@@ -18,3 +18,4 @@ Thumbs.db
 
 # Expo app env (LAN IP, mock flag)
 mobile/.env
+expo-qr.png

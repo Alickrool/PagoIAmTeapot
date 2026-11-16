@@ -170,9 +170,15 @@ footer { font-size: 12.5px; color: var(--muted); border-top: 1px solid var(--lin
         <li class="stop"><span class="dot"></span>
           <div class="meta"><span class="pill m1" title="Membrul 1">M1</span><span>2026-11-16 18:42</span></div>
           <div class="head">Planul de verificare a facturilor e scris și așteaptă discuția în echipă</div></li>
-        <li class="stop last"><span class="dot"></span>
-          <div class="meta"><span class="pill m2" title="Membrul 2">M2</span><span>2026-11-16 19:37</span><span class="pill here">Ești aici</span></div>
+        <li class="stop"><span class="dot"></span>
+          <div class="meta"><span class="pill m2" title="Membrul 2">M2</span><span>2026-11-16 19:37</span></div>
           <div class="head">Backend-ul e pregătit pentru planul de verificare la scanare; îl facem după discuția în echipă</div></li>
+        <li class="stop"><span class="dot"></span>
+          <div class="meta"><span class="pill m1" title="Membrul 1">M1</span><span>2026-11-16 21:08</span></div>
+          <div class="head">Aplicația a pornit pe rețeaua nouă, iar PDF-ul facturii se deschide</div></li>
+        <li class="stop last"><span class="dot"></span>
+          <div class="meta"><span class="pill m2" title="Membrul 2">M2</span><span>2026-11-16 21:49</span><span class="pill here">Ești aici</span></div>
+          <div class="head">Backend-ul verifică acum fiecare factură scanată: luna, sumele, duplicatele și fișierele periculoase</div></li>
       </ol>
     </div>
   </section>
@@ -186,7 +192,7 @@ footer { font-size: 12.5px; color: var(--muted); border-top: 1px solid var(--lin
         <h3>Claude Code</h3>
         <div class="uses">
           <div class="use"><span class="pill m1" title="Membrul 1">M1</span><span class="t">a făcut scanarea cu camera, swipe-ul între tab-uri, roata pe luni, bugetul și întrebările pe fiecare factură, și a scris planul de verificare a datelor la scanare</span></div>
-          <div class="use"><span class="pill m2" title="Membrul 2">M2</span><span class="t">a scris backend-ul Django, traducerea în română, PDF-ul facturii, testele și comiturile</span></div>
+          <div class="use"><span class="pill m2" title="Membrul 2">M2</span><span class="t">a scris backend-ul Django, traducerea în română, PDF-ul facturii, verificarea datelor la scanare, testele și comiturile</span></div>
         </div>
       </div>
 
@@ -265,7 +271,7 @@ footer { font-size: 12.5px; color: var(--muted); border-top: 1px solid var(--lin
     <h2>Pasul următor</h2>
     <div class="card nexts">
       <div class="next"><span class="pill m1" title="Membrul 1">M1</span><span class="t">Discutăm în echipă planul de verificare a datelor și de securitate la scanare (lună, furnizor din România, nume, duplicate, fișiere suspecte), apoi îl implementăm pe backend.</span></div>
-      <div class="next"><span class="pill m2" title="Membrul 2">M2</span><span class="t">Discutăm planul de verificare la scanare cu colegul, apoi îl implementăm pe backend și îl testăm pe telefon cu facturi reale.</span></div>
+      <div class="next"><span class="pill m2" title="Membrul 2">M2</span><span class="t">Terminăm verificarea live cu Gemini și o urcăm pe GitHub; apoi colegul arată avertismentele în aplicație.</span></div>
     </div>
   </section>
 
@@ -327,13 +333,25 @@ footer { font-size: 12.5px; color: var(--muted); border-top: 1px solid var(--lin
       "member": 2,
       "time": "2026-11-16 19:37",
       "headline": "Backend-ul e pregătit pentru planul de verificare la scanare; îl facem după discuția în echipă"
+    },
+    {
+      "n": 10,
+      "member": 1,
+      "time": "2026-11-16 21:08",
+      "headline": "Aplicația a pornit pe rețeaua nouă, iar PDF-ul facturii se deschide"
+    },
+    {
+      "n": 11,
+      "member": 2,
+      "time": "2026-11-16 21:49",
+      "headline": "Backend-ul verifică acum fiecare factură scanată: luna, sumele, duplicatele și fișierele periculoase"
     }
   ],
   "members": {
     "1": {
       "building": "Aplicația mobilă Pago Bill Audit (Expo) în 3 interfețe, Gen Z, Millennials și Senior: vezi facturile lunii într-o roată, scanezi factura din poze sau PDF, Gemini o citește și prinde greșelile. Ca un detectiv care vorbește pe limba fiecărui client.",
-      "works": "Scanarea pornește pe cameră, cu comutare la imagine sau PDF. Tab-urile se schimbă cu swipe, iar roata lunii se glisează între luni și se desenează animat. Bugetul lunii se setează dintr-un buton. Fiecare factură are întrebări pe tipul ei (apă, gaz, curent) și buton „Vezi factura (PDF)”. Furnizorii noi din facturi scanate se adaugă cu un tap. Iconițele sunt simple, fără emoji. Branch-ul frontend-final e unit în main.",
-      "blocking": "Cheia Gemini trebuie rotită înainte de demo, pentru că a fost lipită într-o conversație. Verificarea datelor din factură (lună, furnizor din România, nume, sume) e doar în plan, nu e încă în cod.",
+      "works": "Scanarea pornește pe cameră, cu comutare la imagine sau PDF. Tab-urile se schimbă cu swipe, iar roata lunii se glisează între luni și se desenează animat. Bugetul lunii se setează dintr-un buton. Fiecare factură are întrebări pe tipul ei (apă, gaz, curent) și buton „Vezi factura (PDF)”, care deschide acum factura, pentru că backend-ul o servește. Furnizorii noi din facturi scanate se adaugă cu un tap. Iconițele sunt simple, fără emoji. Branch-ul frontend-final e unit în main.",
+      "blocking": "Cheia Gemini trebuie rotită înainte de demo. Pe Wi-Fi-ul nou, telefonul încă nu a fost testat. Verificarea datelor din factură (lună, furnizor din România, nume, sume) e doar în plan, nu e încă în cod.",
       "features": [
         {
           "name": "Claude Code",
@@ -368,12 +386,12 @@ footer { font-size: 12.5px; color: var(--muted); border-top: 1px solid var(--lin
     },
     "2": {
       "building": "Pago Bill Audit: înainte să apeși «Plătește», AI-ul citește factura, ți-o explică pe înțeles și prinde greșelile (index estimat, scumpiri ascunse, opțiuni plătite uitate). Ca un contabil de buzunar care se uită pe factură în locul tău.",
-      "works": "Tot ce scrie backend-ul e în română (carduri de audit, discrepanțe, răspunsuri Gemini, erori). Modelul mai rapid răspunde în 1–6 secunde și trece singur pe alt model când e aglomerat. O poză care nu e factură sau e prea neclară e respinsă. Facturile scanate se pot redeschide: originalul, sau toate paginile lipite într-un PDF. Verificarea completă pe un server real cu Gemini: 28 din 28. Baza de date e curată: scanarea greșită de test a fost ștearsă, rămân doar facturile reale.",
-      "blocking": "Nimic blocant în cod. Planul de verificare la scanare (lună, furnizor din România, nume, duplicate, fișiere suspecte) e scris de coleg, dar încă nu l-am discutat împreună, așa că nu am început.",
+      "works": "Planul de verificare la scanare e făcut pe backend, cu 52 de teste trecute. Ce citește AI-ul e doar o propunere: regulile din cod verifică luna și anul, sumele și TVA-ul, iar factura din altă lună intră în luna ei. Aceeași factură pozată a doua oară e oprită (409). Fișierele periculoase sunt respinse (PDF cu parolă sau cu cod, poze uriașe), iar pozele sunt salvate fără date GPS. Textul din factură care încearcă să dea ordine AI-ului e semnalat, cifrele rămân cele tipărite. Pe o factură reală Digi citită ca „2020” apare acum avertismentul de factură veche.",
+      "blocking": "Nimic blocant pe backend. Aplicația încă nu arată avertismentele și butonul „E corect”; cheia Gemini trebuie rotită înainte de demo.",
       "features": [
         {
           "name": "Claude Code",
-          "for": "a scris backend-ul Django, traducerea în română, PDF-ul facturii, testele și comiturile"
+          "for": "a scris backend-ul Django, traducerea în română, PDF-ul facturii, verificarea datelor la scanare, testele și comiturile"
         },
         {
           "name": "Căutare pe web",
@@ -400,7 +418,7 @@ footer { font-size: 12.5px; color: var(--muted); border-top: 1px solid var(--lin
           "for": "actualizează pagina Pulse la fiecare 2 ore"
         }
       ],
-      "next": "Discutăm planul de verificare la scanare cu colegul, apoi îl implementăm pe backend și îl testăm pe telefon cu facturi reale."
+      "next": "Terminăm verificarea live cu Gemini și o urcăm pe GitHub; apoi colegul arată avertismentele în aplicație."
     }
   }
 }</script>

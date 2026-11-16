@@ -36,6 +36,12 @@ GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-4-hydrogen")
 AI_MOCK = os.getenv("AI_MOCK", "0") == "1" or not GEMINI_API_KEY
 
 SAMPLES_DIR = REPO_ROOT / "samples"
+# Scan limits (docs/API_V2.md §1)
+SCAN_MAX_FILES = 10
+SCAN_MAX_FILE_BYTES = 10 * 1024 * 1024
+SCAN_MAX_TOTAL_BYTES = 25 * 1024 * 1024
+DATA_UPLOAD_MAX_NUMBER_FILES = 20  # let our own check answer "too_many_files" instead of Django's 400
+
 FIXTURES_DIR = REPO_ROOT / "shared" / "fixtures"
 KNOWLEDGE_DIR = BASE_DIR / "bills" / "knowledge"
 

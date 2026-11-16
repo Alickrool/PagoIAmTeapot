@@ -5,10 +5,10 @@ money as **strings**, dates `YYYY-MM-DD`). Types on the app side: `mobile/src/ap
 
 | # | Endpoint | Screen | Status |
 |---|---|---|---|
-| 1 | `POST /api/bills/scan/` (multi-file) | Scan tab | **change** to existing endpoint |
-| 2 | `GET /api/dashboard/?month=YYYY-MM` | Overview tab (donut + month compare + history) | **new** |
-| 3 | `GET /api/providers/` | Providers tab | **new** |
-| 4 | `GET /api/providers/{slug}/` | Provider history screen | **new** |
+| 1 | `POST /api/bills/scan/` (multi-file) | Scan tab | ✅ **live** |
+| 2 | `GET /api/dashboard/?month=YYYY-MM` | Overview tab (donut + month compare + history) | ✅ **live** |
+| 3 | `GET /api/providers/` | Providers tab | ✅ **live** |
+| 4 | `GET /api/providers/{slug}/` | Provider history screen | ✅ **live** |
 
 The app already works without 2–4: until they exist (404) it computes the same JSON on the phone from
 `GET /bills/` + `GET /bills/{id}/` (`mobile/src/api/derive.ts`). That file is a **reference implementation** of the
@@ -41,12 +41,17 @@ files: page2.jpg  (image/jpeg)
 files: annex.pdf  (application/pdf)
 ```
 
-- Accepted types: `image/jpeg`, `image/png`, `image/webp`, `image/heic`, `application/pdf`.
+- Accepted types: `image/jpeg`, `image/png`, `image/webp`, `image/heic`, `image/heif`, `application/pdf`.
+  If the phone sends `application/octet-stream`, the file extension decides.
 - Max **10 files**, **10 MB per file**, **25 MB total**.
 - Keep accepting the old single field **`file`** (backward compatible, same behaviour as 1 file).
 - Suggested implementation: send all pages in **one** Gemini request (images and PDFs as inline parts,
   in order) with the existing `EXTRACTION_PROMPT`.
-- Cache key: `sha256` of the concatenated file hashes in order, so re-sending the same pages is instant.
+- Cache key: `sha256` of the concatenated file hashes in order, so re-sending the same pages is instant
+  (one file: the file's own `sha256`, so caches pre-warmed per file still match). Other order = new scan.
+- Backend: if every file is a PDF with a text layer, their text goes to Gemini as text in one request;
+  otherwise all pages go as images/PDFs in one request. `line_items[].bbox.page` counts pages across files
+  (a photo = 1 page; photos never get boxes).
 
 **Response** – unchanged: `BillDetail`. `201` = new bill created, `200` = same files already scanned (that bill).
 `file_url` points to the first file (or a merged PDF if you build one).
@@ -114,7 +119,11 @@ files: annex.pdf  (application/pdf)
 | `slices[].previous_total`, `delta_pct` | same provider's bill in `previous_month` (`null` if it had none) |
 | `months` | the last **12 months that have bills, up to and including the selected month**, **oldest first** – the history bar chart. Tapping a bar calls this endpoint with that `month`. |
 
-`404` with `{ "code": "no_bills" }` if the user has no bills at all.
+`404` with `{ "code": "no_bills" }` if the user has no bills at all. `400 { "code": "bad_month" }` if `month`
+is not `YYYY-MM`; a well-formed month without bills falls back to the latest month (same as `derive.ts`).
+
+**One bill per provider per month (backend):** if a month has two bills of the same provider (e.g. a seeded bill
+scanned again in the demo), only the newest counts, so totals are never doubled. Same rule for `/providers/`.
 
 ---
 
@@ -225,6 +234,14 @@ then `critical` before `warning` before `info`. `id` = `"{type}:{bill_id}"` (sta
 | `new_line_item` | a line `code` that none of the previous 3 bills had (e.g. a paid add-on) | `warning` |
 | `missing_month` | gap of more than 1 month between two consecutive bills | `info` |
 
+Backend details (same as `derive.ts` where both compute a rule):
+- `consumption_jump` downwards (≤ −30%) is `info`; `estimated_index` compares with the average of all the
+  provider's bills.
+- `index_gap`: `previous_value` = previous `index_new`, `current_value` = this `index_old`, `unit` = `"index"`.
+- `new_line_item`: one entry per new line, `id` = `"new_line_item:{bill_id}:{line_code}"` (still unique);
+  `current_value` = the line amount **with VAT** (matches the audit card), `unit` = `"RON"`.
+- `bills[].anomalies` is filled for every bill (not only the latest).
+
 `title`/`message` are short, plain English with the real numbers (the app shows them as-is).
 `previous_value` / `current_value` / `unit` are the numbers behind the message (`null` when not numeric, e.g.
 `new_line_item` puts the line label in `message`).
@@ -233,9 +250,10 @@ then `critical` before `warning` before `info`. `id` = `"{type}:{bill_id}"` (sta
 
 ## Checklist for the backend
 
-- [ ] `scan`: accept `files` (repeated) + keep `file`; error body `{code, detail}`
-- [ ] `GET /dashboard/`
-- [ ] `GET /providers/`, `GET /providers/{slug}/` with the discrepancy rules
-- [ ] tests: PPC October → `consumption_jump` + `estimated_index` critical; Digi → `new_line_item`;
+- [x] `scan`: accept `files` (repeated) + keep `file`; error body `{code, detail}`
+      (`not_a_bill` comes with B13; a model failure is `unreadable` today)
+- [x] `GET /dashboard/`
+- [x] `GET /providers/`, `GET /providers/{slug}/` with the discrepancy rules
+- [x] tests: PPC October → `consumption_jump` + `estimated_index` critical; Digi → `new_line_item`;
       Engie → `total_jump`; Apa Brasov → no discrepancies
 - [ ] tell the frontend when each endpoint is live (the app switches from its local fallback on its own)

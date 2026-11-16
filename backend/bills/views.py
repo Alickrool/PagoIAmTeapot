@@ -1,19 +1,19 @@
+import re
+
 from django.conf import settings
 from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
 from rest_framework.response import Response
+from rest_framework.views import APIView
 
 from bills.models import AutoPayRule, Bill
 from bills.serializers import (AskSerializer, AutoPayRuleSerializer, BillDetailSerializer, BillListSerializer,
                                DisputeSerializer, LineItemSerializer, PaySerializer, ReadingSerializer)
-from bills.services import ai, market, mock, pages
+from bills.services import ai, market, mock, overview
 from bills.services.reading import ReadingError, submit_reading
 from bills.services import scan as scan_service
 from bills.services.audit import audit_bill
-
-ALLOWED_TYPES = {"image/jpeg", "image/png", "image/webp", "image/heic", "image/heif", "application/pdf"}
-
 
 def _bill_context(bill: Bill, request) -> dict:
     """Compact bill JSON handed to the LLM."""
@@ -41,19 +41,14 @@ class BillViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, viewsets.Gen
 
     @action(detail=False, methods=["post"])
     def scan(self, request):
-        """Upload the pages of ONE bill (photos and/or PDFs) -> extracted, audited bill. docs/API_V2.md §1"""
+        """1-10 photos/PDFs = the pages of ONE bill (field `files`, repeated; legacy `file`) -> audited bill.
+        Errors: {code, detail} (docs/API_V2.md §1)."""
         uploads = request.FILES.getlist("files") or request.FILES.getlist("file")
-        for u in uploads:
-            if u.content_type not in ALLOWED_TYPES:
-                return Response({"code": "unsupported_type", "detail": f"Tip nesuportat: {u.name} ({u.content_type})."}, status=400)
+        files = [scan_service.Upload(u.read(), scan_service.media_type(u.content_type, u.name), u.name) for u in uploads]
         try:
-            data, content_type, name = pages.combine([(u.read(), u.content_type, u.name) for u in uploads])
-        except pages.PagesError as e:
+            bill, created = scan_service.scan(files)
+        except scan_service.ScanError as e:
             return Response({"code": e.code, "detail": e.detail}, status=e.status)
-        try:
-            bill, created = scan_service.scan(data, content_type, name)
-        except ValueError as e:
-            return Response({"code": "unreadable", "detail": str(e)}, status=422)
         return Response(BillDetailSerializer(bill, context={"request": request}).data, status=201 if created else 200)
 
     @action(detail=True, methods=["post"])
@@ -136,3 +131,33 @@ class BillViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, viewsets.Gen
 class AutoPayRuleViewSet(viewsets.ModelViewSet):
     queryset = AutoPayRule.objects.order_by("-id")
     serializer_class = AutoPayRuleSerializer
+
+
+class DashboardView(APIView):
+    """GET /api/dashboard/?month=YYYY-MM - monthly overview (docs/API_V2.md §2)."""
+
+    def get(self, request):
+        month = request.query_params.get("month")
+        if month and not re.fullmatch(r"\d{4}-(0[1-9]|1[0-2])", month):
+            return Response({"code": "bad_month", "detail": "month must look like 2026-10."}, status=400)
+        try:
+            return Response(overview.dashboard(month))
+        except overview.NoBills:
+            return Response({"code": "no_bills", "detail": "No bills yet. Scan your first bill."}, status=404)
+
+
+class ProvidersView(APIView):
+    """GET /api/providers/ - one card per provider (docs/API_V2.md §3)."""
+
+    def get(self, request):
+        return Response(overview.providers())
+
+
+class ProviderDetailView(APIView):
+    """GET /api/providers/{slug}/ - history + discrepancies (docs/API_V2.md §4)."""
+
+    def get(self, request, slug):
+        try:
+            return Response(overview.provider_history(slug))
+        except overview.UnknownProvider:
+            return Response({"code": "unknown_provider", "detail": f"No provider '{slug}'."}, status=404)

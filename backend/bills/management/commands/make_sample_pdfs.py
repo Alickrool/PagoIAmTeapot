@@ -45,6 +45,7 @@ def ro(n, decimals=2) -> str:
 
 
 def render(bill: Bill, path: Path, font: str, bold: str):
+    rl_config.invariant = 1  # no timestamps/random ids -> same bytes -> same cache hash on every run
     p = lambda text, size=9, b=False: Paragraph(text, ParagraphStyle("p", fontName=bold if b else font, fontSize=size, leading=size + 3))
     period = f"{bill.period_start:%d.%m.%Y} - {bill.period_end:%d.%m.%Y}"
     story = [
@@ -104,7 +105,6 @@ class Command(BaseCommand):
     def handle(self, *args, **opts):
         out = settings.SAMPLES_DIR
         out.mkdir(exist_ok=True)
-        rl_config.invariant = 1  # no timestamps/random ids -> same bytes -> same cache hash on every run
         font, bold = register_font()
         latest = Bill.objects.filter(source="seed").order_by("-period_end").first().period_end
         for bill in Bill.objects.filter(source="seed", period_end=latest).prefetch_related("line_items"):

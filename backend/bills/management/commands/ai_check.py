@@ -2,6 +2,7 @@
 
 Usage:  python manage.py ai_check                       (uses samples/demo_ppc_2026_10.pdf)
         python manage.py ai_check ../samples/my_bill.jpg
+        python manage.py ai_check page1.jpg page2.jpg      (several files = pages of ONE bill)
 Bypasses the extraction cache and writes nothing to the database.
 """
 
@@ -14,31 +15,32 @@ from django.core.management.base import BaseCommand, CommandError
 from bills.models import Bill
 from bills.serializers import BillDetailSerializer
 from bills.services import ai, scan
+from bills.services.scan import EXT_TYPES, Upload
 
-TYPES = {".pdf": "application/pdf", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".png": "image/png",
-         ".webp": "image/webp", ".heic": "image/heic"}
 
 
 class Command(BaseCommand):
     help = "Call the real LLM once for extraction and once for Q&A, print results and timings."
 
     def add_arguments(self, parser):
-        parser.add_argument("file", nargs="?", default=str(settings.SAMPLES_DIR / "demo_ppc_2026_10.pdf"))
+        parser.add_argument("files", nargs="*")
 
-    def handle(self, *args, file, **opts):
+    def handle(self, *args, files, **opts):
         self.stdout.write(f"Model: {settings.GEMINI_MODEL}")
         if settings.AI_MOCK:
             raise CommandError("AI_MOCK is on (AI_MOCK=1 or no GEMINI_API_KEY in backend/.env).")
-        path = Path(file)
-        if not path.is_file():
-            raise CommandError(f"No such file: {path}  (run `python manage.py make_sample_pdfs` first)")
+        paths = [Path(f) for f in files] or [settings.SAMPLES_DIR / "demo_ppc_2026_10.pdf"]
+        for path in paths:
+            if not path.is_file():
+                raise CommandError(f"No such file: {path}  (run `python manage.py make_sample_pdfs` first)")
+        uploads = [Upload(p.read_bytes(), EXT_TYPES.get(p.suffix.lower(), "application/pdf"), p.name) for p in paths]
 
         t = time.monotonic()
         try:
-            bill, method = scan._extract(path.read_bytes(), TYPES.get(path.suffix.lower(), "application/pdf"))
+            bill, method = scan._extract(uploads)
         except Exception as e:  # show provider errors (bad key, unknown model, quota) plainly
             raise CommandError(f"Extraction failed: {type(e).__name__}: {e}")
-        self.stdout.write(self.style.SUCCESS(f"\nExtraction via {method} in {time.monotonic() - t:.1f}s"))
+        self.stdout.write(self.style.SUCCESS(f"\nExtraction of {len(uploads)} file(s) via {method} in {time.monotonic() - t:.1f}s"))
         self.stdout.write(f"  {bill.provider} / {bill.category} / {bill.period_start}..{bill.period_end} / "
                           f"total {bill.total} / {bill.consumption} {bill.consumption_unit} / index {bill.index_type}")
         for li in bill.line_items:

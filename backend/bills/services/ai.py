@@ -5,6 +5,7 @@ Every call goes through `_generate`, which asks for JSON matching a Pydantic sch
 
 from __future__ import annotations
 
+import io
 import json
 from datetime import date
 from functools import lru_cache
@@ -15,6 +16,8 @@ from pydantic import BaseModel, Field
 
 T = TypeVar("T", bound=BaseModel)
 Part = Union[str, tuple[bytes, str]]  # text, or (file bytes, mime type)
+# Gemini rejects requests above ~20 MB of inline data; bigger uploads go through the Files API.
+INLINE_LIMIT_BYTES = 18 * 1024 * 1024
 
 # ---------- Gemini ----------
 
@@ -51,7 +54,19 @@ def _generate(parts: list[Part], schema: type[T], *, system: str | None = None, 
     """One structured LLM call. Returns None when the answer is blocked/empty."""
     from google.genai import types
 
-    contents = [p if isinstance(p, str) else types.Part.from_bytes(data=p[0], mime_type=p[1]) for p in parts]
+    inline_bytes = sum(len(p[0]) for p in parts if not isinstance(p, str))
+    use_files_api = inline_bytes > INLINE_LIMIT_BYTES
+
+    def to_part(p: Part):
+        if isinstance(p, str):
+            return p
+        data, mime = p
+        if use_files_api:
+            f = gemini_client().files.upload(file=io.BytesIO(data), config=types.UploadFileConfig(mime_type=mime))
+            return types.Part.from_uri(file_uri=f.uri, mime_type=mime)
+        return types.Part.from_bytes(data=data, mime_type=mime)
+
+    contents = [to_part(p) for p in parts]
     response = gemini_client().models.generate_content(
         model=settings.GEMINI_MODEL,
         contents=contents,
@@ -124,8 +139,15 @@ def _parse_bill(parts: list[Part]) -> ExtractedBill:
 
 
 def extract_bill(data: bytes, media_type: str) -> ExtractedBill:
-    """Vision path: photo or PDF sent as an image/document."""
-    return _parse_bill([(data, media_type), EXTRACTION_PROMPT])
+    """Vision path, one file: photo or PDF."""
+    return extract_bill_files([(data, media_type)])
+
+
+def extract_bill_files(files: list[tuple[bytes, str]]) -> ExtractedBill:
+    """Vision path, 1-10 files that are the pages of ONE bill, in order (photos and/or PDFs)."""
+    note = (f"\nThe {len(files)} files above are the pages of ONE bill, in order. Extract a single bill; "
+            "don't count a line twice if it appears on two pages.") if len(files) > 1 else ""
+    return _parse_bill([*files, EXTRACTION_PROMPT + note])
 
 
 def extract_bill_from_text(text: str) -> ExtractedBill:

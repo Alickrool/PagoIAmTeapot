@@ -1,9 +1,15 @@
+from django.urls import path
 from rest_framework.routers import DefaultRouter
 
-from bills.views import AutoPayRuleViewSet, BillViewSet
+from bills.views import AutoPayRuleViewSet, BillViewSet, DashboardView, ProviderDetailView, ProvidersView
 
 router = DefaultRouter()
 router.register("bills", BillViewSet, basename="bill")
 router.register("autopay-rules", AutoPayRuleViewSet, basename="autopay-rule")
 
-urlpatterns = router.urls
+urlpatterns = [
+    path("dashboard/", DashboardView.as_view(), name="dashboard"),
+    path("providers/", ProvidersView.as_view(), name="providers"),
+    path("providers/<slug:slug>/", ProviderDetailView.as_view(), name="provider-detail"),
+    *router.urls,
+]

@@ -13,7 +13,7 @@ New endpoints for the Scan / Overview / Providers screens: [API_V2.md](API_V2.md
 |---|---|---|---|
 | GET | `/bills/` | – | `BillSummary[]`, latest bill per provider (`?all=1` for every bill) |
 | GET | `/bills/{id}/` | – | `BillDetail` (line items + audit + 12-month history) |
-| POST | `/bills/scan/` | multipart `file` (jpeg/png/webp/pdf) | `BillDetail` – 201 new bill; 200 if the same file was already scanned (returns that bill) |
+| POST | `/bills/scan/` | multipart `files` (repeated, 1–10 pages of one bill) or `file` (jpeg/png/webp/heic/pdf) | `BillDetail` – 201 new bill; 200 if the same files were already scanned (returns that bill). Details and errors: [API_V2.md §1](API_V2.md) |
 | POST | `/bills/{id}/ask/` | `{question?, line_item_id?}` (at least one) | `{question, line_item, answer, sources[], suggested_actions[]}` |
 | POST | `/bills/{id}/dispute/` | `{anomaly_id?}` | `{to, subject, body}` – complaint letter in Romanian |
 | POST | `/bills/{id}/reading/` | `{index_new}` (meter index, must be > `index_old`) | `BillDetail` + `recalculation` – see below; 400 `{detail}` on a bad index |

@@ -109,6 +109,9 @@ class Command(BaseCommand):
         latest = Bill.objects.filter(source="seed").order_by("-period_end").first().period_end
         for bill in Bill.objects.filter(source="seed", period_end=latest).prefetch_related("line_items"):
             path = out / f"demo_{bill.provider.lower().replace(' ', '_')}_{bill.period_end:%Y_%m}.pdf"
-            render(bill, path, font, bold)
-            self.stdout.write(f"  {path.name}")
+            try:
+                render(bill, path, font, bold)
+                self.stdout.write(f"  {path.name}")
+            except PermissionError:
+                self.stdout.write(self.style.WARNING(f"  {path.name}: file is open in another program, close it and rerun"))
         self.stdout.write(self.style.SUCCESS(f"Written to {out}"))

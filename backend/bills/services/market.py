@@ -16,18 +16,20 @@ COUNTY_AVERAGES = {
 # all_in_price = RON per kWh, VAT and regulated tariffs included (illustrative).
 OFFERS = {
     "electricity": [
-        {"supplier": "Hidroelectrica", "offer": "Casa Verde (demo)", "all_in_price": 1.12},
-        {"supplier": "E.ON", "offer": "Fix 12 luni (demo)", "all_in_price": 1.24},
-        {"supplier": "Electrica Furnizare", "offer": "Eco Home (demo)", "all_in_price": 1.29},
+        {"supplier": "Hidroelectrica", "offer": "Casa Verde (demo)", "all_in_price": 1.26},
+        {"supplier": "E.ON", "offer": "Fix 12 luni (demo)", "all_in_price": 1.33},
+        {"supplier": "Electrica Furnizare", "offer": "Eco Home (demo)", "all_in_price": 1.39},
     ],
+    # Household gas is capped at 0.31 lei/kWh until 31 March 2027, so offers can only be at or below it.
     "gas": [
-        {"supplier": "Engie", "offer": "Gaz Fix 24 (demo)", "all_in_price": 0.49},
-        {"supplier": "E.ON", "offer": "Gaz Confort (demo)", "all_in_price": 0.52},
+        {"supplier": "Engie", "offer": "Gaz Casnic (demo)", "all_in_price": 0.30},
+        {"supplier": "E.ON", "offer": "Gaz Confort (demo)", "all_in_price": 0.30},
     ],
 }
 
-# Market reference for the "above market" anomaly (median all-in price, illustrative).
-MARKET_REFERENCE_PRICE = {"electricity": 1.25, "gas": 0.53}
+# Market reference for the "above market" anomaly (typical all-in price incl. VAT, illustrative).
+# Electricity all-in = (energy ~0.55-0.65 + regulated ~0.50) x 1.21. Gas = the 0.31 lei/kWh household cap.
+MARKET_REFERENCE_PRICE = {"electricity": 1.33, "gas": 0.31}
 
 
 def offers_for(category: str, consumption: float | None, current_total: float, current_supplier: str):

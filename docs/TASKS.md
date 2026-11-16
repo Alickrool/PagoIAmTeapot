@@ -28,7 +28,7 @@ Priority order. P0 = needed for the demo, P1 = makes it win, P2 = only if time i
 | # | P | Task | Done when |
 |---|---|---|---|
 | B1 | P0 | Collect 3–4 **real** bills (your own Engie/PPC/Hidroelectrica/Digi PDFs/photos) in `samples/`; `python manage.py make_sample_pdfs` adds fictional demo PDFs of the seeded "bad" bills. Once the API key arrives (`backend/.env`): `prewarm_cache ../samples/*`, check totals/lines, tune `EXTRACTION_PROMPT` in `services/ai.py`. Delete the bill's row in `ExtractionCache` (Django admin) to re-run after a prompt change | Totals and line items match the paper bill on every test bill |
-| B2 | P0 | Check every `[VERIFY]` line in `bills/knowledge/romania_utilities.md` against ANRE/official sources; delete what you can't verify | No unverified "fact" left |
+| B2 | ✅ | Knowledge base checked 16 Nov against ANAF/ANRE/press, every fact tagged with its source; demo tariffs set to 2026 values; Engie scenario moved from gas to electricity (gas is capped at 0.31 lei/kWh until March 2027) | Done. If a Pago mentor corrects a fact, fix it in `romania_utilities.md` |
 | B3 | P0 | Ask quality: run ~10 demo questions (tap each PPC/Engie line + free text), tune `ASK_SYSTEM`; keep answers short and tied to the numbers | Answers are correct and < 5 s |
 | B4 | P0 | Make the demo bills realistic: compare `seed_demo.py` amounts with a real bill of the same supplier; adjust if a juror from Pago would spot nonsense | |
 | B5 | ✅ | `POST /bills/{id}/reading/ {index_new}` → recalculated bill + `recalculation` | Done, tested |
@@ -54,7 +54,7 @@ Priority order. P0 = needed for the demo, P1 = makes it win, P2 = only if time i
 
 1. **Home** – "Today Pago shows 4 bills and a Pay button. We added an auditor." Three badges: 🔴 PPC, 🟡 Engie, 🟡 Digi, 🟢 water.
 2. **PPC 🔴** – "Billed 350 kWh on an *estimated* index vs your usual 177. Don't pay yet." → *Submit real reading* (index + 182) → 🔴 disappears, total drops by ~240 RON; what's left is 🟡 "price above market" → *Compare offers*.
-3. **Engie 🟡** – "+42% but consumption only +8%." Tap the VAT line → AI explains with the real numbers and the 21% VAT change.
+3. **Engie 🟡** (electricity, parents' flat) – "+42% but consumption only +8%: the fixed-price offer expired, 0.55 → 0.88 lei/kWh." Tap the VAT line → AI explains with the real numbers and the 21% VAT; tap "Contribuție CfD" → "what is this?".
 4. **Digi 🟡** – "15 RON/month for an add-on added 6 months ago, 90 RON so far." → *Cancel this option* → ready-to-send letter.
 5. **Smart Auto-Pay** – "Pay automatically only under 250 RON and never on estimated index." → simulate → blocked, with reasons.
 6. **Live scan** – photo of a real paper bill → extracted and audited in ~15 s.

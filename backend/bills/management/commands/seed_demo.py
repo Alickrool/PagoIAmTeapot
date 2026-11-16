@@ -1,7 +1,10 @@
-"""Seed a demo user's last 12 months of bills (all data is fictional).
+"""Seed a demo user's last 12 months of bills (people, codes and supplier prices are fictional;
+regulated tariffs follow the public 2026 values in bills/knowledge/romania_utilities.md).
 
 Scenarios on the current month (October 2026):
-- Engie (gas):      +42% bill vs last month, consumption only +8% -> price change decomposition.
+- Engie (electricity, parents' flat): fixed-price offer expired, energy 0.55 -> 0.88 lei/kWh: +42% bill while
+  consumption is only +8% -> price change decomposition. (Not gas: household gas is capped at 0.31 lei/kWh until
+  March 2027, so a gas price jump would be unrealistic.)
 - PPC (electricity): estimated index 350 kWh vs ~180 usual, price above market -> "don't pay yet".
 - Digi (telecom):   paid add-on silently added 6 months ago -> "phantom service".
 - Apa Brasov (water): normal bill -> green badge, for contrast.
@@ -57,19 +60,31 @@ def make_bill(provider, category, y, m, items, *, vat=VAT, consumption=None, uni
     return bill
 
 
+def electricity_items(c: float, energy_price: float) -> list[tuple]:
+    """Household low-voltage bill lines. Regulated values per kWh (no VAT), Brașov / DEER, autumn 2026."""
+    return [
+        ("energy", "Energie electrică activă", "Active energy (supply)", "energy", c, "kWh", energy_price, None),
+        ("distribution", "Tarif distribuție JT", "Low-voltage distribution tariff", "distribution", c, "kWh", 0.3553, None),
+        ("transport", "Tarif transport (TL)", "Transmission tariff", "transport", c, "kWh", 0.0365, None),
+        ("system_services", "Servicii de sistem", "System services", "regulated_fee", c, "kWh", 0.0127, None),
+        ("green_certificates", "Certificate verzi", "Green certificates", "regulated_fee", c, "kWh", 0.0740, None),
+        ("cogeneration", "Contribuție cogenerare de înaltă eficiență", "High-efficiency cogeneration contribution",
+         "regulated_fee", c, "kWh", 0.0145, None),
+        ("cfd", "Contribuție CfD", "Contracts-for-Difference contribution", "regulated_fee", c, "kWh", 0.000144, None),
+        ("excise", "Acciză", "Excise duty", "regulated_fee", c, "kWh", 0.0077, None),
+    ]
+
+
 def seed_engie():
-    # Monthly gas consumption in kWh (heating season shape). Last value = current month.
-    kwh = [980, 1350, 1520, 1310, 1040, 720, 420, 260, 210, 230, 470, 508]
-    index = 18240.0
+    # Parents' flat. Fixed-price offer (0.55) expired in October -> standard price 0.88.
+    kwh = [205, 228, 236, 219, 204, 190, 181, 176, 188, 199, 195, 211]
+    index = 23105.0
     for i, ((y, m), c) in enumerate(zip(MONTHS, kwh)):
         current = i == len(kwh) - 1
-        supply, dist = (0.40, 0.084) if current else (0.29, 0.079)
-        make_bill("Engie", "gas", y, m, [
-            ("energy", "Gaze naturale - furnizare", "Gas supply", "energy", c, "kWh", supply, None),
-            ("distribution", "Tarif distribuție gaze", "Gas distribution tariff", "distribution", c, "kWh", dist, None),
-        ], consumption=c, unit="kWh", index_type="real", index_old=index,
-            customer_code="EN-4410023981", meter_series="G4-77812331")
-        index += c / 10.5  # m3 on the meter
+        make_bill("Engie", "electricity", y, m, electricity_items(c, 0.88 if current else 0.55),
+                  consumption=c, unit="kWh", index_type="real" if i % 2 else "self", index_old=index,
+                  customer_code="EN-4410023981", meter_series="EM-55012874", place="Str. Republicii 5, Brașov")
+        index += c
 
 
 def seed_ppc():
@@ -77,17 +92,9 @@ def seed_ppc():
     index = 40211.0
     for i, ((y, m), c) in enumerate(zip(MONTHS, kwh)):
         current = i == len(kwh) - 1
-        make_bill("PPC", "electricity", y, m, [
-            ("energy", "Energie electrică activă", "Active energy (supply)", "energy", c, "kWh", 0.89, None),
-            ("distribution", "Tarif distribuție JT", "Low-voltage distribution tariff", "distribution", c, "kWh", 0.21, None),
-            ("transport", "Tarif transport (TG+TL)", "Transmission tariff", "transport", c, "kWh", 0.04, None),
-            ("system_services", "Servicii de sistem", "System services", "regulated_fee", c, "kWh", 0.008, None),
-            ("green_certificates", "Certificate verzi", "Green certificates", "regulated_fee", c, "kWh", 0.025, None),
-            ("cogeneration", "Contribuție cogenerare de înaltă eficiență", "High-efficiency cogeneration contribution",
-             "regulated_fee", c, "kWh", 0.006, None),
-            ("excise", "Acciză", "Excise duty", "regulated_fee", c, "kWh", 0.006, None),
-        ], consumption=c, unit="kWh", index_type="estimated" if current else ("self" if i % 3 else "real"),
-            index_old=index, customer_code="PPC-1002338471", meter_series="EM-20391877")
+        make_bill("PPC", "electricity", y, m, electricity_items(c, 0.72),
+                  consumption=c, unit="kWh", index_type="estimated" if current else ("self" if i % 3 else "real"),
+                  index_old=index, customer_code="PPC-1002338471", meter_series="EM-20391877")
         index += c
 
 

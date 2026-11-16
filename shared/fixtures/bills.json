@@ -1,6 +1,6 @@
 [
   {
-    "id": 96,
+    "id": 483,
     "provider": "Apa Brasov",
     "category": "water",
     "period_start": "2026-10-01",
@@ -12,7 +12,7 @@
     "audit_status": "ok"
   },
   {
-    "id": 84,
+    "id": 471,
     "provider": "Digi",
     "category": "telecom",
     "period_start": "2026-10-01",
@@ -24,25 +24,25 @@
     "audit_status": "warning"
   },
   {
-    "id": 72,
+    "id": 459,
     "provider": "PPC",
     "category": "electricity",
     "period_start": "2026-10-01",
     "period_end": "2026-10-31",
     "due_date": "2026-11-20",
-    "total": "501.85",
+    "total": "517.06",
     "currency": "RON",
     "status": "unpaid",
     "audit_status": "critical"
   },
   {
-    "id": 60,
+    "id": 447,
     "provider": "Engie",
-    "category": "gas",
+    "category": "electricity",
     "period_start": "2026-10-01",
     "period_end": "2026-10-31",
     "due_date": "2026-11-20",
-    "total": "297.50",
+    "total": "352.53",
     "currency": "RON",
     "status": "unpaid",
     "audit_status": "warning"

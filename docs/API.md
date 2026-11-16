@@ -67,7 +67,7 @@ The full recalculated `BillDetail` (index_type becomes `"self"`, audit re-run) p
 
 ```json
 "recalculation": {
-  "previous_total": 501.85, "new_total": 260.96, "difference": -240.89,
+  "previous_total": 517.06, "new_total": 268.84, "difference": -248.22,
   "previous_consumption": 350, "new_consumption": 182, "unit": "kWh"
 }
 ```

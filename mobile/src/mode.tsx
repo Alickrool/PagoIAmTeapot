@@ -195,7 +195,7 @@ export const COPY = {
     tabOverview: 'Facturi',
     tabScan: 'Fotografiați',
     tabProviders: 'Istoric',
-    overviewTitle: 'Facturile dumneavoastră',
+    overviewTitle: 'Acasă',
     greeting: 'Sărut-mâna!',
     streak: (n: number) => `Ați plătit la timp ${n} luni la rând`,
     vsPrev: (diff: number, month: string) =>

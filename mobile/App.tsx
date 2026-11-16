@@ -2,8 +2,9 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { DarkTheme, DefaultTheme, NavigationContainer, type Theme as NavTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { StatusBar } from 'expo-status-bar';
-import { ActivityIndicator, Pressable, Text, View } from 'react-native';
+import { ActivityIndicator, Text, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { ModeSwitcher } from './src/components/ModeSwitcher';
 import { ModeProvider, useCopy, useMode, useTheme } from './src/mode';
 import type { RootStackParamList, TabParamList } from './src/navigation';
 import AutoPayScreen from './src/screens/AutoPayScreen';
@@ -24,17 +25,6 @@ const icon = (emoji: string) =>
     return <Text style={{ fontSize: 22, opacity: focused ? 1 : 0.5 }}>{emoji}</Text>;
   };
 
-/** Header button that reopens the generation picker. */
-function ModeButton() {
-  const { setMode } = useMode();
-  const t = useTheme();
-  return (
-    <Pressable onPress={() => setMode(null)} hitSlop={10} style={{ paddingHorizontal: 14, minHeight: 44, justifyContent: 'center' }} accessibilityRole="button" accessibilityLabel="Schimbă modul">
-      <Text style={{ color: t.accent, fontWeight: '700', fontSize: t.fs(14) }}>Mod</Text>
-    </Pressable>
-  );
-}
-
 function Tabs() {
   const t = useTheme();
   const copy = useCopy();
@@ -49,7 +39,7 @@ function Tabs() {
         headerTintColor: t.text,
         headerShadowVisible: false,
         headerTitleStyle: { fontSize: t.fs(18), fontWeight: '800' },
-        headerRight: ModeButton,
+        headerRight: ModeSwitcher,
       }}
     >
       <Tab.Screen name="Overview" component={OverviewScreen} options={{ title: copy.overviewTitle, tabBarLabel: copy.tabOverview, tabBarIcon: icon('🍩') }} />
@@ -81,7 +71,13 @@ function Root() {
   return (
     <NavigationContainer theme={navTheme}>
       <Stack.Navigator
-        screenOptions={{ headerStyle: { backgroundColor: t.bg }, headerTintColor: t.text, headerShadowVisible: false, headerTitleStyle: { fontSize: t.fs(18), fontWeight: '800' } }}
+        screenOptions={{
+          headerStyle: { backgroundColor: t.bg },
+          headerTintColor: t.text,
+          headerShadowVisible: false,
+          headerTitleStyle: { fontSize: t.fs(18), fontWeight: '800' },
+          headerRight: ModeSwitcher,
+        }}
       >
         <Stack.Screen name="Tabs" component={Tabs} options={{ headerShown: false, title: 'Acasă' }} />
         <Stack.Screen name="Bill" component={BillScreen} options={{ title: 'Factura' }} />

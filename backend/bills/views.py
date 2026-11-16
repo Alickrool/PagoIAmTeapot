@@ -12,9 +12,6 @@ from bills.services.reading import ReadingError, submit_reading
 from bills.services import scan as scan_service
 from bills.services.audit import audit_bill
 
-ALLOWED_TYPES = {"image/jpeg", "image/png", "image/webp", "image/heic", "image/heif", "application/pdf"}
-
-
 def _bill_context(bill: Bill, request) -> dict:
     """Compact bill JSON handed to the LLM."""
     data = BillDetailSerializer(bill, context={"request": request}).data
@@ -41,16 +38,14 @@ class BillViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, viewsets.Gen
 
     @action(detail=False, methods=["post"])
     def scan(self, request):
-        """Upload a photo/PDF of a bill -> extracted, audited bill."""
-        upload = request.FILES.get("file")
-        if not upload:
-            return Response({"detail": "Send the bill as multipart field 'file'."}, status=400)
-        if upload.content_type not in ALLOWED_TYPES:
-            return Response({"detail": f"Unsupported type {upload.content_type}."}, status=400)
+        """1-10 photos/PDFs = the pages of ONE bill (field `files`, repeated; legacy `file`) -> audited bill.
+        Errors: {code, detail} (docs/API_V2.md §1)."""
+        uploads = request.FILES.getlist("files") or request.FILES.getlist("file")
+        files = [scan_service.Upload(u.read(), scan_service.media_type(u.content_type, u.name), u.name) for u in uploads]
         try:
-            bill, created = scan_service.scan(upload.read(), upload.content_type, upload.name)
-        except ValueError as e:
-            return Response({"detail": str(e)}, status=422)
+            bill, created = scan_service.scan(files)
+        except scan_service.ScanError as e:
+            return Response({"code": e.code, "detail": e.detail}, status=e.status)
         return Response(BillDetailSerializer(bill, context={"request": request}).data, status=201 if created else 200)
 
     @action(detail=True, methods=["post"])

@@ -126,17 +126,24 @@ class DemoScenarioTests(TestCase):
 
         good = extraction()
         bad = good.model_copy(update={"total": good.total + 100})
-        data = self._demo_pdf()
+        pdf = scan.Upload(self._demo_pdf(), "application/pdf", "p.pdf")
+        jpg = scan.Upload(b"jpeg bytes", "image/jpeg", "p.jpg")
         with override_settings(AI_MOCK=False), \
                 um.patch("bills.services.ai.extract_bill_from_text", return_value=good) as text_call, \
-                um.patch("bills.services.ai.extract_bill", return_value=good) as vision_call:
-            _, method = scan._extract(data, "application/pdf")
+                um.patch("bills.services.ai.extract_bill_files", return_value=good) as vision_call:
+            _, method = scan._extract([pdf])
             self.assertEqual((method, text_call.call_count, vision_call.call_count), ("text", 1, 0))
+            # two text PDFs -> still ONE text request, with both files' text
+            _, method = scan._extract([pdf, pdf])
+            self.assertEqual((method, text_call.call_count), ("text", 2))
+            self.assertIn("=== file 2 of 2 ===", text_call.call_args[0][0])
             text_call.return_value = bad
-            _, method = scan._extract(data, "application/pdf")
+            _, method = scan._extract([pdf])
             self.assertEqual((method, vision_call.call_count), ("vision_fallback", 1))
-            _, method = scan._extract(b"jpeg bytes", "image/jpeg")
+            # a photo among the pages -> everything goes to vision in ONE request, in order
+            _, method = scan._extract([pdf, jpg])
             self.assertEqual(method, "vision")
+            self.assertEqual([m for _, m in vision_call.call_args[0][0]], ["application/pdf", "image/jpeg"])
 
     def test_pdf_scan_fills_bboxes(self):
         from django.core.files.uploadedfile import SimpleUploadedFile
@@ -147,6 +154,62 @@ class DemoScenarioTests(TestCase):
         self.assertGreaterEqual(sum(b is not None for b in boxes), len(boxes) - 1)
         b = next(b for b in boxes if b)
         self.assertTrue(0 <= b["x"] < 1 and 0 <= b["y"] < 1 and 0 < b["w"] <= 1 and b["page"] == 1)
+
+    # ---- scan v2 (docs/API_V2.md §1) ----
+
+    def _post_files(self, *files, field="files"):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+
+        payload = {field: [SimpleUploadedFile(n, d, content_type=t) for n, d, t in files]}
+        return self.c.post("/api/bills/scan/", payload, format="multipart")
+
+    def test_scan_multi_file_one_bill_with_page_offsets(self):
+        # photo first, then the PDF: the PDF's lines are on page 2 of the bill
+        r = self._post_files(("p1.jpg", b"\xff\xd8 photo", "image/jpeg"),
+                             ("p2.pdf", self._demo_pdf(), "application/pdf"))
+        self.assertEqual(r.status_code, 201)
+        data = r.json()
+        self.assertTrue(data["file_url"].endswith(".jpg"))  # first file
+        pages = {li["bbox"]["page"] for li in data["line_items"] if li["bbox"]}
+        self.assertEqual(pages, {2})
+        # same files, same order -> same bill; other order -> a different scan
+        again = self._post_files(("p1.jpg", b"\xff\xd8 photo", "image/jpeg"),
+                                 ("p2.pdf", self._demo_pdf(), "application/pdf"))
+        self.assertEqual((again.status_code, again.json()["id"]), (200, data["id"]))
+        swapped = self._post_files(("p2.pdf", self._demo_pdf(), "application/pdf"),
+                                   ("p1.jpg", b"\xff\xd8 photo", "image/jpeg"))
+        self.assertEqual(swapped.status_code, 201)
+
+    def test_scan_errors(self):
+        from django.test import override_settings
+
+        r = self.c.post("/api/bills/scan/", {}, format="multipart")
+        self.assertEqual((r.status_code, r.json()["code"]), (400, "no_files"))
+        r = self._post_files(*[(f"p{i}.jpg", bytes([i]), "image/jpeg") for i in range(11)])
+        self.assertEqual((r.status_code, r.json()["code"]), (400, "too_many_files"))
+        r = self._post_files(("notes.txt", b"hello", "text/plain"))
+        self.assertEqual((r.status_code, r.json()["code"]), (400, "unsupported_type"))
+        self.assertIn("notes.txt", r.json()["detail"])
+        with override_settings(SCAN_MAX_FILE_BYTES=10, SCAN_MAX_TOTAL_BYTES=15):
+            r = self._post_files(("big.jpg", b"x" * 11, "image/jpeg"))
+            self.assertEqual((r.status_code, r.json()["code"]), (413, "file_too_large"))
+            r = self._post_files(("a.jpg", b"x" * 8, "image/jpeg"), ("b.jpg", b"y" * 8, "image/jpeg"))
+            self.assertEqual((r.status_code, r.json()["code"]), (413, "file_too_large"))
+
+    def test_scan_type_from_extension_and_legacy_field(self):
+        # phones sometimes send application/octet-stream: the extension decides
+        r = self._post_files(("bill.heic", b"heic bytes", "application/octet-stream"), field="file")
+        self.assertEqual(r.status_code, 201)
+
+    def test_scan_unreadable_is_422(self):
+        from unittest import mock as um
+
+        from django.test import override_settings
+
+        with override_settings(AI_MOCK=False), \
+                um.patch("bills.services.ai.extract_bill_files", side_effect=ValueError("Could not read this bill")):
+            r = self._post_files(("blurry.jpg", b"\xff\xd8 blurry", "image/jpeg"))
+        self.assertEqual((r.status_code, r.json()["code"]), (422, "unreadable"))
 
     def test_gemini_provider_path(self):
         import json

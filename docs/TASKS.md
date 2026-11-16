@@ -38,7 +38,7 @@ switches to them automatically. No app change needed.
 | B6 | – | bbox for text PDFs + text-first PDF extraction with vision fallback | ✅ |
 | B10 | **P0** | `GET /dashboard/?month=YYYY-MM` exactly as API_V2 §2 (use `derive.ts` as the reference implementation) + tests | open |
 | B11 | **P0** | `GET /providers/` and `GET /providers/{slug}/` with the discrepancy rules (API_V2 §3–4), including `index_gap` and `new_line_item` that the app can't compute + the tests from the API_V2 checklist | open |
-| B12 | **P0** | Scan v2: repeated `files` field (keep `file`), max 10 files / 10 MB each / 25 MB total, errors as `{code, detail}`, cache key = hash of the file hashes in order. All files = text PDFs → one text request; otherwise all pages as inline parts in **one** Gemini request. bbox `page` numbers continue across files | open |
+| B12 | ✅ | Scan v2 live: `files` (1–10) + legacy `file`, limits, `{code, detail}` errors, multi-page in one Gemini request (text if all PDFs have text), bbox pages across files, cache by file order. Verified live with a bill split into 2 photos | Done |
 | B13 | P1 | `not_a_bill` / `unreadable` (422): add `is_bill` + `readable` to the extraction schema. (HEIC needs no conversion: Gemini accepts it, the backend already allows it) | open |
 | B7 | P0 | LAN hosting from both phones (`runserver 0.0.0.0:8000`, firewall), plan B `AI_MOCK=1` | open |
 | B1 | P0 | `ai_check` passes on the demo PDF (text path) and a PNG photo (vision): all lines and totals exact, gemini-4-hydrogen ~10-14 s. Left: run on your real bills (redact name/address), then `prewarm_cache ../samples/*` | demo bills ✅, real bills open |

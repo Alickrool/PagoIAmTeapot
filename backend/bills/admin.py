@@ -20,4 +20,4 @@ admin.site.register(AutoPayRule)
 
 @admin.register(ExtractionCache)
 class ExtractionCacheAdmin(admin.ModelAdmin):
-    list_display = ["filename", "file_hash", "created_at"]
+    list_display = ["filename", "method", "file_hash", "created_at"]

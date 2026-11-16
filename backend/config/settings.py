@@ -34,6 +34,7 @@ ANTHROPIC_MODEL = os.getenv("ANTHROPIC_MODEL", "claude-opus-5-5")
 # so the frontend can work before the AI pipeline is ready.
 AI_MOCK = os.getenv("AI_MOCK", "0") == "1" or not os.getenv("ANTHROPIC_API_KEY")
 
+SAMPLES_DIR = REPO_ROOT / "samples"
 FIXTURES_DIR = REPO_ROOT / "shared" / "fixtures"
 KNOWLEDGE_DIR = BASE_DIR / "bills" / "knowledge"
 

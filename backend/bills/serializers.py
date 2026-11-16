@@ -81,5 +81,9 @@ class DisputeSerializer(serializers.Serializer):
     anomaly_id = serializers.CharField(required=False)
 
 
+class ReadingSerializer(serializers.Serializer):
+    index_new = serializers.FloatField(min_value=0)
+
+
 class PaySerializer(serializers.Serializer):
     mode = serializers.ChoiceField(choices=["manual", "auto"], default="manual")

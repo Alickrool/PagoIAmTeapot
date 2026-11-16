@@ -80,17 +80,35 @@ Rules:
 """
 
 
-def extract_bill(data: bytes, media_type: str) -> ExtractedBill:
+def _parse_bill(content: list[dict]) -> ExtractedBill:
     response = client().messages.parse(
         model=settings.ANTHROPIC_MODEL,
         max_tokens=16000,
         output_config={"effort": "medium"},
-        messages=[{"role": "user", "content": [_file_block(data, media_type), {"type": "text", "text": EXTRACTION_PROMPT}]}],
+        messages=[{"role": "user", "content": content}],
         output_format=ExtractedBill,
     )
     if response.stop_reason == "refusal" or response.parsed_output is None:
         raise ValueError("Could not read this bill")
     return response.parsed_output
+
+
+def extract_bill(data: bytes, media_type: str) -> ExtractedBill:
+    """Vision path: photo or PDF sent as an image/document block."""
+    return _parse_bill([_file_block(data, media_type), {"type": "text", "text": EXTRACTION_PROMPT}])
+
+
+def extract_bill_from_text(text: str) -> ExtractedBill:
+    """Text path: PDF text extracted locally (2-3x fewer tokens, exact numbers)."""
+    note = ("The bill below is the text layer of a PDF, extracted with layout preserved. "
+            "Table columns may be slightly misaligned: use the column headers to map quantity, unit price and amount.")
+    return _parse_bill([{"type": "text", "text": f"{EXTRACTION_PROMPT}\n{note}\n\n<bill_text>\n{text}\n</bill_text>"}])
+
+
+def is_consistent(bill: ExtractedBill, tolerance: float = 0.01) -> bool:
+    """Do the extracted lines add up to the total? A mismatch usually means columns got mixed up."""
+    lines_sum = sum(li.amount for li in bill.line_items)
+    return abs(lines_sum - bill.total) <= max(1.0, abs(bill.total) * tolerance)
 
 
 # ---------- 2. contextual Q&A ----------

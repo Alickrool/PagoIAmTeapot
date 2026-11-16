@@ -105,8 +105,14 @@ class LineItem(models.Model):
 class ExtractionCache(models.Model):
     """sha256(file) -> Claude extraction. Survives seed_demo, so pre-warmed demo bills scan instantly."""
 
+    class Method(models.TextChoices):
+        TEXT = "text"                        # PDF text layer -> Claude (cheapest)
+        VISION = "vision"                    # photo / scanned PDF -> Claude vision
+        VISION_FALLBACK = "vision_fallback"  # text result didn't add up -> retried with vision
+
     file_hash = models.CharField(max_length=64, unique=True)
     filename = models.CharField(max_length=255, blank=True)
+    method = models.CharField(max_length=16, choices=Method.choices, default=Method.VISION)
     data = models.JSONField()
     created_at = models.DateTimeField(auto_now_add=True)
 

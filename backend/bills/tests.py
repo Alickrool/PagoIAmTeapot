@@ -76,6 +76,78 @@ class DemoScenarioTests(TestCase):
         self.assertIsInstance(r["sources"], list)
         self.assertIsInstance(r["suggested_actions"], list)
 
+    def test_submit_reading_clears_estimated(self):
+        bill = self._current("PPC")
+        index_new = bill["index_old"] + 182
+        r = self.c.post(f"/api/bills/{bill['id']}/reading/", {"index_new": index_new}, format="json")
+        self.assertEqual(r.status_code, 200)
+        data = r.json()
+        self.assertEqual(data["index_type"], "self")
+        self.assertNotIn("estimated_index", self._ids(data))
+        self.assertNotEqual(data["audit"]["status"], "critical")
+        rec = data["recalculation"]
+        self.assertEqual(rec["new_consumption"], 182)
+        self.assertLess(rec["difference"], -200)  # 350 -> 182 kWh at ~1.43 RON/kWh
+        # Lines + VAT still add up to the total.
+        self.assertAlmostEqual(sum(float(li["amount"]) for li in data["line_items"]), float(data["total"]), places=2)
+
+    def test_submit_reading_rejects_lower_index(self):
+        bill = self._current("PPC")
+        r = self.c.post(f"/api/bills/{bill['id']}/reading/", {"index_new": bill["index_old"] - 1}, format="json")
+        self.assertEqual(r.status_code, 400)
+
+    def _demo_pdf(self, provider="PPC") -> bytes:
+        import tempfile
+        from pathlib import Path
+
+        from bills.management.commands.make_sample_pdfs import register_font, render
+
+        bill = Bill.objects.filter(provider=provider).order_by("-period_end").first()
+        with tempfile.TemporaryDirectory() as d:
+            path = Path(d) / "bill.pdf"
+            render(bill, path, *register_font())
+            return path.read_bytes()
+
+    def test_pdf_text_extraction(self):
+        from bills.services import pdf_text
+
+        text = pdf_text.extract_text(self._demo_pdf())
+        self.assertIn("ESTIMAT", text)
+        self.assertIn("Certificate verzi", text)
+        self.assertIsNone(pdf_text.extract_text(b"not a pdf"))
+
+    def test_text_first_and_vision_fallback(self):
+        from unittest import mock as um
+
+        from django.test import override_settings
+
+        from bills.services import scan
+        from bills.services.mock import extraction
+
+        good = extraction()
+        bad = good.model_copy(update={"total": good.total + 100})
+        data = self._demo_pdf()
+        with override_settings(AI_MOCK=False), \
+                um.patch("bills.services.ai.extract_bill_from_text", return_value=good) as text_call, \
+                um.patch("bills.services.ai.extract_bill", return_value=good) as vision_call:
+            _, method = scan._extract(data, "application/pdf")
+            self.assertEqual((method, text_call.call_count, vision_call.call_count), ("text", 1, 0))
+            text_call.return_value = bad
+            _, method = scan._extract(data, "application/pdf")
+            self.assertEqual((method, vision_call.call_count), ("vision_fallback", 1))
+            _, method = scan._extract(b"jpeg bytes", "image/jpeg")
+            self.assertEqual(method, "vision")
+
+    def test_pdf_scan_fills_bboxes(self):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+
+        f = SimpleUploadedFile("ppc.pdf", self._demo_pdf(), content_type="application/pdf")
+        data = self.c.post("/api/bills/scan/", {"file": f}, format="multipart").json()  # mock extraction = PPC
+        boxes = [li["bbox"] for li in data["line_items"]]
+        self.assertGreaterEqual(sum(b is not None for b in boxes), len(boxes) - 1)
+        b = next(b for b in boxes if b)
+        self.assertTrue(0 <= b["x"] < 1 and 0 <= b["y"] < 1 and 0 < b["w"] <= 1 and b["page"] == 1)
+
     def test_autopay_blocks_estimated(self):
         bill = self._current("PPC")
         self.c.post("/api/autopay-rules/", {"provider": "PPC", "max_amount": "600"}, format="json")

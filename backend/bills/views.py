@@ -6,8 +6,9 @@ from rest_framework.response import Response
 
 from bills.models import AutoPayRule, Bill
 from bills.serializers import (AskSerializer, AutoPayRuleSerializer, BillDetailSerializer, BillListSerializer,
-                               DisputeSerializer, LineItemSerializer, PaySerializer)
+                               DisputeSerializer, LineItemSerializer, PaySerializer, ReadingSerializer)
 from bills.services import ai, market, mock
+from bills.services.reading import ReadingError, submit_reading
 from bills.services import scan as scan_service
 from bills.services.audit import audit_bill
 
@@ -81,6 +82,20 @@ class BillViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, viewsets.Gen
         ctx = _bill_context(bill, request)
         letter = mock.dispute(ctx, anomaly) if settings.AI_MOCK else ai.write_dispute(ctx, anomaly)
         return Response(letter.model_dump())
+
+    @action(detail=True, methods=["post"])
+    def reading(self, request, pk=None):
+        """Submit the real meter index -> recalculated bill (estimated -> self reading)."""
+        bill = self.get_object()
+        s = ReadingSerializer(data=request.data)
+        s.is_valid(raise_exception=True)
+        try:
+            recalculation = submit_reading(bill, s.validated_data["index_new"])
+        except ReadingError as e:
+            return Response({"detail": str(e)}, status=400)
+        bill = self.get_queryset().get(pk=bill.pk)  # fresh line items
+        data = BillDetailSerializer(bill, context={"request": request}).data
+        return Response({**data, "recalculation": recalculation})
 
     @action(detail=True, methods=["get"])
     def offers(self, request, pk=None):

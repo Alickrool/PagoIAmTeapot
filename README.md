@@ -33,6 +33,7 @@ pip install -r requirements.txt
 copy .env.example .env            # then put your ANTHROPIC_API_KEY in it (empty = mock AI)
 python manage.py migrate
 python manage.py seed_demo        # resets the DB with the demo scenarios
+python manage.py make_sample_pdfs # fictional PDF invoices of the demo bills -> samples/
 python manage.py prewarm_cache ../samples/*   # optional: cache Claude extraction of demo bills
 python manage.py runserver 0.0.0.0:8000
 python manage.py test bills       # demo scenarios must stay green

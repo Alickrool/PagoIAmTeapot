@@ -30,6 +30,6 @@ class Command(BaseCommand):
             if not media_type:
                 self.stdout.write(f"skip    {path.name} (not a pdf/jpg/png/webp)")
                 continue
-            extracted, hit = extract_cached(path.read_bytes(), media_type, path.name)
-            self.stdout.write(f"{'cached ' if hit else 'new    '} {path.name}: {extracted.provider} "
+            extracted, method = extract_cached(path.read_bytes(), media_type, path.name)
+            self.stdout.write(f"{method:<16} {path.name}: {extracted.provider} "
                               f"{extracted.total} RON, {len(extracted.line_items)} lines")

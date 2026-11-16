@@ -15,6 +15,7 @@ Real example responses: `shared/fixtures/*.json` (regenerate with `python manage
 | POST | `/bills/scan/` | multipart `file` (jpeg/png/webp/pdf) | `BillDetail` – 201 new bill; 200 if the same file was already scanned (returns that bill) |
 | POST | `/bills/{id}/ask/` | `{question?, line_item_id?}` (at least one) | `{question, line_item, answer, sources[], suggested_actions[]}` |
 | POST | `/bills/{id}/dispute/` | `{anomaly_id?}` | `{to, subject, body}` – complaint letter in Romanian |
+| POST | `/bills/{id}/reading/` | `{index_new}` (meter index, must be > `index_old`) | `BillDetail` + `recalculation` – see below; 400 `{detail}` on a bad index |
 | GET | `/bills/{id}/offers/` | – | `{current_all_in_price, unit, offers[], disclaimer}` |
 | POST | `/bills/{id}/pay/` | `{mode: "manual" \| "auto"}` | `{status: "paid" \| "blocked", reasons[]}` |
 
@@ -60,13 +61,31 @@ Badges: `ok` → 🟢 Normal, `warning` → 🟡 Attention, `critical` → 🔴 
 
 `sources` → chips under the answer. `suggested_actions` use the same `type` values as anomaly actions (never `ask`).
 
+## Submit reading response
+
+The full recalculated `BillDetail` (index_type becomes `"self"`, audit re-run) plus:
+
+```json
+"recalculation": {
+  "previous_total": 501.85, "new_total": 260.96, "difference": -240.89,
+  "previous_consumption": 350, "new_consumption": 182, "unit": "kWh"
+}
+```
+
+For gas the meter counts m³ and the bill kWh: consumption = (index_new − index_old) × 10.5.
+Demo tip: PPC `index_old` + 182 → the 🔴 estimated-index anomaly disappears (PPC stays 🟡 for the above-market price).
+
 ## Notes
+
+- **Highlight boxes:** for PDFs with a text layer, `line_items[].bbox = {page, x, y, w, h}` (page 1-based,
+  coordinates 0..1 of the page, origin top-left). `null` for photos and scanned PDFs.
+- **Extraction method** (visible in Django admin → Extraction caches): `text` (PDF text layer sent as text, cheapest),
+  `vision` (photo / scanned PDF), `vision_fallback` (text result didn't add up to the total, retried as an image).
 
 - **Scan cache:** extractions are cached by `sha256(file)` in `ExtractionCache`, which `seed_demo` does not wipe.
   Pre-warm demo bills with `python manage.py prewarm_cache ../samples/*` → the live scan is instant and identical
   every time.
 
 - Money fields from Django `DecimalField` arrive as **strings** (`"297.50"`). Use `Number()`.
-- `line_items[].bbox` is `null` for now (stretch goal: highlight boxes on the original document, normalized 0..1).
 - With no `ANTHROPIC_API_KEY` (or `AI_MOCK=1`) `scan/ask/dispute` return canned answers prefixed with `[mock]`;
   the audit is always real (it is rule-based, no AI).

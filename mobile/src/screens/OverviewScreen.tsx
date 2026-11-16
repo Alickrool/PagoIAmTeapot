@@ -1,13 +1,14 @@
 import { useFocusEffect } from '@react-navigation/native';
-import { useCallback, useRef, useState, type ReactNode } from 'react';
-import { ActivityIndicator, Pressable, RefreshControl, ScrollView, Share, Text, View, type ScrollViewInstance } from 'react-native';
-import Svg, { Circle, G } from 'react-native-svg';
+import { useCallback, useState } from 'react';
+import { ActivityIndicator, Pressable, RefreshControl, ScrollView, Share, Text, View } from 'react-native';
 import { api, MOCK } from '../api/client';
-import type { DashboardResponse, DashboardSlice } from '../api/types';
+import type { DashboardMonth, DashboardResponse, DashboardSlice } from '../api/types';
+import { useBudget } from '../budget';
+import { BudgetModal } from '../components/BudgetModal';
 import { Button } from '../components/Button';
 import { Donut } from '../components/charts/Donut';
 import { MonthBars, monthBar } from '../components/charts/MonthBars';
-import { ProviderAvatar } from '../components/ProviderAvatar';
+import { MonthPager } from '../components/MonthPager';
 import { SeverityBadge } from '../components/SeverityBadge';
 import { useCopy, useStyles, useTheme, type Theme } from '../mode';
 import { useStackNavigation } from '../navigation';
@@ -29,36 +30,45 @@ function sliceColors(slices: DashboardSlice[]) {
   );
 }
 
-/** Millennial budget: the 12-month average + 10%, rounded up to 50 lei. */
-const budgetFor = (avg: string | null, total: number) => Math.ceil(((avg ? Number(avg) : total) * 1.1) / 50) * 50;
+/** Suggested budget: the average month + 10%, rounded up to 50 lei. */
+const suggestBudget = (avg: string | null, total: number) => Math.ceil(((avg ? Number(avg) : total) * 1.1) / 50) * 50;
+
+/** Every month we've seen, oldest first. The API returns a 12-month window ending at the selected month,
+ *  so picking an older month must not drop the newer ones (the "disappearing months" bug). */
+const mergeMonths = (a: DashboardMonth[], b: DashboardMonth[]) =>
+  Object.values(Object.fromEntries([...a, ...b].map((m) => [m.month, m]))).sort((x, y) => x.month.localeCompare(y.month));
+
+const capital = (s: string) => s[0].toUpperCase() + s.slice(1);
 
 export default function OverviewScreen() {
   const navigation = useStackNavigation();
   const t = useTheme();
   const copy = useCopy();
   const styles = useStyles(makeStyles);
-  const scroll = useRef<ScrollViewInstance>(null);
   const [data, setData] = useState<DashboardResponse | null>(null);
+  const [history, setHistory] = useState<DashboardMonth[]>([]);
   const [month, setMonth] = useState<string | undefined>(undefined);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [budgetOpen, setBudgetOpen] = useState(false);
+
+  const current = history.length ? history[history.length - 1].month : data?.month; // latest month = "this month"
+  const { budget, setBudget } = useBudget(current);
 
   const load = useCallback((m?: string) => {
     setLoading(true);
     setError(null);
     api
       .dashboard(m)
-      .then(setData)
+      .then((d) => {
+        setData(d);
+        setHistory((h) => mergeMonths(h, d.months));
+      })
       .catch((e) => setError(String(e?.message ?? e)))
       .finally(() => setLoading(false));
   }, []);
 
   useFocusEffect(useCallback(() => load(month), [load, month]));
-
-  const select = (m: string) => {
-    setMonth(m);
-    scroll.current?.scrollTo({ y: 0, animated: true });
-  };
 
   if (!data) {
     return (
@@ -75,8 +85,7 @@ export default function OverviewScreen() {
     );
   }
 
-  const colorOf = sliceColors(data.slices);
-  const months = data.months.map((m) => m.month);
+  const months = history.map((m) => m.month);
   const i = months.indexOf(data.month);
   const prev = i > 0 ? months[i - 1] : null;
   const next = i >= 0 && i < months.length - 1 ? months[i + 1] : null;
@@ -84,19 +93,43 @@ export default function OverviewScreen() {
   const diff = data.previous_total != null ? total - Number(data.previous_total) : null;
   const flagged = data.slices.find((s) => s.audit_status === 'critical') ?? null;
   const unpaid = data.slices.filter((s) => s.status !== 'paid');
-  const streak = Math.max(0, i); // earlier months in the window, all paid in the demo data
+  const colorOf = sliceColors(data.slices);
+  const isCurrent = data.month === current;
+  const suggested = suggestBudget(data.average_total, total);
+  const budgetFor = (m: string) => (m === current && budget ? budget : suggested);
+  const totalOf = (m: string) => Number(history.find((h) => h.month === m)?.total ?? 0);
   const open = (id: number) => navigation.navigate('Bill', { id });
 
   const switcher = (
     <View style={styles.switcher}>
-      <Pressable onPress={() => prev && select(prev)} disabled={!prev} hitSlop={12} accessibilityLabel="Luna anterioară">
+      <Pressable onPress={() => prev && setMonth(prev)} disabled={!prev} hitSlop={12} accessibilityLabel="Luna anterioară" style={styles.arrowBtn}>
         <Text style={[styles.arrow, !prev && styles.arrowOff]}>‹</Text>
       </Pressable>
       <Text style={styles.monthTitle}>{monthLabel(data.month)}</Text>
-      <Pressable onPress={() => next && select(next)} disabled={!next} hitSlop={12} accessibilityLabel="Luna următoare">
+      <Pressable onPress={() => next && setMonth(next)} disabled={!next} hitSlop={12} accessibilityLabel="Luna următoare" style={styles.arrowBtn}>
         <Text style={[styles.arrow, !next && styles.arrowOff]}>›</Text>
       </Pressable>
     </View>
+  );
+
+  const budgetRow = isCurrent && (
+    <Pressable onPress={() => setBudgetOpen(true)} style={({ pressed }) => [styles.budgetRow, pressed && { opacity: 0.6 }]} accessibilityRole="button">
+      {budget ? (
+        <View style={{ flex: 1, gap: 6 }}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 8 }}>
+            <Text style={[styles.small, tabular]}>
+              Buget: {money(total)} din {money(budget)}
+            </Text>
+            <Text style={styles.link}>Modifică</Text>
+          </View>
+          <View style={styles.barTrack}>
+            <View style={[styles.barFill, { width: `${Math.min(total / budget, 1) * 100}%`, backgroundColor: total > budget ? t.sev.critical.color : t.accent }]} />
+          </View>
+        </View>
+      ) : (
+        <Text style={styles.link}>＋ Creează bugetul pentru {monthName(data.month)}</Text>
+      )}
+    </Pressable>
   );
 
   const alert = flagged && (
@@ -107,186 +140,220 @@ export default function OverviewScreen() {
   );
 
   const breakdown = (
-    <>
+    <View style={{ gap: 8 }}>
       <Text style={styles.section}>{copy.whereMoney}</Text>
       <View style={styles.list}>
         {data.slices.map((s) => (
           <Pressable key={s.bill_id} onPress={() => open(s.bill_id)} style={({ pressed }) => [styles.row, pressed && { opacity: 0.6 }]} accessibilityRole="button">
-            <View style={[styles.colorBar, { backgroundColor: colorOf[s.slug] }]} />
-            <ProviderAvatar provider={s.provider} category={s.category} size={t.mode === 'senior' ? 44 : 36} />
-            <View style={{ flex: 1 }}>
-              <Text style={styles.rowTitle}>{s.provider}</Text>
-              {t.mode !== 'senior' && (
-                <Text style={[styles.small, tabular]} numberOfLines={1}>
-                  {s.share_pct.toFixed(0)}% din lună
-                </Text>
-              )}
-            </View>
-            <View style={{ alignItems: 'flex-end', gap: 4 }}>
-              <Text style={[styles.rowTotal, tabular]}>{money(s.total)}</Text>
-              {s.audit_status !== 'ok' ? (
-                <SeverityBadge severity={s.audit_status} />
-              ) : (
-                s.delta_pct != null && t.mode !== 'senior' && <Text style={[styles.delta, { color: deltaColor(s.delta_pct, t) }]}>{deltaLabel(s.delta_pct)}</Text>
-              )}
-            </View>
+            <View style={[styles.colorDot, { backgroundColor: colorOf[s.slug] }]} />
+            <Text style={[styles.rowTitle, { flex: 1 }]} numberOfLines={1}>
+              {s.provider}
+            </Text>
+            {s.audit_status !== 'ok' && <SeverityBadge severity={s.audit_status} />}
+            <Text style={[styles.rowTotal, tabular]}>{money(s.total)}</Text>
           </Pressable>
         ))}
       </View>
-    </>
+    </View>
   );
 
-  const history = (
-    <>
+  const historyCard = (
+    <View style={{ gap: 8 }}>
       <Text style={styles.section}>{copy.history}</Text>
-      {t.mode !== 'senior' && (
-        <View style={[styles.card, { alignItems: 'stretch' }]}>
-          <MonthBars bars={data.months.map(monthBar)} selected={data.month} onSelect={select} />
-        </View>
-      )}
-      <View style={styles.list}>
-        {[...data.months].reverse().map((m, idx, arr) => {
-          const before = arr[idx + 1];
-          const d = before && Number(before.total) ? ((Number(m.total) - Number(before.total)) / Number(before.total)) * 100 : null;
-          const sel = m.month === data.month;
-          return (
-            <Pressable key={m.month} onPress={() => select(m.month)} style={({ pressed }) => [styles.row, sel && styles.rowSel, pressed && { opacity: 0.6 }]} accessibilityRole="button">
-              <Text style={[styles.rowTitle, { flex: 1 }]}>{monthLabel(m.month)}</Text>
-              <View style={{ alignItems: 'flex-end' }}>
-                <Text style={[styles.rowTotal, tabular]}>{money(m.total)}</Text>
+      <View style={styles.card}>
+        {t.mode !== 'senior' && <MonthBars bars={history.slice(-12).map(monthBar)} selected={data.month} onSelect={setMonth} height={90} />}
+        <ScrollView style={styles.historyBox} nestedScrollEnabled showsVerticalScrollIndicator>
+          {[...history].reverse().map((m, idx, arr) => {
+            const before = arr[idx + 1];
+            const d = before && Number(before.total) ? ((Number(m.total) - Number(before.total)) / Number(before.total)) * 100 : null;
+            const sel = m.month === data.month;
+            return (
+              <Pressable
+                key={m.month}
+                onPress={() => setMonth(m.month)}
+                style={({ pressed }) => [styles.histRow, sel && styles.histRowSel, pressed && { opacity: 0.6 }]}
+                accessibilityRole="button"
+                accessibilityState={{ selected: sel }}
+              >
+                <Text style={[styles.rowTitle, { flex: 1 }, sel && { color: t.accent }]}>{monthLabel(m.month)}</Text>
                 {d != null && t.mode !== 'senior' && <Text style={[styles.delta, tabular, { color: deltaColor(d, t) }]}>{deltaLabel(Math.round(d * 10) / 10)}</Text>}
-              </View>
-            </Pressable>
-          );
-        })}
+                <Text style={[styles.rowTotal, tabular, sel && { color: t.accent }]}>{money(m.total)}</Text>
+              </Pressable>
+            );
+          })}
+        </ScrollView>
       </View>
-    </>
+    </View>
   );
 
   return (
-    <ScrollView ref={scroll} style={{ backgroundColor: t.bg }} contentContainerStyle={styles.page} refreshControl={<RefreshControl refreshing={loading} onRefresh={() => load(month)} tintColor={t.accent} />}>
-      {MOCK && <Text style={styles.mock}>MOD DEMO: date din shared/fixtures</Text>}
+    <>
+      <ScrollView style={{ backgroundColor: t.bg }} contentContainerStyle={styles.page} refreshControl={<RefreshControl refreshing={loading} onRefresh={() => load(month)} tintColor={t.accent} />}>
+        {MOCK && <Text style={styles.mock}>MOD DEMO: date din shared/fixtures</Text>}
 
-      {t.mode === 'genz' && (
-        <>
-          <View style={styles.greetRow}>
+        {t.mode === 'genz' && (
+          <>
+            <View style={styles.greetRow}>
+              <Text style={styles.greet}>{copy.greeting}</Text>
+              {i > 1 && <Text style={styles.streak}>{copy.streak(i)}</Text>}
+            </View>
+            <View style={styles.card}>
+              {switcher}
+              <MonthPager
+                months={months}
+                selected={data.month}
+                onSelect={setMonth}
+                height={248}
+                renderPage={(m, sel) =>
+                  sel ? (
+                    <Donut key={`sel-${m}`} size={232} stroke={24} slices={data.slices.map((s) => ({ key: s.slug, value: Number(s.total), color: colorOf[s.slug] }))}>
+                      <Text style={[styles.centerTotal, tabular]}>{total.toFixed(2).replace('.', ',')}</Text>
+                      <Text style={styles.small}>lei în {monthName(m)}</Text>
+                    </Donut>
+                  ) : (
+                    <Donut key={m} size={232} stroke={24} animate={false} slices={[{ key: m, value: 1, color: t.surface2 }]}>
+                      <Text style={[styles.centerTotal, tabular, { color: t.muted }]}>{totalOf(m).toFixed(2).replace('.', ',')}</Text>
+                      <Text style={styles.small}>lei în {monthName(m)}</Text>
+                    </Donut>
+                  )
+                }
+              />
+              {diff != null && data.previous_month && (
+                <Text style={[styles.vsPrev, tabular, { color: deltaColor(data.delta_pct, t) }]}>{copy.vsPrev(diff, monthName(data.previous_month))}</Text>
+              )}
+              {budgetRow}
+            </View>
+            {alert}
+            {breakdown}
+            {historyCard}
+          </>
+        )}
+
+        {t.mode === 'millennial' && (
+          <>
+            <View style={styles.card}>
+              {switcher}
+              <Text style={styles.headline}>
+                {total > budgetFor(data.month)
+                  ? `${capital(monthName(data.month))} a fost generos: ${money(total - budgetFor(data.month))} peste buget`
+                  : `În buget: îți mai rămân ${money(budgetFor(data.month) - total)}`}
+              </Text>
+              <MonthPager
+                months={months}
+                selected={data.month}
+                onSelect={setMonth}
+                height={206}
+                renderPage={(m, sel) => (
+                  <BudgetRing key={sel ? `sel-${m}` : m} total={totalOf(m)} budget={budgetFor(m)} estimated={!(m === current && budget)} animate={sel} />
+                )}
+              />
+              {diff != null && data.previous_month && <Text style={[styles.small, tabular, { textAlign: 'center' }]}>{copy.vsPrev(diff, monthName(data.previous_month))}</Text>}
+              {budgetRow}
+            </View>
+            {alert}
+            {breakdown}
+            {historyCard}
+          </>
+        )}
+
+        {t.mode === 'senior' && (
+          <>
             <Text style={styles.greet}>{copy.greeting}</Text>
-            {streak > 1 && <Text style={styles.streak}>{copy.streak(streak)}</Text>}
-          </View>
-          <View style={styles.card}>
-            {switcher}
-            <Donut size={232} stroke={24} slices={data.slices.map((s) => ({ key: s.slug, value: Number(s.total), color: colorOf[s.slug] }))}>
-              <Text style={[styles.centerTotal, tabular]}>{total.toFixed(2).replace('.', ',')}</Text>
-              <Text style={styles.small}>lei în {monthName(data.month)}</Text>
-            </Donut>
-            {diff != null && data.previous_month && (
-              <Text style={[styles.vsPrev, tabular, { color: deltaColor(data.delta_pct, t) }]}>{copy.vsPrev(diff, monthName(data.previous_month))}</Text>
-            )}
-          </View>
-          {alert}
-          {breakdown}
-          {history}
-        </>
-      )}
+            <View style={{ gap: 4 }}>
+              <Text style={styles.seniorSub}>
+                {unpaid.length > 0 ? `Vă așteaptă ${unpaid.length} ${unpaid.length > 1 ? 'facturi' : 'factură'} de plată` : 'Toate facturile sunt plătite'}
+              </Text>
+              <Text style={[styles.seniorTotal, tabular]}>{money(data.unpaid_total)}</Text>
+              {budgetRow}
+            </View>
+            {alert}
+            {breakdown}
+            <Button
+              title="Trimiteți facturile unui membru al familiei"
+              variant="secondary"
+              onPress={() =>
+                Share.share({
+                  message: `Facturile mele din ${monthLabel(data.month)}: ${data.slices.map((s) => `${s.provider} ${money(s.total)}`).join(', ')}. Total ${money(data.total)}.${flagged ? ` ${flagged.provider} pare greșită.` : ''}`,
+                })
+              }
+            />
+            {historyCard}
+          </>
+        )}
+      </ScrollView>
 
-      {t.mode === 'millennial' && (
-        <>
-          <BudgetCard data={data} budget={budgetFor(data.average_total, total)} switcher={switcher} />
-          {alert}
-          {breakdown}
-          {history}
-        </>
+      {budgetOpen && current && (
+        <BudgetModal
+          month={current}
+          current={budget}
+          suggested={suggested}
+          onClose={() => setBudgetOpen(false)}
+          onSave={(v) => {
+            setBudget(v);
+            setBudgetOpen(false);
+          }}
+        />
       )}
-
-      {t.mode === 'senior' && (
-        <>
-          <Text style={styles.greet}>{copy.greeting}</Text>
-          <View style={{ gap: 4 }}>
-            <Text style={styles.seniorSub}>
-              {unpaid.length > 0 ? `Vă așteaptă ${unpaid.length} ${unpaid.length > 1 ? 'facturi' : 'factură'} de plată` : 'Toate facturile sunt plătite'}
-            </Text>
-            <Text style={[styles.seniorTotal, tabular]}>{money(data.unpaid_total)}</Text>
-          </View>
-          {alert}
-          {breakdown}
-          <Button
-            title="Trimiteți facturile unui membru al familiei"
-            variant="secondary"
-            onPress={() =>
-              Share.share({
-                message: `Facturile mele din ${monthLabel(data.month)}: ${data.slices.map((s) => `${s.provider} ${money(s.total)}`).join(', ')}. Total ${money(data.total)}.${flagged ? ` ${flagged.provider} pare greșită.` : ''}`,
-              })
-            }
-          />
-          {history}
-        </>
-      )}
-    </ScrollView>
+    </>
   );
 }
 
-function BudgetCard({ data, budget, switcher }: { data: DashboardResponse; budget: number; switcher: ReactNode }) {
+/** Millennial wheel: month total against the budget; overflow drawn in orange. Sweeps in when selected. */
+function BudgetRing({ total, budget, estimated, animate }: { total: number; budget: number; estimated: boolean; animate: boolean }) {
   const t = useTheme();
-  const copy = useCopy();
   const styles = useStyles(makeStyles);
-  const total = Number(data.total);
-  const over = total - budget;
-  const r = 80;
-  const circ = 2 * Math.PI * r;
   const used = Math.min(total / budget, 1);
-  const overflow = over > 0 ? Math.min(over / budget, 1) : 0;
-  const diff = data.previous_total != null ? total - Number(data.previous_total) : null;
-
+  const over = total > budget ? Math.min((total - budget) / budget, 1) : 0;
   return (
-    <View style={styles.card}>
-      {switcher}
-      <Text style={styles.headline}>
-        {over > 0 ? `${monthName(data.month)[0].toUpperCase()}${monthName(data.month).slice(1)} a fost generos: ${money(over)} peste buget` : `Ești în buget: îți mai rămân ${money(-over)}`}
+    <Donut
+      size={196}
+      stroke={18}
+      animate={animate}
+      slices={[
+        { key: 'used', value: Math.max(used - over, 0), color: t.accent },
+        ...(over > 0 ? [{ key: 'over', value: over, color: '#C2410C' }] : []),
+        ...(used < 1 ? [{ key: 'left', value: 1 - used, color: t.surface2 }] : []),
+      ]}
+    >
+      <Text style={[styles.centerTotal, tabular]}>{total.toFixed(2).replace('.', ',')}</Text>
+      <Text style={[styles.small, tabular]}>
+        din {budget} lei{estimated ? ' (estimat)' : ''}
       </Text>
-      <View style={{ width: 200, height: 200 }}>
-        <Svg width={200} height={200} viewBox="0 0 200 200" accessibilityLabel={`${money(total)} din ${money(budget)}`}>
-          <G transform="rotate(-90 100 100)">
-            <Circle cx={100} cy={100} r={r} stroke={t.surface2} strokeWidth={18} fill="none" />
-            <Circle cx={100} cy={100} r={r} stroke={t.accent} strokeWidth={18} fill="none" strokeLinecap="round" strokeDasharray={`${used * circ} ${circ}`} />
-            {overflow > 0 && (
-              <Circle cx={100} cy={100} r={r} stroke="#C2410C" strokeWidth={18} fill="none" strokeLinecap="round" strokeDasharray={`${overflow * circ} ${circ}`} />
-            )}
-          </G>
-        </Svg>
-        <View style={[{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center' }]}>
-          <Text style={[styles.centerTotal, tabular]}>{total.toFixed(2).replace('.', ',')}</Text>
-          <Text style={[styles.small, tabular]}>din {budget} lei</Text>
-        </View>
-      </View>
-      {diff != null && data.previous_month && <Text style={[styles.small, tabular, { textAlign: 'center' }]}>{copy.vsPrev(diff, monthName(data.previous_month))}</Text>}
-    </View>
+    </Donut>
   );
 }
 
 const makeStyles = (t: Theme) => ({
-  page: { padding: 16, gap: 16, paddingBottom: 40 },
+  page: { padding: 16, gap: 20, paddingBottom: 32 },
   centerFill: { flex: 1, alignItems: 'center' as const, justifyContent: 'center' as const, gap: 12, padding: 24, backgroundColor: t.bg },
   mock: { textAlign: 'center' as const, backgroundColor: t.sev.warning.bg, color: t.sev.warning.color, padding: 4, fontSize: 12, borderRadius: 8, overflow: 'hidden' as const },
   card: { backgroundColor: t.surface, borderRadius: t.radius, padding: t.pad, alignItems: 'center' as const, gap: 12 },
   switcher: { flexDirection: 'row' as const, alignItems: 'center' as const, justifyContent: 'space-between' as const, alignSelf: 'stretch' as const },
-  arrow: { fontSize: t.fs(30), color: t.accent, paddingHorizontal: 12, lineHeight: t.fs(34) },
+  arrowBtn: { minWidth: 44, minHeight: 44, alignItems: 'center' as const, justifyContent: 'center' as const },
+  arrow: { fontSize: t.fs(30), color: t.accent, lineHeight: t.fs(34) },
   arrowOff: { color: t.border },
   monthTitle: { fontSize: t.fs(17), fontWeight: '700' as const, color: t.text },
   greetRow: { flexDirection: 'row' as const, alignItems: 'center' as const, justifyContent: 'space-between' as const },
   greet: { fontSize: t.fs(26), fontWeight: '800' as const, color: t.text },
   streak: { fontSize: t.fs(14), fontWeight: '700' as const, color: t.accent },
-  headline: { fontSize: t.fs(19), fontWeight: '800' as const, color: t.text, alignSelf: 'stretch' as const, lineHeight: t.fs(25) },
-  centerTotal: { fontSize: t.fs(32), fontWeight: '800' as const, color: t.text },
+  headline: { fontSize: t.fs(18), fontWeight: '800' as const, color: t.text, alignSelf: 'stretch' as const, lineHeight: t.fs(24), textAlign: 'center' as const },
+  centerTotal: { fontSize: t.fs(30), fontWeight: '800' as const, color: t.text },
   vsPrev: { fontSize: t.fs(14), fontWeight: '700' as const, textAlign: 'center' as const },
+  budgetRow: { alignSelf: 'stretch' as const, minHeight: 44, justifyContent: 'center' as const, paddingTop: 8, borderTopWidth: 1, borderColor: t.border },
+  barTrack: { height: 6, borderRadius: 3, backgroundColor: t.surface2, overflow: 'hidden' as const },
+  barFill: { height: 6, borderRadius: 3 },
+  link: { color: t.accent, fontWeight: '700' as const, fontSize: t.fs(14), textAlign: 'center' as const },
   alert: { backgroundColor: t.sev.critical.bg, borderRadius: t.radius, padding: t.pad, gap: 12 },
-  alertTitle: { color: t.sev.critical.color, fontSize: t.fs(19), fontWeight: '800' as const, lineHeight: t.fs(25) },
+  alertTitle: { color: t.sev.critical.color, fontSize: t.fs(18), fontWeight: '800' as const, lineHeight: t.fs(24) },
   seniorSub: { fontSize: t.fs(17), color: t.muted },
   seniorTotal: { fontSize: t.fs(40), fontWeight: '800' as const, color: t.text, marginLeft: -1 },
-  section: { fontWeight: '800' as const, fontSize: t.fs(15), color: t.text, marginTop: 8 },
+  section: { fontWeight: '800' as const, fontSize: t.fs(15), color: t.text },
   list: { backgroundColor: t.surface, borderRadius: t.radius, overflow: 'hidden' as const, paddingVertical: 4 },
-  row: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 12, paddingVertical: t.mode === 'senior' ? 16 : 12, paddingHorizontal: t.pad, minHeight: t.touch },
-  rowSel: { backgroundColor: t.surface2 },
-  colorBar: { position: 'absolute' as const, left: 0, top: 12, bottom: 12, width: 4, borderRadius: 2 },
+  row: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 10, paddingVertical: t.mode === 'senior' ? 14 : 10, paddingHorizontal: t.pad, minHeight: t.touch },
+  colorDot: { width: 10, height: 10, borderRadius: 5 },
+  historyBox: { alignSelf: 'stretch' as const, maxHeight: t.mode === 'senior' ? 300 : 220, borderRadius: t.inner, backgroundColor: t.bg },
+  histRow: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 10, paddingHorizontal: 12, minHeight: t.touch - 4, borderLeftWidth: 4, borderColor: 'transparent' },
+  histRowSel: { borderColor: t.accent, backgroundColor: t.surface2 },
   rowTitle: { fontWeight: '700' as const, color: t.text, fontSize: t.fs(15) },
   rowTotal: { fontWeight: '800' as const, color: t.text, fontSize: t.fs(15) },
   muted: { color: t.muted, fontSize: t.fs(14), textAlign: 'center' as const },

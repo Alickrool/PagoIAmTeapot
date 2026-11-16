@@ -10,6 +10,7 @@ export function ConfirmDialog({
   confirm,
   cancel,
   danger,
+  primary = 'cancel',
   onConfirm,
   onCancel,
 }: {
@@ -19,6 +20,8 @@ export function ConfirmDialog({
   confirm: string;
   cancel: string;
   danger?: boolean;
+  /** Which answer is the big button: 'cancel' for risky actions (default), 'confirm' for a plain yes. */
+  primary?: 'confirm' | 'cancel';
   onConfirm: () => void;
   onCancel: () => void;
 }) {
@@ -30,8 +33,17 @@ export function ConfirmDialog({
           <Text style={{ color: danger ? t.sev.critical.color : t.text, fontSize: t.fs(20), fontWeight: '800' }}>{title}</Text>
           <Text style={{ color: t.text, fontSize: t.fs(15), lineHeight: t.fs(22) }}>{body}</Text>
           <View style={{ gap: 8, marginTop: 8 }}>
-            <Button title={cancel} onPress={onCancel} />
-            <Button title={confirm} onPress={onConfirm} variant="ghost" />
+            {primary === 'cancel' ? (
+              <>
+                <Button title={cancel} onPress={onCancel} />
+                <Button title={confirm} onPress={onConfirm} variant="ghost" />
+              </>
+            ) : (
+              <>
+                <Button title={confirm} onPress={onConfirm} />
+                <Button title={cancel} onPress={onCancel} variant="ghost" />
+              </>
+            )}
           </View>
         </Pressable>
       </Pressable>

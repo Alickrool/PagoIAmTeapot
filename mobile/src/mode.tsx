@@ -132,7 +132,6 @@ export const COPY = {
     paid: 'Plătită, legend.',
     askPlaceholder: 'Întreabă orice despre factură…',
     ask: 'Întreabă',
-    chips: ['De ce e TVA-ul așa sus?', 'Ce e contribuția CfD?', 'De ce a crescut factura?'],
     lines: 'Factura, rând cu rând · tap pe orice rând',
     readingTitle: 'Dă-le indexul real',
     readingHint: (old: number | null, unit: string) =>
@@ -173,7 +172,6 @@ export const COPY = {
     paid: 'Achitată.',
     askPlaceholder: 'Întreabă despre această factură…',
     ask: 'Întreabă',
-    chips: ['De ce e TVA-ul atât de mare?', 'Ce este contribuția CfD?', 'De ce a crescut factura?'],
     lines: 'Factura, rând cu rând · atinge orice rând',
     readingTitle: 'Trimite indexul real',
     readingHint: (old: number | null, unit: string) =>
@@ -214,7 +212,6 @@ export const COPY = {
     paid: 'Factura este plătită.',
     askPlaceholder: 'Scrieți întrebarea dumneavoastră…',
     ask: 'Întrebați',
-    chips: ['De ce e TVA-ul atât de mare?', 'De ce a crescut factura?'],
     lines: 'Ce scrie pe factură · atingeți un rând',
     readingTitle: 'Vă rugăm, scrieți cifra de pe contor',
     readingHint: (old: number | null) => (old != null ? `Data trecută contorul arăta ${old}.` : 'Scrieți numărul de pe contor.'),

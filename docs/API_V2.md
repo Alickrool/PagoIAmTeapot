@@ -9,6 +9,7 @@ money as **strings**, dates `YYYY-MM-DD`). Types on the app side: `mobile/src/ap
 | 2 | `GET /api/dashboard/?month=YYYY-MM` | Overview tab (donut + month compare + history) | ✅ **live** |
 | 3 | `GET /api/providers/` | Providers tab | ✅ **live** |
 | 4 | `GET /api/providers/{slug}/` | Provider history screen | ✅ **live** |
+| 5 | `GET /api/bills/{id}/pdf/` | Bill screen: "Vezi factura (PDF)" | **new** – backend todo |
 
 The app already works without 2–4: until they exist (404) it computes the same JSON on the phone from
 `GET /bills/` + `GET /bills/{id}/` (`mobile/src/api/derive.ts`). That file is a **reference implementation** of the
@@ -252,7 +253,24 @@ Backend details (same as `derive.ts` where both compute a rule):
 
 ---
 
+## 5. `GET /api/bills/{id}/pdf/` – the bill as a PDF
+
+The bill screen has a "Vezi factura (PDF)" button. The app first sends `HEAD /api/bills/{id}/pdf/`; on 200 it opens
+the same URL (`GET`) in the phone's browser / PDF viewer, otherwise it shows "PDF-ul acestei facturi nu e încă
+disponibil." If `file_url` already ends in `.pdf`, the app opens that directly.
+
+- **Response:** `200`, `Content-Type: application/pdf`, `Content-Disposition: inline; filename="<provider>-<YYYY-MM>.pdf"`.
+- **Uploaded PDF** (one file) → the original file, unchanged.
+- **Uploaded photos / several files** → the pages combined into one PDF, in upload order (images scaled to A4, EXIF
+  rotation applied).
+- **Seeded / demo bills** → render it with the same code as `make_sample_pdfs` (so every bill has a PDF in the demo).
+- **HEAD** must answer like GET without the body (Django does this for GET views automatically).
+- **404** `{ "code": "no_pdf", "detail": "..." }` when there is nothing to show.
+- Optional: cache the generated PDF next to the upload so a second tap is instant.
+
 ## Checklist for the backend
+
+- [ ] `GET /bills/{id}/pdf/` (§5): original PDF, combined photos, or rendered demo bill; 404 `no_pdf`
 
 - [x] `scan`: accept `files` (repeated) + keep `file`; error body `{code, detail}`
       (`not_a_bill` / `unreadable` come from the model's `is_bill` / `readable` flags; nothing is saved)

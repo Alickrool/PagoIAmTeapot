@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
+  Linking,
   Platform,
   Pressable,
   ScrollView,
@@ -11,10 +12,14 @@ import {
   type ScrollViewInstance,
 } from 'react-native';
 import { api } from '../api/client';
+import { slugify } from '../api/derive';
+import { acceptProvider, pendingProviders } from '../providerList';
+import { questionsFor } from '../questions';
 import type { Anomaly, AnomalyAction, AskResponse, BillDetail, LineItem, Recalculation } from '../api/types';
 import { AnomalyCard } from '../components/AnomalyCard';
 import { Button } from '../components/Button';
 import { ConfirmDialog } from '../components/ConfirmDialog';
+import { Icon } from '../components/Icon';
 import { ReadingModal } from '../components/ReadingModal';
 import { SeverityBadge } from '../components/SeverityBadge';
 import { useCopy, useStyles, useTheme, type Theme } from '../mode';
@@ -39,6 +44,9 @@ export default function BillScreen({ route, navigation }: ScreenProps<'Bill'>) {
   const [recalc, setRecalc] = useState<Recalculation | null>(null);
   const [confirmPay, setConfirmPay] = useState(false);
   const [paying, setPaying] = useState(false);
+  const [askAddProvider, setAskAddProvider] = useState(false);
+  const [isPending, setIsPending] = useState(false); // provider not in "my providers" yet
+  const [pdfNote, setPdfNote] = useState<string | null>(null);
 
   useEffect(() => {
     api
@@ -46,12 +54,15 @@ export default function BillScreen({ route, navigation }: ScreenProps<'Bill'>) {
       .then((b) => {
         setBill(b);
         navigation.setOptions({ title: b.provider });
+        pendingProviders().then((p) => setIsPending(p.has(slugify(b.provider))));
       })
       .catch((e) => setLoadError(String(e?.message ?? e)));
   }, [id, navigation]);
 
   // Line codes referenced by any anomaly get highlighted ("tap me").
   const flagged = useMemo(() => new Set(bill?.audit.anomalies.flatMap((a) => a.line_item_codes) ?? []), [bill]);
+
+  const questions = bill ? questionsFor(bill, t.mode) : [];
 
   if (!bill) {
     return loadError ? (
@@ -89,7 +100,7 @@ export default function BillScreen({ route, navigation }: ScreenProps<'Bill'>) {
       case 'autopay_rule':
         return navigation.navigate('AutoPay', { billId: bill.id, provider: bill.provider, suggestedMax: Math.ceil(Number(bill.total) * 1.1) });
       case 'ask':
-        return ask({ question: copy.chips[copy.chips.length - 1] });
+        return ask({ question: questions[0] });
       case 'submit_reading':
         return setReadingOpen(true);
     }
@@ -101,12 +112,21 @@ export default function BillScreen({ route, navigation }: ScreenProps<'Bill'>) {
     try {
       const r = await api.pay(bill.id, 'manual');
       setBill({ ...bill, status: r.status });
+      // First bill from this provider (came in through a scan)? Offer to add it to "my providers".
+      if (r.status === 'paid' && isPending) setAskAddProvider(true);
     } finally {
       setPaying(false);
     }
   };
 
-  // A3: a 🔴 bill asks for confirmation before paying.
+  const openPdf = async () => {
+    setPdfNote(null);
+    if (bill.file_url && bill.file_url.toLowerCase().endsWith('.pdf')) return Linking.openURL(bill.file_url);
+    if (await api.hasBillPdf(bill.id)) return Linking.openURL(api.billPdfUrl(bill.id));
+    setPdfNote('PDF-ul acestei facturi nu e încă disponibil.');
+  };
+
+  // A3: a critical bill asks for confirmation before paying.
   const pay = () => (bill.audit.status === 'critical' ? setConfirmPay(true) : doPay());
 
   return (
@@ -129,6 +149,26 @@ export default function BillScreen({ route, navigation }: ScreenProps<'Bill'>) {
               {bill.all_in_unit_price ? ` · ${bill.all_in_unit_price} lei/${bill.consumption_unit}` : ''}
             </Text>
           )}
+          <View style={styles.headerActions}>
+            <Pressable onPress={openPdf} style={({ pressed }) => [styles.pdfBtn, pressed && { opacity: 0.6 }]} accessibilityRole="button">
+              <Icon name="document" size={18} color={t.accent} />
+              <Text style={styles.pdfText}>Vezi factura (PDF)</Text>
+            </Pressable>
+            {isPending && (
+              <Pressable
+                onPress={() => {
+                  acceptProvider(slugify(bill.provider));
+                  setIsPending(false);
+                }}
+                style={({ pressed }) => [styles.pdfBtn, pressed && { opacity: 0.6 }]}
+                accessibilityRole="button"
+              >
+                <Icon name="plus" size={18} color={t.accent} />
+                <Text style={styles.pdfText}>Adaugă la furnizori</Text>
+              </Pressable>
+            )}
+          </View>
+          {pdfNote && <Text style={styles.muted}>{pdfNote}</Text>}
         </View>
 
         {bill.audit.anomalies.map((a) => (
@@ -187,7 +227,7 @@ export default function BillScreen({ route, navigation }: ScreenProps<'Bill'>) {
 
       <View style={styles.askBar}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingHorizontal: 12 }}>
-          {copy.chips.map((c) => (
+          {questions.map((c) => (
             <Pressable key={c} onPress={() => ask({ question: c })} style={({ pressed }) => [styles.chip, pressed && { opacity: 0.6 }]} disabled={asking}>
               <Text style={styles.chipText}>{c}</Text>
             </Pressable>
@@ -221,6 +261,20 @@ export default function BillScreen({ route, navigation }: ScreenProps<'Bill'>) {
         />
       )}
       <ConfirmDialog
+        visible={askAddProvider}
+        primary="confirm"
+        title={`Adaugi ${bill.provider} la furnizorii tăi?`}
+        body={`Așa vezi facturile ${bill.provider} în tabul Furnizori și le comparăm lună de lună.`}
+        confirm="Adaugă furnizorul"
+        cancel="Nu acum"
+        onConfirm={() => {
+          acceptProvider(slugify(bill.provider));
+          setIsPending(false);
+          setAskAddProvider(false);
+        }}
+        onCancel={() => setAskAddProvider(false)}
+      />
+      <ConfirmDialog
         visible={confirmPay}
         danger
         title={copy.payConfirmTitle}
@@ -253,6 +307,9 @@ function LineRow({ item, flagged, onPress }: { item: LineItem; flagged: boolean;
 const makeStyles = (t: Theme) => ({
   header: { backgroundColor: t.surface, borderRadius: t.radius, padding: t.pad, gap: 6, alignItems: 'flex-start' as const },
   total: { fontSize: t.fs(34), fontWeight: '800' as const, color: t.text, marginLeft: -1 },
+  headerActions: { flexDirection: 'row' as const, flexWrap: 'wrap' as const, gap: 8, marginTop: 6 },
+  pdfBtn: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 6, minHeight: 40, paddingHorizontal: 12, borderRadius: 999, borderWidth: 1.5, borderColor: t.accent },
+  pdfText: { color: t.accent, fontWeight: '700' as const, fontSize: t.fs(13) },
   recalc: { fontSize: t.fs(15), fontWeight: '700' as const, color: t.sev.ok.color },
   muted: { color: t.muted, fontSize: t.fs(13) },
   section: { fontWeight: '700' as const, fontSize: t.fs(15), marginTop: 8, color: t.text },

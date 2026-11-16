@@ -3,21 +3,41 @@ import * as ImagePicker from 'expo-image-picker';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { api } from '../api/client';
+import { slugify } from '../api/derive';
+import { markPending } from '../providerList';
 import type { UploadFile } from '../api/types';
 import { Button } from '../components/Button';
+import { Icon, type IconName } from '../components/Icon';
 import { useStackNavigation } from '../navigation';
 import { useCopy, useStyles, useTheme, type Theme } from '../mode';
 
 
 const MAX_FILES = 10; // docs/API_V2.md §1
+
+type Source = 'camera' | 'image' | 'pdf';
+const SOURCES: { key: Source; label: string; icon: IconName; action: string; short: string; hint: string }[] = [
+  { key: 'camera', label: 'Cameră', icon: 'camera', action: 'Fotografiază factura', short: 'Poză', hint: 'Câte o poză pentru fiecare pagină. Le trimitem împreună, ca o singură factură.' },
+  { key: 'image', label: 'Imagine', icon: 'image', action: 'Alege imagini din galerie', short: 'Imagine', hint: 'Poți alege mai multe pagini odată, în ordine.' },
+  { key: 'pdf', label: 'PDF', icon: 'file', action: 'Alege factura PDF', short: 'PDF', hint: 'Factura primită pe e-mail, de pe telefon sau din Fișiere.' },
+];
 const STEP_MS = 2500;
 
 type Page = UploadFile & { key: string };
+
+/** Turn transport errors into something a person can act on; backend errors already come as readable text. */
+function scanErrorMessage(e: unknown): string {
+  const msg = e instanceof Error ? e.message : String(e);
+  if (e instanceof Error && e.name === 'AbortError') return 'Citirea a durat prea mult. Încearcă din nou, eventual cu mai puține pagini.';
+  if (/network request failed|failed to fetch|load failed|networkerror/i.test(msg))
+    return 'Nu am putut ajunge la server. Verifică internetul (telefonul și laptopul în aceeași rețea) și încearcă din nou.';
+  return msg;
+}
 let nextKey = 0;
 const toPage = (f: UploadFile): Page => ({ ...f, key: String(nextKey++) });
 const isPdf = (p: UploadFile) => p.mimeType === 'application/pdf' || p.name.toLowerCase().endsWith('.pdf');
 
 export default function ScanScreen() {
+  const t = useTheme();
   const styles = useStyles(makeStyles);
   const copy = useCopy();
   const STEPS = copy.scanSteps;
@@ -25,6 +45,7 @@ export default function ScanScreen() {
   const [pages, setPages] = useState<Page[]>([]);
   const [step, setStep] = useState<number | null>(null); // null = not scanning
   const [error, setError] = useState<string | null>(null);
+  const [source, setSource] = useState<Source>('camera'); // camera by default; image / PDF on demand
 
   // Staged loader: advance one step every STEP_MS, stay on the last one until the backend answers.
   useEffect(() => {
@@ -63,10 +84,12 @@ export default function ScanScreen() {
   };
 
   const pickFiles = async () => {
-    const res = await DocumentPicker.getDocumentAsync({ type: ['application/pdf', 'image/*'], multiple: true });
+    const res = await DocumentPicker.getDocumentAsync({ type: ['application/pdf'], multiple: true });
     if (res.canceled) return;
     add(res.assets.map((a) => ({ uri: a.uri, name: a.name, mimeType: a.mimeType ?? 'application/pdf' })));
   };
+
+  const acquire = () => (source === 'camera' ? takePhoto() : source === 'image' ? pickGallery() : pickFiles());
 
   const remove = (key: string) => setPages((cur) => cur.filter((p) => p.key !== key));
 
@@ -76,9 +99,13 @@ export default function ScanScreen() {
     try {
       const bill = await api.scanBill(pages);
       setPages([]);
+      // A provider seen for the first time waits outside "my providers" until the user adds it (asked after paying).
+      const list = await api.providers().catch(() => []);
+      const entry = list.find((p) => p.provider.toLowerCase() === bill.provider.toLowerCase());
+      if (!entry || entry.bills_count <= 1) await markPending(entry?.slug ?? slugify(bill.provider));
       navigation.navigate('Bill', { id: bill.id });
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(scanErrorMessage(e));
     } finally {
       setStep(null);
     }
@@ -86,28 +113,45 @@ export default function ScanScreen() {
 
   if (step != null) return <ScanProgress step={step} pages={pages.length} steps={STEPS} />;
 
+  const src = SOURCES.find((x) => x.key === source)!;
+
   return (
     <View style={styles.container}>
       <ScrollView contentContainerStyle={{ padding: 16, gap: 16, paddingBottom: 32 }}>
-        <View style={styles.sources}>
-          <Source icon="📷" label="Cameră" onPress={takePhoto} primary />
-          <Source icon="🖼" label="Galerie" onPress={pickGallery} />
-          <Source icon="📄" label="PDF / Fișiere" onPress={pickFiles} />
+        <View style={styles.segment} accessibilityRole="tablist">
+          {SOURCES.map((x) => {
+            const on = x.key === source;
+            return (
+              <Pressable
+                key={x.key}
+                onPress={() => setSource(x.key)}
+                accessibilityRole="tab"
+                accessibilityState={{ selected: on }}
+                style={({ pressed }) => [styles.segBtn, on && styles.segOn, pressed && { opacity: 0.7 }]}
+              >
+                <Icon name={x.icon} size={20} color={on ? t.onAccent : t.text} />
+                <Text style={[styles.segLabel, on && { color: t.onAccent }]}>{x.label}</Text>
+              </Pressable>
+            );
+          })}
         </View>
 
         {error && (
           <View style={styles.error}>
-            <Text style={styles.errorTitle}>Nu am putut citi factura</Text>
+            <Text style={styles.errorTitle}>A apărut o eroare la scanare</Text>
             <Text style={styles.errorText}>{error}</Text>
+            {pages.length > 0 && <Button title="Încearcă din nou" onPress={analyze} variant="secondary" />}
           </View>
         )}
 
         {pages.length === 0 ? (
-          <View style={styles.empty}>
-            <Text style={{ fontSize: 44 }}>🧾</Text>
-            <Text style={styles.emptyTitle}>{copy.scanEmptyTitle}</Text>
-            <Text style={styles.emptyText}>{copy.scanEmptyBody}</Text>
-          </View>
+          <Pressable onPress={acquire} style={({ pressed }) => [styles.empty, pressed && { opacity: 0.8 }]} accessibilityRole="button" accessibilityLabel={src.action}>
+            <View style={styles.emptyIcon}>
+              <Icon name={src.icon} size={40} color={t.accent} strokeWidth={1.8} />
+            </View>
+            <Text style={styles.emptyTitle}>{source === 'camera' ? copy.scanEmptyTitle : src.action}</Text>
+            <Text style={styles.emptyText}>{src.hint}</Text>
+          </Pressable>
         ) : (
           <>
             <Text style={styles.section}>
@@ -118,7 +162,7 @@ export default function ScanScreen() {
                 <View key={p.key} style={styles.thumb}>
                   {isPdf(p) ? (
                     <View style={[styles.thumbInner, styles.pdf]}>
-                      <Text style={{ fontSize: 28 }}>📄</Text>
+                      <Icon name="file" size={30} color={t.muted} />
                       <Text style={styles.pdfName} numberOfLines={2}>
                         {p.name}
                       </Text>
@@ -127,14 +171,15 @@ export default function ScanScreen() {
                     <Image source={{ uri: p.uri }} style={styles.thumbInner} />
                   )}
                   <Text style={styles.pageNo}>{i + 1}</Text>
-                  <Pressable onPress={() => remove(p.key)} style={styles.remove} hitSlop={8}>
-                    <Text style={styles.removeText}>✕</Text>
+                  <Pressable onPress={() => remove(p.key)} style={styles.remove} hitSlop={8} accessibilityLabel={`Șterge pagina ${i + 1}`}>
+                    <Icon name="close" size={14} color="#fff" strokeWidth={2.5} />
                   </Pressable>
                 </View>
               ))}
               {pages.length < MAX_FILES && (
-                <Pressable onPress={pickGallery} style={[styles.thumb, styles.addMore]}>
-                  <Text style={styles.addMoreText}>＋</Text>
+                <Pressable onPress={acquire} style={[styles.thumb, styles.addMore]} accessibilityLabel={src.action}>
+                  <Icon name="plus" size={26} color={t.accent} />
+                  <Text style={styles.addMoreText}>{src.short}</Text>
                 </Pressable>
               )}
             </View>
@@ -143,24 +188,9 @@ export default function ScanScreen() {
       </ScrollView>
 
       <View style={styles.footer}>
-        <Button
-          title={pages.length ? copy.analyze(pages.length) : copy.addPage}
-          onPress={analyze}
-          disabled={!pages.length}
-        />
+        {pages.length ? <Button title={copy.analyze(pages.length)} onPress={analyze} /> : <Button title={src.action} onPress={acquire} />}
       </View>
     </View>
-  );
-}
-
-function Source({ icon, label, onPress, primary }: { icon: string; label: string; onPress: () => void; primary?: boolean }) {
-  const t = useTheme();
-  const styles = useStyles(makeStyles);
-  return (
-    <Pressable onPress={onPress} style={({ pressed }) => [styles.source, primary && styles.sourcePrimary, pressed && { opacity: 0.7 }]}>
-      <Text style={{ fontSize: 26 }}>{icon}</Text>
-      <Text style={[styles.sourceLabel, primary && { color: t.onAccent }]}>{label}</Text>
-    </Pressable>
   );
 }
 
@@ -177,7 +207,13 @@ function ScanProgress({ step, pages, steps: STEPS }: { step: number; pages: numb
       <View style={{ gap: 10, marginTop: 16, alignSelf: 'stretch' }}>
         {STEPS.map((s, i) => (
           <View key={s} style={styles.stepRow}>
-            <Text style={[styles.stepDot, i < step && styles.stepDone, i === step && styles.stepNow]}>{i < step ? '✓' : i + 1}</Text>
+            <View style={[styles.stepDot, i < step && styles.stepDone, i === step && styles.stepNow]}>
+              {i < step ? (
+                <Icon name="check" size={16} color={t.sev.ok.color} strokeWidth={3} />
+              ) : (
+                <Text style={[styles.stepNum, i === step && { color: t.onAccent }]}>{i + 1}</Text>
+              )}
+            </View>
             <Text style={[styles.stepText, i > step && { color: t.muted }]}>{s}</Text>
           </View>
         ))}
@@ -188,34 +224,35 @@ function ScanProgress({ step, pages, steps: STEPS }: { step: number; pages: numb
 
 const makeStyles = (t: Theme) =>
   StyleSheet.create({
-  container: { flex: 1, backgroundColor: t.bg },
-  sources: { flexDirection: 'row', gap: 10 },
-  source: { flex: 1, backgroundColor: t.surface, borderRadius: 16, paddingVertical: 18, alignItems: 'center', gap: 6 },
-  sourcePrimary: { backgroundColor: t.accent },
-  sourceLabel: { fontWeight: '600', color: t.accent },
-  section: { fontWeight: '700', color: t.text },
-  empty: { alignItems: 'center', gap: 8, padding: 24, backgroundColor: t.surface, borderRadius: 16, borderWidth: 1, borderStyle: 'dashed', borderColor: t.border },
-  emptyTitle: { fontWeight: '700', fontSize: 16, color: t.text },
-  emptyText: { color: t.muted, textAlign: 'center', lineHeight: 20 },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  thumb: { width: '30%', aspectRatio: 0.72, borderRadius: 12, overflow: 'hidden', backgroundColor: t.surface },
-  thumbInner: { width: '100%', height: '100%' },
-  pdf: { alignItems: 'center', justifyContent: 'center', padding: 6, gap: 4, backgroundColor: '#FEF2F2' },
-  pdfName: { fontSize: 11, color: t.text, textAlign: 'center' },
-  pageNo: { position: 'absolute', left: 6, bottom: 6, backgroundColor: 'rgba(0,0,0,0.6)', color: '#fff', fontSize: 12, fontWeight: '700', paddingHorizontal: 7, paddingVertical: 2, borderRadius: 999, overflow: 'hidden' },
-  remove: { position: 'absolute', right: 6, top: 6, width: 24, height: 24, borderRadius: 12, backgroundColor: 'rgba(0,0,0,0.6)', alignItems: 'center', justifyContent: 'center' },
-  removeText: { color: '#fff', fontSize: 12, fontWeight: '700' },
-  addMore: { alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderStyle: 'dashed', borderColor: t.accent, backgroundColor: '#EEEAFE' },
-  addMoreText: { fontSize: 28, color: t.accent },
-  error: { backgroundColor: '#FEE2E2', borderRadius: 14, padding: 14, gap: 4, borderLeftWidth: 4, borderColor: '#B91C1C' },
-  errorTitle: { fontWeight: '700', color: '#B91C1C' },
-  errorText: { color: '#1F2937' },
-  footer: { padding: 16, backgroundColor: t.surface, borderTopWidth: 1, borderColor: t.border },
-  progress: { alignItems: 'center', justifyContent: 'center', padding: 32, gap: 8 },
-  progressTitle: { fontSize: 20, fontWeight: '700', color: t.text, marginTop: 12 },
-  stepRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  stepDot: { width: 26, height: 26, borderRadius: 13, textAlign: 'center', lineHeight: 26, backgroundColor: t.border, color: t.muted, fontWeight: '700', overflow: 'hidden' },
-  stepDone: { backgroundColor: '#DCFCE7', color: '#15803D' },
-  stepNow: { backgroundColor: t.accent, color: t.onAccent },
-  stepText: { color: t.text, fontWeight: '600' },
-});
+    container: { flex: 1, backgroundColor: t.bg },
+    segment: { flexDirection: 'row', gap: 6, padding: 4, backgroundColor: t.surface, borderRadius: t.inner + 10 },
+    segBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, minHeight: t.touch, borderRadius: t.inner + 6 },
+    segOn: { backgroundColor: t.accent },
+    segLabel: { fontWeight: '700', fontSize: t.fs(14), color: t.text },
+    section: { fontWeight: '700', color: t.text, fontSize: t.fs(14) },
+    empty: { alignItems: 'center', gap: 10, paddingVertical: 40, paddingHorizontal: 24, backgroundColor: t.surface, borderRadius: t.radius, borderWidth: 1.5, borderStyle: 'dashed', borderColor: t.border },
+    emptyIcon: { width: 76, height: 76, borderRadius: 38, alignItems: 'center', justifyContent: 'center', backgroundColor: t.surface2 },
+    emptyTitle: { fontWeight: '800', fontSize: t.fs(18), color: t.text },
+    emptyText: { color: t.muted, textAlign: 'center', lineHeight: t.fs(20), fontSize: t.fs(14) },
+    grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+    thumb: { width: '30%', aspectRatio: 0.72, borderRadius: t.inner + 4, overflow: 'hidden', backgroundColor: t.surface },
+    thumbInner: { width: '100%', height: '100%' },
+    pdf: { alignItems: 'center', justifyContent: 'center', padding: 6, gap: 6, backgroundColor: t.surface2 },
+    pdfName: { fontSize: 11, color: t.text, textAlign: 'center' },
+    pageNo: { position: 'absolute', left: 6, bottom: 6, backgroundColor: 'rgba(0,0,0,0.6)', color: '#fff', fontSize: 12, fontWeight: '700', paddingHorizontal: 7, paddingVertical: 2, borderRadius: 999, overflow: 'hidden' },
+    remove: { position: 'absolute', right: 6, top: 6, width: 26, height: 26, borderRadius: 13, backgroundColor: 'rgba(0,0,0,0.6)', alignItems: 'center', justifyContent: 'center' },
+    addMore: { alignItems: 'center', justifyContent: 'center', gap: 4, borderWidth: 1.5, borderStyle: 'dashed', borderColor: t.accent, backgroundColor: t.surface },
+    addMoreText: { fontSize: t.fs(12), color: t.accent, fontWeight: '700' },
+    error: { backgroundColor: t.sev.critical.bg, borderRadius: t.radius, padding: t.pad, gap: 6 },
+    errorTitle: { fontWeight: '800', color: t.sev.critical.color, fontSize: t.fs(16) },
+    errorText: { color: t.text, fontSize: t.fs(14), lineHeight: t.fs(20) },
+    footer: { padding: 16, backgroundColor: t.surface, borderTopWidth: 1, borderColor: t.border },
+    progress: { alignItems: 'center', justifyContent: 'center', padding: 32, gap: 8 },
+    progressTitle: { fontSize: t.fs(20), fontWeight: '700', color: t.text, marginTop: 12 },
+    stepRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+    stepDot: { width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: t.surface2 },
+    stepNum: { color: t.muted, fontWeight: '700', fontSize: 13 },
+    stepDone: { backgroundColor: t.sev.ok.bg },
+    stepNow: { backgroundColor: t.accent },
+    stepText: { color: t.text, fontWeight: '600', fontSize: t.fs(15) },
+  });

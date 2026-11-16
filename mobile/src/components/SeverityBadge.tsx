@@ -1,10 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
-import { Animated, StyleSheet, Text } from 'react-native';
+import { Animated, StyleSheet, Text, View } from 'react-native';
 import type { Severity } from '../api/types';
 import { useCopy, useTheme } from '../mode';
-import { severityIcon } from '../theme';
 
-/** Audit badge. When `severity` changes (e.g. 🔴 -> 🟡 after a reading) it pops, so the change is noticed (A9). */
+/** Audit badge. When `severity` changes (e.g. critical -> warning after a reading) it pops, so the change is noticed (A9). */
 export function SeverityBadge({ severity }: { severity: Severity }) {
   const t = useTheme();
   const copy = useCopy();
@@ -23,14 +22,14 @@ export function SeverityBadge({ severity }: { severity: Severity }) {
 
   return (
     <Animated.View style={[styles.badge, { backgroundColor: s.bg, transform: [{ scale: pop }] }]}>
-      <Text style={[styles.text, { color: s.color, fontSize: t.fs(12) }]}>
-        {severityIcon[severity]} {copy.sev[severity]}
-      </Text>
+      <View style={[styles.dot, { backgroundColor: s.color }]} />
+      <Text style={[styles.text, { color: s.color, fontSize: t.fs(12) }]}>{copy.sev[severity]}</Text>
     </Animated.View>
   );
 }
 
 const styles = StyleSheet.create({
-  badge: { borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4, alignSelf: 'flex-start' },
+  badge: { borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4, alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 6 },
+  dot: { width: 7, height: 7, borderRadius: 4 },
   text: { fontWeight: '700' },
 });

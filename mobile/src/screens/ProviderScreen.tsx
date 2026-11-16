@@ -7,7 +7,8 @@ import { MonthBars } from '../components/charts/MonthBars';
 import { ProviderAvatar } from '../components/ProviderAvatar';
 import type { ScreenProps } from '../navigation';
 import { useStyles, useTheme, type Theme } from '../mode';
-import { category, deltaColor, deltaLabel, money, monthLabel, severityIcon } from '../theme';
+import { category, deltaColor, deltaLabel, money, monthLabel } from '../theme';
+import { Icon } from '../components/Icon';
 
 type Metric = 'total' | 'consumption';
 
@@ -71,7 +72,7 @@ export default function ProviderScreen({ route, navigation }: ScreenProps<'Provi
           <View style={{ flex: 1 }}>
             <Text style={styles.title}>{data.provider}</Text>
             <Text style={styles.muted}>
-              {c.icon} {c.label} · {data.bills.length} facturi
+              {c.label} · {data.bills.length} facturi
             </Text>
           </View>
         </View>
@@ -125,7 +126,7 @@ export default function ProviderScreen({ route, navigation }: ScreenProps<'Provi
       </Text>
       {data.discrepancies.length === 0 ? (
         <View style={[styles.card, { flexDirection: 'row', gap: 10, alignItems: 'center' }]}>
-          <Text style={{ fontSize: 22 }}>🟢</Text>
+          <Icon name="check" color={t.sev.ok.color} size={26} />
           <Text style={{ flex: 1, color: t.text }}>Fiecare factură e în linie cu cele de dinainte.</Text>
         </View>
       ) : (
@@ -133,11 +134,13 @@ export default function ProviderScreen({ route, navigation }: ScreenProps<'Provi
       )}
 
       {/* Timeline */}
-      <Text style={styles.section}>Toate facturile</Text>
+      <Text style={styles.section}>Toate facturile · {data.bills.length}</Text>
       <View style={styles.list}>
-        {data.bills.map((b) => (
-          <BillRow key={b.id} bill={b} unit={unit} onPress={() => open(b.id)} />
-        ))}
+        <ScrollView style={{ maxHeight: t.mode === 'senior' ? 420 : 340 }} nestedScrollEnabled showsVerticalScrollIndicator>
+          {data.bills.map((b) => (
+            <BillRow key={b.id} bill={b} unit={unit} onPress={() => open(b.id)} />
+          ))}
+        </ScrollView>
       </View>
     </ScrollView>
   );
@@ -167,8 +170,9 @@ function DiscrepancyCard({ d, onPress }: { d: Discrepancy; onPress: () => void }
   return (
     <Pressable onPress={onPress} style={({ pressed }) => [styles.disc, { backgroundColor: s.bg, borderColor: s.color }, pressed && { opacity: 0.7 }]}>
       <View style={styles.headerRow}>
+        <View style={{ width: 9, height: 9, borderRadius: 5, backgroundColor: s.color }} />
         <Text style={[styles.discTitle, { color: s.color, flex: 1 }]}>
-          {severityIcon[d.severity]} {d.title}
+          {d.title}
         </Text>
         <Text style={styles.discMonth}>{monthLabel(d.period_end.slice(0, 7))}</Text>
       </View>
@@ -260,11 +264,11 @@ const makeStyles = (t: Theme) =>
   toggleOn: { backgroundColor: t.accent },
   toggleText: { fontSize: 12, fontWeight: '700', color: t.muted },
   legend: { flexDirection: 'row', gap: 14, flexWrap: 'wrap' },
-  selected: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#EEEAFE', borderRadius: 12, padding: 12 },
+  selected: { flexDirection: 'row', alignItems: 'center', backgroundColor: t.surface2, borderRadius: 12, padding: 12 },
   disc: { borderRadius: 14, padding: 14, gap: 6, borderLeftWidth: 4 },
   discTitle: { fontWeight: '700', fontSize: 15 },
   discMonth: { fontSize: 12, color: t.muted, fontWeight: '600' },
-  discText: { color: '#1F2937', lineHeight: 20 },
+  discText: { color: t.text, lineHeight: 20 },
   fromTo: { flexDirection: 'row', gap: 8, alignItems: 'center' },
   fromToText: { color: t.text, fontWeight: '600' },
   list: { backgroundColor: t.surface, borderRadius: 18, overflow: 'hidden' },

@@ -5,6 +5,7 @@ import type { BillDetail, ReadingResponse } from '../api/types';
 import { useCopy, useTheme } from '../mode';
 import { tabular } from '../theme';
 import { Button } from './Button';
+import { Icon } from './Icon';
 
 /** A6: "Submit real reading" -> POST /bills/{id}/reading/ -> recalculated bill + difference. */
 export function ReadingModal({
@@ -54,7 +55,7 @@ export function ReadingModal({
           {result ? (
             <View style={{ alignItems: 'center', gap: 12, paddingVertical: 8 }}>
               <Animated.View style={[styles.check, { backgroundColor: t.sev.ok.bg, transform: [{ scale: pop }] }]}>
-                <Text style={{ fontSize: 34, color: t.sev.ok.color, fontWeight: '900' }}>✓</Text>
+                <Icon name="check" color={t.sev.ok.color} size={36} strokeWidth={2.5} />
               </Animated.View>
               <Text style={{ color: t.text, fontSize: t.fs(20), fontWeight: '800', textAlign: 'center' }}>{copy.readingDone(diff)}</Text>
               <Text style={[{ color: t.muted, fontSize: t.fs(14), textAlign: 'center' }, tabular]}>

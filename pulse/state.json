@@ -18,17 +18,23 @@
       "member": 2,
       "time": "2026-11-16 13:37",
       "headline": "Toate ecranele noi primesc date reale din backend; testăm pe telefon prin hotspot"
+    },
+    {
+      "n": 4,
+      "member": 1,
+      "time": "2026-11-16 14:11",
+      "headline": "Butonul de interfețe e gata, iar aplicația e unită în main"
     }
   ],
   "members": {
     "1": {
       "building": "Aplicația mobilă Pago Bill Audit (Expo) în 3 interfețe, Gen Z, Millennials și Senior: vezi facturile lunii într-o roată, scanezi factura din poze sau PDF, Gemini o citește și prinde greșelile. Ca un detectiv care vorbește pe limba fiecărui client.",
-      "works": "3 interfețe (Gen Z întunecată și cu slang, Millennials cu roata bugetului, Senior cu text mare și ajutor de la familie), schimbate dintr-un buton din colțul de sus. Trimiterea indexului real reface factura PPC de la 517,06 la 268,84 lei. O factură 🔴 cere confirmare înainte de plată. Întrebările sugerate primesc răspuns de la Gemini. Facturi reale scanate cu Gemini, din mai multe poze sau PDF-uri. Totul în română.",
-      "blocking": "Telefonul nu vedea laptopul pe Wi-Fi, a mers doar prin hotspot. Răspunsurile Gemini și textele anomaliilor vin încă în engleză. Scanarea din mai multe fișiere a fost făcută în paralel și pe backend, deci trebuie unite.",
+      "works": "3 interfețe (Gen Z întunecată și cu slang, Millennials cu roata bugetului, Senior cu text mare), schimbate dintr-un buton din colțul de sus al fiecărui ecran. Ecranele Overview și Furnizori iau acum datele direct din backend. Trimiterea indexului real reface factura PPC de la 517,06 la 268,84 lei. O factură 🔴 cere confirmare înainte de plată. Întrebările sugerate primesc răspuns de la Gemini. Branch-ul cu interfețele e unit în main, fără conflicte.",
+      "blocking": "Telefonul nu vedea laptopul pe Wi-Fi-ul obișnuit, așa că testăm prin hotspot. Răspunsurile Gemini și textele anomaliilor vin încă în engleză.",
       "features": [
         {
           "name": "Claude Code",
-          "for": "a făcut cele 3 interfețe și ecranele noi, a reparat salvarea facturilor scanate și a făcut commit și push"
+          "for": "a făcut cele 3 interfețe și butonul de schimbare, a unit branch-ul cu main și a rezolvat conflictele"
         },
         {
           "name": "Browserul integrat",
@@ -55,7 +61,7 @@
           "for": "actualizează pagina Pulse la fiecare 2 ore"
         }
       ],
-      "next": "Push pe branch-ul nou, ca să continue colegul, și test pe telefon cu facturi reale."
+      "next": "Testăm aplicația pe telefon prin hotspot, cu facturi reale fotografiate."
     },
     "2": {
       "building": "Pago Bill Audit: înainte să apeși «Plătește», AI-ul citește factura, ți-o explică pe înțeles și prinde greșelile (index estimat, scumpiri ascunse, opțiuni plătite uitate). Ca un contabil de buzunar care se uită pe factură în locul tău.",

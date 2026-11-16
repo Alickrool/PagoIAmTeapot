@@ -1,13 +1,16 @@
+import re
+
 from django.conf import settings
 from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
 from rest_framework.response import Response
+from rest_framework.views import APIView
 
 from bills.models import AutoPayRule, Bill
 from bills.serializers import (AskSerializer, AutoPayRuleSerializer, BillDetailSerializer, BillListSerializer,
                                DisputeSerializer, LineItemSerializer, PaySerializer, ReadingSerializer)
-from bills.services import ai, market, mock
+from bills.services import ai, market, mock, overview
 from bills.services.reading import ReadingError, submit_reading
 from bills.services import scan as scan_service
 from bills.services.audit import audit_bill
@@ -128,3 +131,16 @@ class BillViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, viewsets.Gen
 class AutoPayRuleViewSet(viewsets.ModelViewSet):
     queryset = AutoPayRule.objects.order_by("-id")
     serializer_class = AutoPayRuleSerializer
+
+
+class DashboardView(APIView):
+    """GET /api/dashboard/?month=YYYY-MM - monthly overview (docs/API_V2.md §2)."""
+
+    def get(self, request):
+        month = request.query_params.get("month")
+        if month and not re.fullmatch(r"\d{4}-(0[1-9]|1[0-2])", month):
+            return Response({"code": "bad_month", "detail": "month must look like 2026-10."}, status=400)
+        try:
+            return Response(overview.dashboard(month))
+        except overview.NoBills:
+            return Response({"code": "no_bills", "detail": "No bills yet. Scan your first bill."}, status=404)

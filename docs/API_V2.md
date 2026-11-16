@@ -6,7 +6,7 @@ money as **strings**, dates `YYYY-MM-DD`). Types on the app side: `mobile/src/ap
 | # | Endpoint | Screen | Status |
 |---|---|---|---|
 | 1 | `POST /api/bills/scan/` (multi-file) | Scan tab | ✅ **live** |
-| 2 | `GET /api/dashboard/?month=YYYY-MM` | Overview tab (donut + month compare + history) | **new** |
+| 2 | `GET /api/dashboard/?month=YYYY-MM` | Overview tab (donut + month compare + history) | ✅ **live** |
 | 3 | `GET /api/providers/` | Providers tab | **new** |
 | 4 | `GET /api/providers/{slug}/` | Provider history screen | **new** |
 
@@ -119,7 +119,11 @@ files: annex.pdf  (application/pdf)
 | `slices[].previous_total`, `delta_pct` | same provider's bill in `previous_month` (`null` if it had none) |
 | `months` | the last **12 months that have bills, up to and including the selected month**, **oldest first** – the history bar chart. Tapping a bar calls this endpoint with that `month`. |
 
-`404` with `{ "code": "no_bills" }` if the user has no bills at all.
+`404` with `{ "code": "no_bills" }` if the user has no bills at all. `400 { "code": "bad_month" }` if `month`
+is not `YYYY-MM`; a well-formed month without bills falls back to the latest month (same as `derive.ts`).
+
+**One bill per provider per month (backend):** if a month has two bills of the same provider (e.g. a seeded bill
+scanned again in the demo), only the newest counts, so totals are never doubled. Same rule for `/providers/`.
 
 ---
 
@@ -240,7 +244,7 @@ then `critical` before `warning` before `info`. `id` = `"{type}:{bill_id}"` (sta
 
 - [x] `scan`: accept `files` (repeated) + keep `file`; error body `{code, detail}`
       (`not_a_bill` comes with B13; a model failure is `unreadable` today)
-- [ ] `GET /dashboard/`
+- [x] `GET /dashboard/`
 - [ ] `GET /providers/`, `GET /providers/{slug}/` with the discrepancy rules
 - [ ] tests: PPC October → `consumption_jump` + `estimated_index` critical; Digi → `new_line_item`;
       Engie → `total_jump`; Apa Brasov → no discrepancies

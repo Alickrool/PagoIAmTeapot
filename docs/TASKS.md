@@ -36,7 +36,7 @@ switches to them automatically. No app change needed.
 | B2 | – | Knowledge base fact-check, 2026 tariffs, Engie scenario → electricity | ✅ |
 | B5 | – | `POST /bills/{id}/reading/` | ✅ |
 | B6 | – | bbox for text PDFs + text-first PDF extraction with vision fallback | ✅ |
-| B10 | **P0** | `GET /dashboard/?month=YYYY-MM` exactly as API_V2 §2 (use `derive.ts` as the reference implementation) + tests | open |
+| B10 | ✅ | `GET /dashboard/` live, same rules as `derive.ts`; newest bill per provider per month (re-scans don't double totals); `bad_month` / `no_bills` errors | Done |
 | B11 | **P0** | `GET /providers/` and `GET /providers/{slug}/` with the discrepancy rules (API_V2 §3–4), including `index_gap` and `new_line_item` that the app can't compute + the tests from the API_V2 checklist | open |
 | B12 | ✅ | Scan v2 live: `files` (1–10) + legacy `file`, limits, `{code, detail}` errors, multi-page in one Gemini request (text if all PDFs have text), bbox pages across files, cache by file order. Verified live with a bill split into 2 photos | Done |
 | B13 | P1 | `not_a_bill` / `unreadable` (422): add `is_bill` + `readable` to the extraction schema. (HEIC needs no conversion: Gemini accepts it, the backend already allows it) | open |

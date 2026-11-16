@@ -155,6 +155,44 @@ class DemoScenarioTests(TestCase):
         b = next(b for b in boxes if b)
         self.assertTrue(0 <= b["x"] < 1 and 0 <= b["y"] < 1 and 0 < b["w"] <= 1 and b["page"] == 1)
 
+    # ---- dashboard (docs/API_V2.md §2) ----
+
+    def test_dashboard_latest_month(self):
+        d = self.c.get("/api/dashboard/").json()
+        self.assertEqual((d["month"], d["previous_month"], d["bills_count"], d["audit_status"]),
+                         ("2026-10", "2026-09", 4, "critical"))
+        self.assertEqual((d["total"], d["unpaid_total"], d["paid_total"], d["previous_total"]),
+                         ("1001.83", "1001.83", "0.00", "642.81"))
+        self.assertEqual(d["delta_pct"], 55.9)
+        totals = [float(s["total"]) for s in d["slices"]]
+        self.assertEqual(totals, sorted(totals, reverse=True))  # donut order
+        self.assertEqual(d["slices"][0]["provider"], "PPC")
+        self.assertAlmostEqual(sum(s["share_pct"] for s in d["slices"]), 100, delta=0.2)
+        self.assertEqual([m["month"] for m in d["months"]][-1], "2026-10")
+        self.assertEqual(len(d["months"]), 12)
+        others = [float(m["total"]) for m in d["months"][:-1]]
+        self.assertAlmostEqual(float(d["average_total"]), sum(others) / len(others), places=2)
+
+    def test_dashboard_selected_month_and_errors(self):
+        d = self.c.get("/api/dashboard/?month=2026-09").json()
+        self.assertEqual((d["month"], d["previous_month"], d["months"][-1]["month"]), ("2026-09", "2026-08", "2026-09"))
+        self.assertEqual(d["paid_total"], d["total"])  # older months are paid in the seed
+        first = self.c.get("/api/dashboard/?month=2025-11").json()
+        self.assertEqual((first["previous_month"], first["delta_pct"], first["average_total"]), (None, None, None))
+        self.assertEqual(self.c.get("/api/dashboard/?month=2026-9").json()["code"], "bad_month")
+        Bill.objects.all().delete()
+        r = self.c.get("/api/dashboard/")
+        self.assertEqual((r.status_code, r.json()["code"]), (404, "no_bills"))
+
+    def test_dashboard_rescanned_bill_not_counted_twice(self):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+
+        f = SimpleUploadedFile("ppc.pdf", self._demo_pdf(), content_type="application/pdf")
+        new_id = self.c.post("/api/bills/scan/", {"file": f}, format="multipart").json()["id"]  # mock = PPC Oct
+        d = self.c.get("/api/dashboard/").json()
+        self.assertEqual((d["bills_count"], d["total"]), (4, "1001.83"))
+        self.assertEqual(next(s for s in d["slices"] if s["slug"] == "ppc")["bill_id"], new_id)
+
     # ---- scan v2 (docs/API_V2.md §1) ----
 
     def _post_files(self, *files, field="files"):

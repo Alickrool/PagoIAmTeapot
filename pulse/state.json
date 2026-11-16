@@ -30,17 +30,23 @@
       "member": 2,
       "time": "2026-11-16 15:37",
       "headline": "Backend-ul vorbește românește, deschide facturile scanate ca PDF și a trecut toate cele 28 de verificări"
+    },
+    {
+      "n": 6,
+      "member": 1,
+      "time": "2026-11-16 17:29",
+      "headline": "Scanare cu camera, swipe între tab-uri și un plan pentru verificarea facturilor"
     }
   ],
   "members": {
     "1": {
       "building": "Aplicația mobilă Pago Bill Audit (Expo) în 3 interfețe, Gen Z, Millennials și Senior: vezi facturile lunii într-o roată, scanezi factura din poze sau PDF, Gemini o citește și prinde greșelile. Ca un detectiv care vorbește pe limba fiecărui client.",
-      "works": "3 interfețe (Gen Z întunecată și cu slang, Millennials cu roata bugetului, Senior cu text mare), schimbate dintr-un buton din colțul de sus al fiecărui ecran. Ecranele Overview și Furnizori iau acum datele direct din backend. Trimiterea indexului real reface factura PPC de la 517,06 la 268,84 lei. O factură 🔴 cere confirmare înainte de plată. Întrebările sugerate primesc răspuns de la Gemini. Branch-ul cu interfețele e unit în main, fără conflicte.",
-      "blocking": "Telefonul nu vedea laptopul pe Wi-Fi-ul obișnuit, așa că testăm prin hotspot. Răspunsurile Gemini și textele anomaliilor vin încă în engleză.",
+      "works": "Scanarea pornește pe cameră, cu comutare la imagine sau PDF. Tab-urile se schimbă cu swipe, iar roata lunii se glisează între luni și se desenează animat. Bugetul lunii se setează dintr-un buton. Fiecare factură are întrebări pe tipul ei (apă, gaz, curent) și buton „Vezi factura (PDF)”. Furnizorii noi din facturi scanate se adaugă cu un tap. Iconițele sunt simple, fără emoji. Branch-ul frontend-final e unit în main.",
+      "blocking": "Cheia Gemini trebuie rotită înainte de demo, pentru că a fost lipită într-o conversație. Verificarea datelor din factură (lună, furnizor din România, nume, sume) e doar în plan, nu e încă în cod.",
       "features": [
         {
           "name": "Claude Code",
-          "for": "a făcut cele 3 interfețe și butonul de schimbare, a unit branch-ul cu main și a rezolvat conflictele"
+          "for": "a făcut scanarea cu camera, swipe-ul între tab-uri, roata pe luni, bugetul și întrebările pe fiecare factură, și a scris planul de verificare a datelor la scanare"
         },
         {
           "name": "Browserul integrat",
@@ -67,7 +73,7 @@
           "for": "actualizează pagina Pulse la fiecare 2 ore"
         }
       ],
-      "next": "Testăm aplicația pe telefon prin hotspot, cu facturi reale fotografiate."
+      "next": "Discutăm în echipă planul de verificare a datelor și de securitate la scanare (lună, furnizor din România, nume, duplicate, fișiere suspecte), apoi îl implementăm pe backend."
     },
     "2": {
       "building": "Pago Bill Audit: înainte să apeși «Plătește», AI-ul citește factura, ți-o explică pe înțeles și prinde greșelile (index estimat, scumpiri ascunse, opțiuni plătite uitate). Ca un contabil de buzunar care se uită pe factură în locul tău.",

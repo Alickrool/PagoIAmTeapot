@@ -12,6 +12,9 @@ submit reading, line highlight boxes for text PDFs, fact-checked knowledge base,
 (1–10 pages), 3 generation modes in the app, all frontend P0 tasks.
 **Checked after the merge:** 27 backend tests, migrations, TypeScript, lint and the Android bundle all pass; the app's
 submit-reading call and types match the backend.
+**Test mode (Mon 14:05):** start the backend with `python manage.py dev`: every start deletes all bills of the
+current month (`CURRENT_MONTH`, default 2026-10; seeded and scanned), older months stay, extraction cache stays.
+**For the demo** the October scenarios are needed again: `python manage.py seed_demo` then `python manage.py dev --keep`.
 **Biggest open gap:** the app UI is Romanian, but texts produced by the backend are English (audit cards,
 discrepancies, Gemini answers, AutoPay reasons, errors) → B14.
 **All API v2 endpoints are live** (scan v2, `/dashboard/`, `/providers/`, `/providers/{slug}/`). The app switches
@@ -61,7 +64,7 @@ from its on-phone fallback (`mobile/src/api/derive.ts`) automatically; `derive.t
 | Mon 14:00–18:00 | A8 (original PDF with highlight boxes); scan 2–3 real bills from the phone and report what breaks | B14 (if agreed), B3 (Q&A quality/speed), B13 |
 | **Mon 20:00** | **Integration checkpoint:** from the phone on the real backend: Overview + Providers, scan a 2-page real bill, submit reading on PPC, ask a question in each generation mode | |
 | Mon evening | Polish what the checkpoint found | B1 on real bills, B4 |
-| Tue 08:00–10:00 | Test on the Pago office Wi-Fi (B7) together; polish | Pre-warm cache with every demo file |
+| Tue 08:00–10:00 | Test on the Pago office Wi-Fi (B7) together; polish | `seed_demo` + `dev --keep` (October demo data back), pre-warm cache with every demo file |
 | **Tue 10:00** | **Feature freeze.** Only bug fixes from here | |
 | Tue 11:00–12:30 | Rehearse the 3-minute demo together twice, the second run fully from cache | |
 | Tue 12:30 | Final commit, push, hand in | |

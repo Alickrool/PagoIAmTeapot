@@ -36,7 +36,8 @@ python manage.py migrate
 python manage.py seed_demo        # resets the DB with the demo scenarios
 python manage.py make_sample_pdfs # fictional PDF invoices of the demo bills -> samples/
 python manage.py prewarm_cache ../samples/*   # optional: cache Gemini extraction of demo bills
-python manage.py runserver 0.0.0.0:8000
+python manage.py dev              # TEST session: empties the current month (CURRENT_MONTH, default 2026-10), then serves on 0.0.0.0:8000
+python manage.py dev --keep       # same server, no reset (use for the demo, after seed_demo)
 python manage.py test bills       # demo scenarios must stay green
 ```
 

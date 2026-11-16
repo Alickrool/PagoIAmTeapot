@@ -36,6 +36,10 @@ GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-4-hydrogen")
 AI_MOCK = os.getenv("AI_MOCK", "0") == "1" or not GEMINI_API_KEY
 
 SAMPLES_DIR = REPO_ROOT / "samples"
+# Testing: the "current" billing month. `python manage.py dev` deletes all its bills (seeded and scanned)
+# on every start, so each session begins with an empty current month; older months are kept.
+CURRENT_MONTH = os.getenv("CURRENT_MONTH", "2026-10")
+
 # Scan limits (docs/API_V2.md §1)
 SCAN_MAX_FILES = 10
 SCAN_MAX_FILE_BYTES = 10 * 1024 * 1024

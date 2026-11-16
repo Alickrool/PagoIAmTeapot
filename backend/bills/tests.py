@@ -1,12 +1,17 @@
 import io
+import tempfile
 
 from django.core.management import call_command
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from rest_framework.test import APIClient
 
 from bills.models import Bill
 
 
+TEST_MEDIA = tempfile.mkdtemp(prefix="pago-test-media-")  # never write test uploads into the real media/ folder
+
+
+@override_settings(MEDIA_ROOT=TEST_MEDIA)
 class DemoScenarioTests(TestCase):
     """The demo depends on these exact anomalies firing. Keep these green."""
 
@@ -192,6 +197,18 @@ class DemoScenarioTests(TestCase):
         d = self.c.get("/api/dashboard/").json()
         self.assertEqual((d["bills_count"], d["total"]), (4, "1001.83"))
         self.assertEqual(next(s for s in d["slices"] if s["slug"] == "ppc")["bill_id"], new_id)
+
+    # ---- test sessions (manage.py dev) ----
+
+    def test_reset_month_keeps_older_months(self):
+        from bills.management.commands.dev import reset_month
+
+        before = Bill.objects.exclude(period_end__year=2026, period_end__month=10).count()
+        self.assertEqual(reset_month("2026-10"), 4)
+        self.assertFalse(Bill.objects.filter(period_end__year=2026, period_end__month=10).exists())
+        self.assertEqual(Bill.objects.count(), before)  # nothing else touched
+        d = self.c.get("/api/dashboard/").json()
+        self.assertEqual(d["month"], "2026-09")  # overview falls back to the latest month that has bills
 
     # ---- providers (docs/API_V2.md §3-4) ----
 

@@ -24,6 +24,12 @@
       "member": 1,
       "time": "2026-11-16 14:11",
       "headline": "Butonul de interfețe e gata, iar aplicația e unită în main"
+    },
+    {
+      "n": 5,
+      "member": 2,
+      "time": "2026-11-16 15:37",
+      "headline": "Backend-ul vorbește românește, deschide facturile scanate ca PDF și a trecut toate cele 28 de verificări"
     }
   ],
   "members": {
@@ -65,12 +71,12 @@
     },
     "2": {
       "building": "Pago Bill Audit: înainte să apeși «Plătește», AI-ul citește factura, ți-o explică pe înțeles și prinde greșelile (index estimat, scumpiri ascunse, opțiuni plătite uitate). Ca un contabil de buzunar care se uită pe factură în locul tău.",
-      "works": "Backend-ul are toate endpoint-urile noi: scanare din 1–10 poze sau PDF-uri ca o singură factură, prezentarea lunară (+56% în octombrie față de septembrie) și istoricul pe furnizori cu 7 reguli de discrepanțe. Gemini citește corect facturile demo din PDF, din poză și chiar dintr-o factură tăiată în două poze. Trimiterea indexului real reface factura. Branch-ul colegului e unit în main; 27 de teste trec. Backend-ul și aplicația rulează pe laptop, cu cheia Gemini reală.",
-      "blocking": "Textele scrise de backend (cardurile de audit, discrepanțele, răspunsurile Gemini) sunt încă în engleză, iar aplicația e în română. Pe Wi-Fi-ul obișnuit telefonul nu vede laptopul, merge doar prin hotspot. Expo Go cere același cont Expo pe telefon și pe laptop.",
+      "works": "Tot ce scrie backend-ul e acum în română (carduri de audit, discrepanțe, răspunsuri Gemini, erori). Modelul mai rapid răspunde la întrebări în 1–6 secunde și trece singur pe alt model când e aglomerat. Răspunsurile explică TVA-ul corect și nu contrazic cardurile de audit. O poză care nu e factură sau e prea neclară e respinsă. Facturile scanate se pot redeschide: originalul, sau toate paginile lipite într-un PDF. Verificarea completă pe un server real cu Gemini: 28 din 28. Aplicația colegului e unită în main.",
+      "blocking": "Nimic blocant acum. Pe Wi-Fi-ul obișnuit telefonul nu vede laptopul, testăm prin hotspot; mai trebuie verificate câteva facturi reale.",
       "features": [
         {
           "name": "Claude Code",
-          "for": "a scris backend-ul Django, endpoint-urile noi, regulile de audit, testele și comiturile"
+          "for": "a scris backend-ul Django, traducerea în română, PDF-ul facturii, testele și comiturile"
         },
         {
           "name": "Căutare pe web",
@@ -97,7 +103,7 @@
           "for": "actualizează pagina Pulse la fiecare 2 ore"
         }
       ],
-      "next": "Test complet pe telefon cu cheia Gemini, apoi textele din backend în română, ca să se potrivească cu aplicația."
+      "next": "Așteptăm planul nou discutat cu colegul, apoi testăm din nou pe telefon cu facturi reale."
     }
   }
 }

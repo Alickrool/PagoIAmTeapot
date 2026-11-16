@@ -5,10 +5,15 @@ Deadline: **Tuesday 17 Nov, 13:00** (project hand-in), then demos 13:00–16:00.
 Ownership: **Frontend = `mobile/`**, **Backend = `backend/` + `shared/fixtures/`**. Contracts are shared:
 [API.md](API.md) (bills, ask, actions) and [API_V2.md](API_V2.md) (scan v2, dashboard, providers).
 
-## Status (Mon 16 Nov, after merging `frontend` into `main`)
+## Status (Mon 16 Nov ~13:45, after merging `feature/generations-ui` into `main`)
 
 **Works end to end now:** seeded 12-month demo data, rule-based audit, all screens, mock AI, scan cache,
-submit reading, line highlight boxes for text PDFs, fact-checked knowledge base.
+submit reading, line highlight boxes for text PDFs, fact-checked knowledge base, real-bill scanning with Gemini
+(1–10 pages), 3 generation modes in the app, all frontend P0 tasks.
+**Checked after the merge:** 27 backend tests, migrations, TypeScript, lint and the Android bundle all pass; the app's
+submit-reading call and types match the backend.
+**Biggest open gap:** the app UI is Romanian, but texts produced by the backend are English (audit cards,
+discrepancies, Gemini answers, AutoPay reasons, errors) → B14.
 **All API v2 endpoints are live** (scan v2, `/dashboard/`, `/providers/`, `/providers/{slug}/`). The app switches
 from its on-phone fallback (`mobile/src/api/derive.ts`) automatically; `derive.ts` stays as the offline fallback.
 
@@ -19,7 +24,7 @@ from its on-phone fallback (`mobile/src/api/derive.ts`) automatically; `derive.t
 | A1 | P0 | Run in Expo Go (mock + real backend on LAN) | ✅ |
 | A5 | P1 | History charts | ✅ Overview (donut, month compare, 12-month bars) + provider chart |
 | A7 | P0 | Scan screen: camera/gallery/PDF, up to 10 pages, staged loader | ✅ |
-| – | – | Overview + Providers tabs, provider history with discrepancies | ✅ (on local fallback until B10/B11) |
+| – | – | Overview + Providers tabs, provider history with discrepancies | ✅ on the real endpoints |
 | A6 | **P0** | **Submit-reading modal** on the "Submit real reading" action → `POST /bills/{id}/reading/ {index_new}` (backend ready, see API.md), then show the returned bill and `recalculation.difference` ("−248.22 RON"). This is demo step 2. Also polish Dispute/Offers/AutoPay result | ✅ modal + recalculated bill (517,06 → 268,84 lei, 🔴 → 🟡); AutoPay result on screen |
 | A3 | P0 | Pay button asks for confirmation when the audit is 🔴 ("This bill has an anomaly. Pay anyway?") | ✅ (works on web too) |
 | A4 | P0 | Ask UX: suggested-question chips ("Why is VAT so high?", "What is Contribuție CfD?", "Why did it go up?"), answer card scrolls into view; style `sources` chips + `suggested_actions` | ✅ (Gemini still answers in English) |
@@ -40,21 +45,23 @@ from its on-phone fallback (`mobile/src/api/derive.ts`) automatically; `derive.t
 | B11 | ✅ | `GET /providers/` and `/providers/{slug}/` live with all 7 discrepancy rules (incl. `index_gap`, `new_line_item`) and the API_V2 checklist tests | Done |
 | B12 | ✅ | Scan v2 live: `files` (1–10) + legacy `file`, limits, `{code, detail}` errors, multi-page in one Gemini request (text if all PDFs have text), bbox pages across files, cache by file order. Verified live with a bill split into 2 photos | Done |
 | B13 | P1 | `not_a_bill` / `unreadable` (422): add `is_bill` + `readable` to the extraction schema. (HEIC needs no conversion: Gemini accepts it, the backend already allows it) | open |
-| B7 | P0 | LAN hosting from both phones (`runserver 0.0.0.0:8000`, firewall), plan B `AI_MOCK=1` | open |
+| B7 | P0 | Demo network: the phone could not reach the laptop on Wi-Fi (client isolation), a phone hotspot works. Before the demo: test on the Pago office Wi-Fi; if it fails, hotspot + `runserver 0.0.0.0:8000`; plan B `AI_MOCK=1` / app mock mode | hotspot ✅, office Wi-Fi open |
 | B1 | P0 | `ai_check` passes on the demo PDF (text path) and a PNG photo (vision): all lines and totals exact, gemini-4-hydrogen ~10-14 s. Left: run on your real bills (redact name/address), then `prewarm_cache ../samples/*` | demo bills ✅, real bills open |
 | B3 | P0 | ~10 demo questions, tune `ASK_SYSTEM`. First answer (Engie VAT) is correct and well-sourced but takes ~7 s: try a faster model for Q&A only (`gemini-3.5-flash-lite` answered a ping in 0.8 s) | started |
 | B4 | P1 | Compare demo amounts with one of your real bills | open |
+| B14 | **P0** | **Romanian texts from the backend**, to match the Romanian UI: audit card titles/messages and action labels, discrepancy titles/messages, Gemini answers (`ASK_SYSTEM`), AutoPay reasons, reading/scan error `detail`s, offers disclaimer. Code, comments and docs stay English. Needs the team's OK (the original rule was "everything in English") | waiting for decision |
+| B15 | – | Null text fields from Gemini stored as "" (fix from the frontend side during the merge) + regression test | ✅ |
 | B8 | P2 | Streaming `/ask` | open |
 
 ## Timeline
 
 | When | Frontend | Backend |
 |---|---|---|
-| Mon until 18:00 | A6, A3, A4 | B12, B10, B11 |
-| Mon 18:00–20:00 | A2 polish, A10 as endpoints land | B13, B7 |
-| **Mon 20:00** | **Integration checkpoint:** from the phone on the real backend: Overview + Providers from real endpoints, scan a 2-page bill, submit reading on PPC | |
-| Mon evening | A8 | B1, B3 with the Gemini key |
-| Tue 08:00–10:00 | Polish | Pre-warm cache with every demo file, B4 |
+| ~~Mon until 14:00~~ | ✅ A1–A7, A9–A11 | ✅ B2, B5, B6, B10–B12 |
+| Mon 14:00–18:00 | A8 (original PDF with highlight boxes); scan 2–3 real bills from the phone and report what breaks | B14 (if agreed), B3 (Q&A quality/speed), B13 |
+| **Mon 20:00** | **Integration checkpoint:** from the phone on the real backend: Overview + Providers, scan a 2-page real bill, submit reading on PPC, ask a question in each generation mode | |
+| Mon evening | Polish what the checkpoint found | B1 on real bills, B4 |
+| Tue 08:00–10:00 | Test on the Pago office Wi-Fi (B7) together; polish | Pre-warm cache with every demo file |
 | **Tue 10:00** | **Feature freeze.** Only bug fixes from here | |
 | Tue 11:00–12:30 | Rehearse the 3-minute demo together twice, the second run fully from cache | |
 | Tue 12:30 | Final commit, push, hand in | |
@@ -63,6 +70,7 @@ from its on-phone fallback (`mobile/src/api/derive.ts`) automatically; `derive.t
 
 1. **Overview tab** – "Today Pago shows a list and a Pay button. We added an auditor." Donut for October,
    +56% vs September, 🔴 overall. Badges: 🔴 PPC, 🟡 Engie, 🟡 Digi, 🟢 water.
+   Tap the mode pill: same data as Gen Z / Millennials / Senior ("it speaks every customer's language").
 2. **PPC 🔴** – "Billed 350 kWh on an *estimated* index vs your usual 177. Don't pay yet." → *Submit real reading*
    (index + 182) → 🔴 disappears, total drops by ~248 RON; what's left is 🟡 "price above market" → *Compare offers*.
 3. **Engie 🟡** (electricity, parents' flat) – "+42% but consumption only +8%: the fixed-price offer expired,

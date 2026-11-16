@@ -284,6 +284,23 @@ class DemoScenarioTests(TestCase):
         r = self._post_files(("bill.heic", b"heic bytes", "application/octet-stream"), field="file")
         self.assertEqual(r.status_code, 201)
 
+    def test_scan_saves_null_text_fields_from_model(self):
+        """Gemini returns null for text it can't read (e.g. VAT line without unit); text columns are NOT NULL."""
+        from unittest import mock as um
+
+        from django.test import override_settings
+
+        from bills.services.mock import extraction
+
+        e = extraction()
+        e = e.model_copy(update={"customer_code": None, "meter_series": None, "line_items": [
+            li.model_copy(update={"unit": None}) for li in e.line_items]})
+        with override_settings(AI_MOCK=False), um.patch("bills.services.ai.extract_bill_files", return_value=e):
+            r = self._post_files(("vat.jpg", b"\xff\xd8 vat", "image/jpeg"))
+        self.assertEqual(r.status_code, 201)
+        self.assertEqual({li["unit"] for li in r.json()["line_items"]}, {""})
+        self.assertEqual(r.json()["customer_code"], "")
+
     def test_scan_unreadable_is_422(self):
         from unittest import mock as um
 

@@ -7,7 +7,7 @@ from rest_framework.response import Response
 from bills.models import AutoPayRule, Bill
 from bills.serializers import (AskSerializer, AutoPayRuleSerializer, BillDetailSerializer, BillListSerializer,
                                DisputeSerializer, LineItemSerializer, PaySerializer, ReadingSerializer)
-from bills.services import ai, market, mock
+from bills.services import ai, market, mock, pages
 from bills.services.reading import ReadingError, submit_reading
 from bills.services import scan as scan_service
 from bills.services.audit import audit_bill
@@ -41,16 +41,19 @@ class BillViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, viewsets.Gen
 
     @action(detail=False, methods=["post"])
     def scan(self, request):
-        """Upload a photo/PDF of a bill -> extracted, audited bill."""
-        upload = request.FILES.get("file")
-        if not upload:
-            return Response({"detail": "Send the bill as multipart field 'file'."}, status=400)
-        if upload.content_type not in ALLOWED_TYPES:
-            return Response({"detail": f"Unsupported type {upload.content_type}."}, status=400)
+        """Upload the pages of ONE bill (photos and/or PDFs) -> extracted, audited bill. docs/API_V2.md §1"""
+        uploads = request.FILES.getlist("files") or request.FILES.getlist("file")
+        for u in uploads:
+            if u.content_type not in ALLOWED_TYPES:
+                return Response({"code": "unsupported_type", "detail": f"Tip nesuportat: {u.name} ({u.content_type})."}, status=400)
         try:
-            bill, created = scan_service.scan(upload.read(), upload.content_type, upload.name)
+            data, content_type, name = pages.combine([(u.read(), u.content_type, u.name) for u in uploads])
+        except pages.PagesError as e:
+            return Response({"code": e.code, "detail": e.detail}, status=e.status)
+        try:
+            bill, created = scan_service.scan(data, content_type, name)
         except ValueError as e:
-            return Response({"detail": str(e)}, status=422)
+            return Response({"code": "unreadable", "detail": str(e)}, status=422)
         return Response(BillDetailSerializer(bill, context={"request": request}).data, status=201 if created else 200)
 
     @action(detail=True, methods=["post"])

@@ -198,3 +198,47 @@ class DemoScenarioTests(TestCase):
         self.c.post("/api/autopay-rules/", {"provider": "PPC", "max_amount": "600"}, format="json")
         r = self.c.post(f"/api/bills/{bill['id']}/pay/", {"mode": "auto"}, format="json").json()
         self.assertEqual(r["status"], "blocked")
+
+
+class MultiPageScanTests(TestCase):
+    """docs/API_V2.md §1: several photos/PDFs of ONE bill are combined into one scan."""
+
+    def setUp(self):
+        self.c = APIClient()
+
+    @staticmethod
+    def _png(color: str) -> bytes:
+        from PIL import Image
+
+        out = io.BytesIO()
+        Image.new("RGB", (60, 80), color).save(out, format="PNG")
+        return out.getvalue()
+
+    def test_combine_images_into_one_pdf(self):
+        from bills.services import pages
+
+        data, content_type, name = pages.combine([(self._png("white"), "image/png", "p1.png"), (self._png("gray"), "image/png", "p2.png")])
+        self.assertEqual(content_type, "application/pdf")
+        from pypdf import PdfReader
+
+        self.assertEqual(len(PdfReader(io.BytesIO(data)).pages), 2)
+        self.assertTrue(name.endswith(".pdf"))
+
+    def test_scan_accepts_files_field(self):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        from django.test import override_settings
+
+        files = [SimpleUploadedFile(f"p{i}.png", self._png(c), content_type="image/png") for i, c in enumerate(["white", "gray"])]
+        with override_settings(AI_MOCK=True):
+            r = self.c.post("/api/bills/scan/", {"files": files}, format="multipart")
+        self.assertEqual(r.status_code, 201)
+        self.assertTrue(r.json()["line_items"])
+
+    def test_scan_errors_have_code(self):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+
+        r = self.c.post("/api/bills/scan/", {}, format="multipart")
+        self.assertEqual((r.status_code, r.json()["code"]), (400, "no_files"))
+        many = [SimpleUploadedFile(f"p{i}.png", self._png("white"), content_type="image/png") for i in range(11)]
+        r = self.c.post("/api/bills/scan/", {"files": many}, format="multipart")
+        self.assertEqual((r.status_code, r.json()["code"]), (400, "too_many_files"))

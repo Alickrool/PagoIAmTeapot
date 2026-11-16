@@ -49,6 +49,13 @@ def extract_cached(data: bytes, media_type: str, filename: str = "") -> tuple[ai
     return extracted, method
 
 
+def _blank_nulls(model, values: dict) -> dict:
+    """The model may return null for text it can't read (e.g. a VAT line has no unit); text columns are NOT NULL."""
+    text_fields = {f.name for f in model._meta.get_fields() if getattr(f, "get_internal_type", None)
+                   and f.get_internal_type() in ("CharField", "TextField", "SlugField")}
+    return {k: ("" if v is None and k in text_fields else v) for k, v in values.items()}
+
+
 def scan(data: bytes, media_type: str, filename: str) -> tuple[Bill, bool]:
     """Returns (bill, created). Re-uploading the same file returns the bill created the first time."""
     h = file_hash(data)
@@ -65,11 +72,11 @@ def scan(data: bytes, media_type: str, filename: str) -> tuple[Bill, bool]:
         )
 
     with transaction.atomic():
-        fields = extracted.model_dump(exclude={"line_items"})
+        fields = _blank_nulls(Bill, extracted.model_dump(exclude={"line_items"}))
         fields["provider"] = providers.normalize(fields["provider"])
         bill = Bill(**fields, source=Bill.Source.UPLOAD, file_hash=h, raw_extraction=extracted.model_dump(mode="json"))
         bill.file.save(filename or "bill", ContentFile(data), save=False)
         bill.save()
         for i, li in enumerate(extracted.line_items):
-            LineItem.objects.create(bill=bill, order=i, bbox=boxes.get(i), **li.model_dump())
+            LineItem.objects.create(bill=bill, order=i, bbox=boxes.get(i), **_blank_nulls(LineItem, li.model_dump()))
     return bill, True

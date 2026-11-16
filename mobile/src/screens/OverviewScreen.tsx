@@ -245,7 +245,7 @@ function BudgetCard({ data, budget, switcher }: { data: DashboardResponse; budge
       </Text>
       <View style={{ width: 200, height: 200 }}>
         <Svg width={200} height={200} viewBox="0 0 200 200" accessibilityLabel={`${money(total)} din ${money(budget)}`}>
-          <G rotation={-90} origin="100, 100">
+          <G transform="rotate(-90 100 100)">
             <Circle cx={100} cy={100} r={r} stroke={t.surface2} strokeWidth={18} fill="none" />
             <Circle cx={100} cy={100} r={r} stroke={t.accent} strokeWidth={18} fill="none" strokeLinecap="round" strokeDasharray={`${used * circ} ${circ}`} />
             {overflow > 0 && (

@@ -130,6 +130,11 @@ class ExtractedLineItem(BaseModel):
 
 
 class ExtractedBill(BaseModel):
+    is_bill: bool = Field(default=True, description=(
+        "false if the files are NOT a household utility/telecom/services bill (e.g. a shop receipt, a selfie, "
+        "a random document). Then fill the other fields with placeholders and no line items."))
+    readable: bool = Field(default=True, description=(
+        "false if it is a bill but too blurry, cut off or dark to read the total and the line amounts reliably"))
     provider: str = Field(description="Supplier brand, e.g. Engie, PPC, Hidroelectrica, E.ON, Digi, Orange")
     category: Literal["electricity", "gas", "telecom", "water", "other"]
     customer_code: str | None = None
@@ -153,6 +158,7 @@ class ExtractedBill(BaseModel):
 EXTRACTION_PROMPT = """You are reading a Romanian utility or telecom bill (factură).
 Extract every billed line item exactly as printed, with amounts in RON.
 Rules:
+- First decide is_bill and readable. Never guess amounts from an unreadable photo: set readable=false instead.
 - Do not invent values. Use null when a field is not printed.
 - index_type: look for words like "estimat", "convenție", "autocitire", "citit de distribuitor".
 - VAT (TVA) is its own line item with kind "tax" and code "vat".
@@ -199,15 +205,25 @@ ASK_SYSTEM = """You are the bill assistant inside Pago, a Romanian bill-payment 
 The user is looking at one bill and asks about it, sometimes after tapping a specific line.
 
 How to answer:
-- answer: ROMANIAN (the app is in Romanian), 2-4 short sentences, plain everyday language, no markdown.
-  Write amounts the Romanian way: "352,53 lei", "0,88 lei/kWh", "+42,2%".
+- answer: ROMANIAN (the app is in Romanian), 2-4 short sentences, plain everyday language, correct grammar,
+  no markdown. Answer exactly what was asked; don't add facts the question didn't ask about.
+- Numbers the Romanian way: money always with 2 decimals ("352,53 lei"); everything else without trailing zeros
+  ("350 kWh", "0,72 lei/kWh", "0,000144 lei/kWh", "+42,2%").
 - Always tie the answer to the user's actual numbers (amounts, % changes, prices per kWh).
+- How a bill adds up: every line amount is WITHOUT VAT; VAT = vat_rate x the sum of all the other lines;
+  total = that sum + VAT. So VAT is never "a percentage of the total". Use the numbers in <bill_math>.
+- The bill's "audit" is the app's verdict, shown to the user as cards. Your advice must match it, never contradict
+  it: e.g. if there is an "estimated_index" anomaly, the advice is to send the real meter reading in the app before
+  paying, so the bill is recalculated.
+- Write institution names correctly: ANRE, ANAF, ANPC.
 - Explain real-world causes (law changes, ANRE tariffs, price caps ending) ONLY using the knowledge base below.
   If the knowledge base does not cover it, say what the bill shows and that you are not sure about the cause.
 - Never invent legislation, dates, or tariffs. Don't show the bracketed source tags in the answer text.
-- sources: short Romanian labels for what the answer relies on, e.g. "Factura ta", "Ultimele 12 facturi",
-  "Legea 141/2025 (TVA 21%)", "Ordin ANRE 69/2025". Use the law/order numbers from the knowledge base, never site
-  names. Only items you actually used. 1-3 items.
+- sources: short Romanian labels for what the answer relies on, 1-3 items, only ones you used:
+  "Factura ta", "Ultimele 12 facturi", a law/order number from the knowledge base ("Legea 141/2025 (TVA 21%)",
+  "Ordin ANRE 69/2025", "OUG 6/2025"), or, when the fact has no law/order number, a short topic label such as
+  "Tarife reglementate 2026" or "Drepturile consumatorului (ANRE)". NEVER a website or domain name (no ".ro"),
+  never the word "secondary".
 - suggested_actions: 0-2 actions the user can take right now, only if they really help with this question;
   label in Romanian, e.g. "Compară ofertele", "Trimite indexul real", "Contestă factura".
 
@@ -227,10 +243,24 @@ class AskAnswer(BaseModel):
     suggested_actions: list[SuggestedAction]
 
 
+def bill_math(bill: dict) -> str:
+    """Spell out how the bill adds up, so the model never computes VAT on the wrong base."""
+    lines = bill.get("line_items") or []
+    tax = sum(float(li["amount"]) for li in lines if li.get("kind") == "tax")
+    net = sum(float(li["amount"]) for li in lines if li.get("kind") != "tax")
+    rate = bill.get("vat_rate")
+    out = [f"Sum of all lines without VAT: {net:.2f} lei"]
+    if tax:
+        out.append(f"VAT{f' ({float(rate):g}%)' if rate else ''} = {tax:.2f} lei, computed on {net:.2f} lei")
+    out.append(f"Total to pay (VAT included): {float(bill.get('total') or 0):.2f} lei")
+    return "\n".join(out)
+
+
 def answer_question(bill_context: dict, question: str, line_item: dict | None) -> AskAnswer:
     focus = f"\nThe user tapped this line: {json.dumps(line_item, ensure_ascii=False)}" if line_item else ""
     user = (
-        f"<bill>\n{json.dumps(bill_context, ensure_ascii=False, default=str)}\n</bill>{focus}\n\nQuestion: {question}"
+        f"<bill>\n{json.dumps(bill_context, ensure_ascii=False, default=str)}\n</bill>\n"
+        f"<bill_math>\n{bill_math(bill_context)}\n</bill_math>{focus}\n\nQuestion: {question}"
     )
     result = _generate([user], AskAnswer, system=ASK_SYSTEM.format(kb=knowledge_base()))
     return result or AskAnswer(answer="Îmi pare rău, nu pot răspunde la asta.", sources=[], suggested_actions=[])

@@ -377,6 +377,21 @@ class DemoScenarioTests(TestCase):
         self.assertEqual({li["unit"] for li in r.json()["line_items"]}, {""})
         self.assertEqual(r.json()["customer_code"], "")
 
+    def test_scan_not_a_bill_and_unreadable_flags(self):
+        from unittest import mock as um
+
+        from django.test import override_settings
+
+        from bills.services.mock import extraction
+
+        for flags, code, name in [({"is_bill": False}, "not_a_bill", "cat.jpg"),
+                                  ({"readable": False}, "unreadable", "blurry2.jpg")]:
+            e = extraction().model_copy(update=flags)
+            with override_settings(AI_MOCK=False), um.patch("bills.services.ai.extract_bill_files", return_value=e):
+                r = self._post_files((name, name.encode(), "image/jpeg"))
+            self.assertEqual((r.status_code, r.json()["code"]), (422, code))
+        self.assertFalse(Bill.objects.filter(source="upload").exists())  # nothing saved
+
     def test_scan_unreadable_is_422(self):
         from unittest import mock as um
 

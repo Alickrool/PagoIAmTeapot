@@ -129,6 +129,10 @@ def scan(files: list[Upload]) -> tuple[Bill, bool]:
         log.exception("Gemini error while scanning")
         raise ScanError("ai_error", "Serviciul AI a răspuns cu o eroare. Încearcă din nou.", 502)
     log.info("Extracted %s via %s", [f.name for f in files], method)
+    if not extracted.is_bill:
+        raise ScanError("not_a_bill", "Nu pare o factură de utilități sau telecom. Fotografiază factura, nu alt document.", 422)
+    if not extracted.readable:
+        raise ScanError("unreadable", "Nu am putut citi factura. Încearcă o poză mai clară, bine luminată.", 422)
 
     boxes = pdf_text.find_line_bboxes(
         [(f.data, f.mime) for f in files],
@@ -136,7 +140,7 @@ def scan(files: list[Upload]) -> tuple[Bill, bool]:
     )
 
     with transaction.atomic():
-        fields = _blank_nulls(Bill, extracted.model_dump(exclude={"line_items"}))
+        fields = _blank_nulls(Bill, extracted.model_dump(exclude={"line_items", "is_bill", "readable"}))
         fields["provider"] = providers.normalize(fields["provider"])
         bill = Bill(**fields, source=Bill.Source.UPLOAD, file_hash=h, raw_extraction=extracted.model_dump(mode="json"))
         first = files[0]

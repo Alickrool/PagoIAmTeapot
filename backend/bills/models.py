@@ -90,7 +90,7 @@ class LineItem(models.Model):
     kind = models.CharField(max_length=16, choices=Kind.choices, default=Kind.OTHER)
     quantity = models.FloatField(null=True, blank=True)
     unit = models.CharField(max_length=16, blank=True)
-    unit_price = models.DecimalField(max_digits=10, decimal_places=4, null=True, blank=True)
+    unit_price = models.DecimalField(max_digits=14, decimal_places=6, null=True, blank=True)  # CfD is 0.000144 lei/kWh
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     # Optional highlight box on the original document, normalized 0..1: {page, x, y, w, h}
     bbox = models.JSONField(null=True, blank=True)

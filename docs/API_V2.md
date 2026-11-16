@@ -255,7 +255,7 @@ Backend details (same as `derive.ts` where both compute a rule):
 ## Checklist for the backend
 
 - [x] `scan`: accept `files` (repeated) + keep `file`; error body `{code, detail}`
-      (`not_a_bill` comes with B13; a model failure is `unreadable` today)
+      (`not_a_bill` / `unreadable` come from the model's `is_bill` / `readable` flags; nothing is saved)
 - [x] `GET /dashboard/`
 - [x] `GET /providers/`, `GET /providers/{slug}/` with the discrepancy rules
 - [x] tests: PPC October → `consumption_jump` + `estimated_index` critical; Digi → `new_line_item`;

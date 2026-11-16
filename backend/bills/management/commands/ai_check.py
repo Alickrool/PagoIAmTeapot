@@ -41,6 +41,7 @@ class Command(BaseCommand):
         except Exception as e:  # show provider errors (bad key, unknown model, quota) plainly
             raise CommandError(f"Extraction failed: {type(e).__name__}: {e}")
         self.stdout.write(self.style.SUCCESS(f"\nExtraction of {len(uploads)} file(s) via {method} in {time.monotonic() - t:.1f}s"))
+        self.stdout.write(f"  is_bill={bill.is_bill} readable={bill.readable}")
         self.stdout.write(f"  {bill.provider} / {bill.category} / {bill.period_start}..{bill.period_end} / "
                           f"total {bill.total} / {bill.consumption} {bill.consumption_unit} / index {bill.index_type}")
         for li in bill.line_items:

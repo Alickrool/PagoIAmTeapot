@@ -51,6 +51,7 @@ class Bill(models.Model):
     status = models.CharField(max_length=16, choices=Status.choices, default=Status.UNPAID)
     source = models.CharField(max_length=16, choices=Source.choices, default=Source.SEED)
     file = models.FileField(upload_to="bills/", null=True, blank=True)
+    file_hash = models.CharField(max_length=64, blank=True, db_index=True)
     raw_extraction = models.JSONField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -99,6 +100,18 @@ class LineItem(models.Model):
 
     def __str__(self):
         return f"{self.label}: {self.amount}"
+
+
+class ExtractionCache(models.Model):
+    """sha256(file) -> Claude extraction. Survives seed_demo, so pre-warmed demo bills scan instantly."""
+
+    file_hash = models.CharField(max_length=64, unique=True)
+    filename = models.CharField(max_length=255, blank=True)
+    data = models.JSONField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.filename or self.file_hash[:12]}"
 
 
 class AutoPayRule(models.Model):

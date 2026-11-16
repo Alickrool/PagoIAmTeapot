@@ -53,11 +53,12 @@ export default function BillScreen({ route, navigation }: ScreenProps<'Bill'>) {
     }
   };
 
-  const onAction = (anomaly: Anomaly, action: AnomalyAction) => {
+  // anomaly is undefined when the action comes from an AI answer.
+  const onAction = (action: AnomalyAction, anomaly?: Anomaly) => {
     switch (action.type) {
       case 'dispute':
       case 'cancel_service':
-        return navigation.navigate('Dispute', { billId: bill.id, anomalyId: anomaly.id });
+        return navigation.navigate('Dispute', { billId: bill.id, anomalyId: anomaly?.id });
       case 'switch_supplier':
         return navigation.navigate('Offers', { billId: bill.id });
       case 'autopay_rule':
@@ -97,7 +98,7 @@ export default function BillScreen({ route, navigation }: ScreenProps<'Bill'>) {
         </View>
 
         {bill.audit.anomalies.map((a) => (
-          <AnomalyCard key={a.id} anomaly={a} onAction={(action) => onAction(a, action)} />
+          <AnomalyCard key={a.id} anomaly={a} onAction={(action) => onAction(action, a)} />
         ))}
 
         {/* TODO(frontend): history bar chart from bill.history (total + consumption), estimated months in red */}
@@ -117,6 +118,18 @@ export default function BillScreen({ route, navigation }: ScreenProps<'Bill'>) {
               <>
                 <Text style={styles.answerQ}>{answer!.line_item ? answer!.line_item.label : answer!.question}</Text>
                 <Text style={styles.answerText}>{answer!.answer}</Text>
+                {answer!.sources.length > 0 && (
+                  <View style={styles.chips}>
+                    {answer!.sources.map((s) => (
+                      <Text key={s} style={styles.chip}>
+                        📎 {s}
+                      </Text>
+                    ))}
+                  </View>
+                )}
+                {answer!.suggested_actions.map((a) => (
+                  <Button key={a.type} title={a.label} onPress={() => onAction(a)} variant="secondary" style={{ height: 40 }} />
+                ))}
               </>
             )}
           </View>
@@ -172,6 +185,8 @@ const styles = StyleSheet.create({
   answer: { backgroundColor: '#EEEAFE', borderRadius: 14, padding: 16, gap: 6 },
   answerQ: { fontWeight: '700', color: colors.primary },
   answerText: { color: colors.text, lineHeight: 20 },
+  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+  chip: { fontSize: 12, color: colors.primary, backgroundColor: colors.card, borderRadius: 999, paddingHorizontal: 8, paddingVertical: 3, overflow: 'hidden' },
   askBar: { flexDirection: 'row', gap: 8, padding: 12, backgroundColor: colors.card, borderTopWidth: 1, borderColor: colors.border },
   input: { flex: 1, height: 48, borderRadius: 12, backgroundColor: colors.bg, paddingHorizontal: 12 },
 });

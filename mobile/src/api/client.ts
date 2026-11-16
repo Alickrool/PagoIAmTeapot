@@ -54,7 +54,16 @@ export const api = {
 
   ask: (billId: number, body: { question?: string; line_item_id?: number }): Promise<AskResponse> =>
     MOCK
-      ? delay({ question: body.question ?? '', line_item: null, answer: '[mock] AI answer goes here.' }, 800)
+      ? delay(
+          {
+            question: body.question ?? '',
+            line_item: null,
+            answer: '[mock] VAT is 21% of everything else on the bill, so when the energy price goes up, VAT goes up too.',
+            sources: ['Your bill', 'Law 141/2025 (VAT 21%)'],
+            suggested_actions: [{ type: 'switch_supplier' as const, label: 'Compare offers' }],
+          },
+          800,
+        )
       : post(`/bills/${billId}/ask/`, body),
 
   dispute: (billId: number, anomalyId?: string): Promise<DisputeLetter> =>

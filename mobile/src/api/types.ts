@@ -93,6 +93,8 @@ export interface AskResponse {
   question: string;
   line_item: LineItem | null;
   answer: string;
+  sources: string[]; // e.g. "Your bill", "Law 141/2025 (VAT 21%)" -> render as chips
+  suggested_actions: AnomalyAction[]; // never "ask"
 }
 
 export interface DisputeLetter {

@@ -31,12 +31,6 @@ def _file_block(data: bytes, media_type: str) -> dict:
     return {"type": kind, "source": {"type": "base64", "media_type": media_type, "data": b64}}
 
 
-def _text(response) -> str:
-    if response.stop_reason == "refusal":
-        return "Sorry, I can't answer that one."
-    return "".join(b.text for b in response.content if b.type == "text").strip()
-
-
 # ---------- 1. extraction ----------
 
 
@@ -105,25 +99,37 @@ ASK_SYSTEM = """You are the bill assistant inside Pago, a Romanian bill-payment 
 The user is looking at one bill and asks about it, sometimes after tapping a specific line.
 
 How to answer:
-- Answer in English, 2-4 short sentences, plain language, no markdown headings.
+- answer: English, 2-4 short sentences, plain language, no markdown.
 - Always tie the answer to the user's actual numbers (amounts, % changes, prices per kWh).
 - Explain real-world causes (law changes, ANRE tariffs, price caps ending) ONLY using the knowledge base below.
   If the knowledge base does not cover it, say what the bill shows and that you are not sure about the cause.
-- Never invent legislation, dates, or tariffs.
-- If there is something the user can do (submit a reading, contest, cancel an option, switch supplier), end with one
-  short suggestion.
+- Never invent legislation, dates, or tariffs. Do not repeat [VERIFY] markers to the user.
+- sources: short labels for what the answer relies on, e.g. "Your bill", "Your last 12 bills",
+  "Law 141/2025 (VAT 21%)", "ANRE distribution tariffs". Only knowledge-base items you actually used. 1-3 items.
+- suggested_actions: 0-2 actions the user can take right now, only if they really help with this question.
 
 <knowledge_base>
 {kb}
 </knowledge_base>"""
 
 
-def answer_question(bill_context: dict, question: str, line_item: dict | None) -> str:
+class SuggestedAction(BaseModel):
+    type: Literal["submit_reading", "dispute", "switch_supplier", "cancel_service", "autopay_rule"]
+    label: str = Field(description="Button text, max 4 words")
+
+
+class AskAnswer(BaseModel):
+    answer: str
+    sources: list[str]
+    suggested_actions: list[SuggestedAction]
+
+
+def answer_question(bill_context: dict, question: str, line_item: dict | None) -> AskAnswer:
     focus = f"\nThe user tapped this line: {json.dumps(line_item, ensure_ascii=False)}" if line_item else ""
     user = (
         f"<bill>\n{json.dumps(bill_context, ensure_ascii=False, default=str)}\n</bill>{focus}\n\nQuestion: {question}"
     )
-    response = client().beta.messages.create(
+    response = client().beta.messages.parse(
         model=settings.ANTHROPIC_MODEL,
         max_tokens=4000,
         betas=["server-side-fallback-2026-07-01"],
@@ -132,8 +138,11 @@ def answer_question(bill_context: dict, question: str, line_item: dict | None) -
         cache_control={"type": "ephemeral"},
         system=ASK_SYSTEM.format(kb=knowledge_base()),
         messages=[{"role": "user", "content": user}],
+        output_format=AskAnswer,
     )
-    return _text(response)
+    if response.stop_reason == "refusal" or response.parsed_output is None:
+        return AskAnswer(answer="Sorry, I can't answer that one.", sources=[], suggested_actions=[])
+    return response.parsed_output
 
 
 # ---------- 3. dispute letter ----------

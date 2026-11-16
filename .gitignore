@@ -6,6 +6,10 @@ backend/db.sqlite3
 backend/media/
 backend/.env
 
+# Real bills contain names, addresses, customer codes: never commit them
+samples/*
+!samples/README.md
+
 # OS / editors
 .DS_Store
 Thumbs.db

@@ -1,14 +1,14 @@
 from django.conf import settings
-from django.db import transaction
 from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
 from rest_framework.response import Response
 
-from bills.models import AutoPayRule, Bill, LineItem
+from bills.models import AutoPayRule, Bill
 from bills.serializers import (AskSerializer, AutoPayRuleSerializer, BillDetailSerializer, BillListSerializer,
                                DisputeSerializer, LineItemSerializer, PaySerializer)
-from bills.services import ai, market, mock, providers
+from bills.services import ai, market, mock
+from bills.services import scan as scan_service
 from bills.services.audit import audit_bill
 
 ALLOWED_TYPES = {"image/jpeg", "image/png", "image/webp", "image/gif", "application/pdf"}
@@ -46,21 +46,11 @@ class BillViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, viewsets.Gen
             return Response({"detail": "Send the bill as multipart field 'file'."}, status=400)
         if upload.content_type not in ALLOWED_TYPES:
             return Response({"detail": f"Unsupported type {upload.content_type}."}, status=400)
-        data = upload.read()
         try:
-            extracted = mock.extraction() if settings.AI_MOCK else ai.extract_bill(data, upload.content_type)
+            bill, created = scan_service.scan(upload.read(), upload.content_type, upload.name)
         except ValueError as e:
             return Response({"detail": str(e)}, status=422)
-
-        with transaction.atomic():
-            fields = extracted.model_dump(exclude={"line_items"})
-            fields["provider"] = providers.normalize(fields["provider"])
-            bill = Bill.objects.create(**fields, source=Bill.Source.UPLOAD, raw_extraction=extracted.model_dump(mode="json"))
-            upload.seek(0)
-            bill.file.save(upload.name, upload, save=True)
-            for i, li in enumerate(extracted.line_items):
-                LineItem.objects.create(bill=bill, order=i, **li.model_dump())
-        return Response(BillDetailSerializer(bill, context={"request": request}).data, status=201)
+        return Response(BillDetailSerializer(bill, context={"request": request}).data, status=201 if created else 200)
 
     @action(detail=True, methods=["post"])
     def ask(self, request, pk=None):
@@ -76,8 +66,8 @@ class BillViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, viewsets.Gen
             line_item = LineItemSerializer(li).data
         question = s.validated_data.get("question") or "What is this charge and why is it this amount?"
         ctx = _bill_context(bill, request)
-        answer = mock.answer(ctx, question, line_item) if settings.AI_MOCK else ai.answer_question(ctx, question, line_item)
-        return Response({"question": question, "line_item": line_item, "answer": answer})
+        result = mock.answer(ctx, question, line_item) if settings.AI_MOCK else ai.answer_question(ctx, question, line_item)
+        return Response({"question": question, "line_item": line_item, **result.model_dump()})
 
     @action(detail=True, methods=["post"])
     def dispute(self, request, pk=None):

@@ -8,7 +8,7 @@ import json
 
 from django.conf import settings
 
-from bills.services.ai import DisputeLetter, ExtractedBill
+from bills.services.ai import AskAnswer, DisputeLetter, ExtractedBill
 
 
 def extraction() -> ExtractedBill:
@@ -16,14 +16,20 @@ def extraction() -> ExtractedBill:
     return ExtractedBill.model_validate(data)
 
 
-def answer(bill: dict, question: str, line_item: dict | None) -> str:
+def answer(bill: dict, question: str, line_item: dict | None) -> AskAnswer:
     q = (question or "").lower()
     if line_item:
-        return (f"[mock] \"{line_item['label']}\" is {line_item['amount']} RON on this bill. "
+        text = (f"[mock] \"{line_item['label']}\" is {line_item['amount']} RON on this bill. "
                 f"The real answer will explain what it is and why it changed.")
+        return AskAnswer(answer=text, sources=["Your bill"], suggested_actions=[])
     if "vat" in q or "tva" in q:
-        return "[mock] VAT is 21% of everything else on the bill, so when the energy price goes up, VAT goes up too."
-    return f"[mock] Your {bill['provider']} bill is {bill['total']} RON. Real AI answer goes here."
+        return AskAnswer(
+            answer="[mock] VAT is 21% of everything else on the bill, so when the energy price goes up, VAT goes up too.",
+            sources=["Your bill", "Law 141/2025 (VAT 21%)"],
+            suggested_actions=[{"type": "switch_supplier", "label": "Compare offers"}],
+        )
+    return AskAnswer(answer=f"[mock] Your {bill['provider']} bill is {bill['total']} RON. Real AI answer goes here.",
+                     sources=["Your bill"], suggested_actions=[{"type": "dispute", "label": "Contest this bill"}])
 
 
 def dispute(bill: dict, anomaly: dict | None) -> DisputeLetter:

@@ -45,6 +45,37 @@ class DemoScenarioTests(TestCase):
     def test_home_lists_one_bill_per_provider(self):
         self.assertEqual(len(self.c.get("/api/bills/").json()), 4)
 
+    def test_scan_uses_cache_and_dedupes(self):
+        import json
+
+        from django.conf import settings
+        from django.core.files.uploadedfile import SimpleUploadedFile
+
+        from bills.models import ExtractionCache
+        from bills.services.scan import file_hash
+
+        content = b"%PDF-1.4 fake engie bill"
+        sample = json.loads((settings.FIXTURES_DIR / "extraction_sample.json").read_text(encoding="utf-8"))
+        sample["provider"] = "ENGIE Romania S.A."
+        ExtractionCache.objects.create(file_hash=file_hash(content), data=sample)
+
+        def upload():
+            f = SimpleUploadedFile("bill.pdf", content, content_type="application/pdf")
+            return self.c.post("/api/bills/scan/", {"file": f}, format="multipart")
+
+        first, second = upload(), upload()
+        self.assertEqual(first.status_code, 201)
+        self.assertEqual(first.json()["provider"], "Engie")  # from cache, normalized
+        self.assertEqual(second.status_code, 200)
+        self.assertEqual(second.json()["id"], first.json()["id"])
+
+    def test_ask_shape(self):
+        bill = self._current("Engie")
+        r = self.c.post(f"/api/bills/{bill['id']}/ask/", {"question": "Why is VAT so high?"}, format="json").json()
+        self.assertTrue(r["answer"])
+        self.assertIsInstance(r["sources"], list)
+        self.assertIsInstance(r["suggested_actions"], list)
+
     def test_autopay_blocks_estimated(self):
         bill = self._current("PPC")
         self.c.post("/api/autopay-rules/", {"provider": "PPC", "max_amount": "600"}, format="json")

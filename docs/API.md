@@ -12,8 +12,8 @@ Real example responses: `shared/fixtures/*.json` (regenerate with `python manage
 |---|---|---|---|
 | GET | `/bills/` | – | `BillSummary[]`, latest bill per provider (`?all=1` for every bill) |
 | GET | `/bills/{id}/` | – | `BillDetail` (line items + audit + 12-month history) |
-| POST | `/bills/scan/` | multipart `file` (jpeg/png/webp/pdf) | `BillDetail` (201) – AI extraction, then audit |
-| POST | `/bills/{id}/ask/` | `{question?, line_item_id?}` (at least one) | `{question, line_item, answer}` |
+| POST | `/bills/scan/` | multipart `file` (jpeg/png/webp/pdf) | `BillDetail` – 201 new bill; 200 if the same file was already scanned (returns that bill) |
+| POST | `/bills/{id}/ask/` | `{question?, line_item_id?}` (at least one) | `{question, line_item, answer, sources[], suggested_actions[]}` |
 | POST | `/bills/{id}/dispute/` | `{anomaly_id?}` | `{to, subject, body}` – complaint letter in Romanian |
 | GET | `/bills/{id}/offers/` | – | `{current_all_in_price, unit, offers[], disclaimer}` |
 | POST | `/bills/{id}/pay/` | `{mode: "manual" \| "auto"}` | `{status: "paid" \| "blocked", reasons[]}` |
@@ -46,7 +46,25 @@ Real example responses: `shared/fixtures/*.json` (regenerate with `python manage
 
 Badges: `ok` → 🟢 Normal, `warning` → 🟡 Attention, `critical` → 🔴 Anomaly. `info` never changes the badge.
 
+## Ask response
+
+```json
+{
+  "question": "Why is VAT so high?",
+  "line_item": null,
+  "answer": "VAT is 21% of everything else on the bill...",
+  "sources": ["Your bill", "Law 141/2025 (VAT 21%)"],
+  "suggested_actions": [{"type": "switch_supplier", "label": "Compare offers"}]
+}
+```
+
+`sources` → chips under the answer. `suggested_actions` use the same `type` values as anomaly actions (never `ask`).
+
 ## Notes
+
+- **Scan cache:** extractions are cached by `sha256(file)` in `ExtractionCache`, which `seed_demo` does not wipe.
+  Pre-warm demo bills with `python manage.py prewarm_cache ../samples/*` → the live scan is instant and identical
+  every time.
 
 - Money fields from Django `DecimalField` arrive as **strings** (`"297.50"`). Use `Number()`.
 - `line_items[].bbox` is `null` for now (stretch goal: highlight boxes on the original document, normalized 0..1).

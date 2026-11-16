@@ -15,11 +15,11 @@ Priority order. P0 = needed for the demo, P1 = makes it win, P2 = only if time i
 |---|---|---|---|
 | A1 | P0 | Run the app in Expo Go with `EXPO_PUBLIC_MOCK=1`, then against the backend on the LAN | Home shows 4 bills with 🟢🟡🔴 from the real API |
 | A2 | P0 | Pago look & feel: brand colours in `src/theme.ts`, provider logos/initials, home like Pago's bill list | Looks like a Pago screen, not a template |
-| A3 | P0 | Bill screen: clear hierarchy (total → badges → anomaly cards → lines), highlighted lines visibly tappable | A stranger understands it in 5 s |
-| A4 | P0 | Ask UX: suggested-question chips ("Why is VAT so high?", "What is cogeneration?", "Why did it go up?"), loading state, answer card that scrolls into view | Tap a chip → answer visible without scrolling |
+| A3 | P0 | Bill screen: clear hierarchy (total → badges → anomaly cards → lines), highlighted lines visibly tappable. **Pay button asks for confirmation when the audit is 🔴** ("This bill has an anomaly. Pay anyway?") | A stranger understands it in 5 s |
+| A4 | P0 | Ask UX: suggested-question chips ("Why is VAT so high?", "What is cogeneration?", "Why did it go up?"), loading state, answer card that scrolls into view. Answer already shows `sources` chips and `suggested_actions` buttons (basic) – make them look good | Tap a chip → answer visible without scrolling |
 | A5 | P1 | 12-month history bar chart from `bill.history` (`react-native-svg`, works in Expo Go); estimated months in red | Chart on the PPC bill shows the spike |
 | A6 | P1 | Action screens polish: Dispute (edit + mailto/share), Offers, AutoPay result screen (not just an Alert), submit-reading modal | Every anomaly button leads somewhere sensible |
-| A7 | P1 | Scan flow: progress UI while the AI reads (it takes ~10–20 s), error state, then land on the bill | Scanning a real bill photo works on the phone |
+| A7 | P0 | Scan flow as its own screen: camera/gallery/PDF, then a **staged loader** that cycles "Reading your bill… → Comparing with your history… → Checking for anomalies…" (~10–20 s uncached, instant when cached), error state, then land on the bill | Scanning a real bill photo works on the phone |
 | A8 | P2 | Interactive document: show the original photo/PDF (`file_url`) with highlight boxes from `line_items[].bbox` | Needs B6 |
 | A9 | P2 | Small "scan → audit" animation on the badges (the demo wow moment) | |
 
@@ -27,13 +27,13 @@ Priority order. P0 = needed for the demo, P1 = makes it win, P2 = only if time i
 
 | # | P | Task | Done when |
 |---|---|---|---|
-| B1 | P0 | Put the API key in `backend/.env`, scan 3–4 **real** bills (your own Engie/PPC/Hidroelectrica/Digi PDFs/photos). Tune `EXTRACTION_PROMPT` in `services/ai.py` | Totals and line items match the paper bill on every test bill |
+| B1 | P0 | Put the API key in `backend/.env`, collect 3–4 **real** bills (your own Engie/PPC/Hidroelectrica/Digi PDFs/photos) in `samples/`. Tune `EXTRACTION_PROMPT` in `services/ai.py`. Delete the bill's row in `ExtractionCache` (Django admin) to re-run after a prompt change | Totals and line items match the paper bill on every test bill |
 | B2 | P0 | Check every `[VERIFY]` line in `bills/knowledge/romania_utilities.md` against ANRE/official sources; delete what you can't verify | No unverified "fact" left |
 | B3 | P0 | Ask quality: run ~10 demo questions (tap each PPC/Engie line + free text), tune `ASK_SYSTEM`; keep answers short and tied to the numbers | Answers are correct and < 5 s |
 | B4 | P0 | Make the demo bills realistic: compare `seed_demo.py` amounts with a real bill of the same supplier; adjust if a juror from Pago would spot nonsense | |
 | B5 | P1 | `POST /bills/{id}/reading/ {index_new}` → recompute consumption & estimated total, return updated `BillDetail` (the "submit real reading" action) | PPC bill turns from 🔴 to 🟢 live in the demo |
 | B6 | P1 | For PDF bills: fill `line_items[].bbox` (pypdf text positions, or ask the model for approximate boxes) | Frontend can draw highlights |
-| B7 | P1 | Demo hosting: run `runserver 0.0.0.0:8000` on the laptop, test from both phones; plan B = `AI_MOCK=1` + fixtures | Works on the Pago office Wi-Fi |
+| B7 | P0 | Demo hosting: run `runserver 0.0.0.0:8000` on the laptop, test from both phones; **pre-warm every demo file** with `python manage.py prewarm_cache ../samples/*`; plan B = `AI_MOCK=1` + fixtures | Works on the Pago office Wi-Fi; demo scans are instant |
 | B8 | P2 | Streaming answers for `/ask` (SSE) | |
 | B9 | P2 | More rules: penalty detection on real bills, "regularization" detection, gas m³→kWh sanity check | |
 
@@ -42,9 +42,12 @@ Priority order. P0 = needed for the demo, P1 = makes it win, P2 = only if time i
 | When | Frontend | Backend |
 |---|---|---|
 | Mon until 18:00 | A1, A2, A3 | B1, B2 |
-| Mon evening | A4, A5 | B3, B4 |
-| Tue 08:00–11:00 | A6, A7 (+ A8 if B6 is done) | B5, B6, B7 |
-| Tue 11:00–12:30 | **Feature freeze.** Rehearse the 3-minute demo together twice, fix only bugs | |
+| Mon 18:00–20:00 | A7, A4 | B3, B4 |
+| **Mon 20:00** | **Integration checkpoint:** scan a real bill from the phone against the real API, end to end | |
+| Mon evening | A5, A6 | B5, B7 |
+| Tue 08:00–10:00 | Polish (+ A8 if B6 is done) | B6, pre-warm cache |
+| **Tue 10:00** | **Feature freeze.** Only bug fixes from here | |
+| Tue 11:00–12:30 | Rehearse the 3-minute demo together twice, the second run fully from cache | |
 | Tue 12:30 | Final commit, push, hand in | |
 
 ## Demo script (3 min)

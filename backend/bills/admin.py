@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from bills.models import AutoPayRule, Bill, LineItem
+from bills.models import AutoPayRule, Bill, ExtractionCache, LineItem
 
 
 class LineItemInline(admin.TabularInline):
@@ -16,3 +16,8 @@ class BillAdmin(admin.ModelAdmin):
 
 
 admin.site.register(AutoPayRule)
+
+
+@admin.register(ExtractionCache)
+class ExtractionCacheAdmin(admin.ModelAdmin):
+    list_display = ["filename", "file_hash", "created_at"]

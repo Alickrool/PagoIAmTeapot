@@ -26,11 +26,16 @@ export default function BillScreen({ route, navigation }: ScreenProps<'Bill'>) {
   const [asking, setAsking] = useState(false);
   const [answer, setAnswer] = useState<AskResponse | null>(null);
 
+  const [loadError, setLoadError] = useState<string | null>(null);
+
   useEffect(() => {
-    api.getBill(id).then((b) => {
-      setBill(b);
-      navigation.setOptions({ title: b.provider });
-    });
+    api
+      .getBill(id)
+      .then((b) => {
+        setBill(b);
+        navigation.setOptions({ title: b.provider });
+      })
+      .catch((e) => setLoadError(String(e?.message ?? e)));
   }, [id, navigation]);
 
   // Line codes referenced by any anomaly get highlighted ("tap me").
@@ -39,7 +44,13 @@ export default function BillScreen({ route, navigation }: ScreenProps<'Bill'>) {
     [bill],
   );
 
-  if (!bill) return <ActivityIndicator style={{ marginTop: 40 }} />;
+  if (!bill) {
+    return loadError ? (
+      <Text style={[styles.muted, { textAlign: 'center', margin: 32 }]}>{loadError}</Text>
+    ) : (
+      <ActivityIndicator style={{ marginTop: 40 }} />
+    );
+  }
 
   const ask = async (body: { question?: string; line_item_id?: number }) => {
     setAsking(true);

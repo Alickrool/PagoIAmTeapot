@@ -138,3 +138,123 @@ export interface UploadFile {
   name: string;
   mimeType: string;
 }
+
+// ---------- v2: Scan / Overview / Providers (docs/API_V2.md) ----------
+
+export interface ApiError {
+  code: string;
+  detail: string;
+}
+
+export interface DashboardSlice {
+  provider: string;
+  slug: string;
+  category: Category;
+  bill_id: number;
+  total: string;
+  share_pct: number;
+  previous_total: string | null;
+  delta_pct: number | null;
+  status: BillStatus;
+  audit_status: AuditStatus;
+}
+
+export interface DashboardMonth {
+  month: string; // "2026-10"
+  total: string;
+  bills_count: number;
+  audit_status: AuditStatus;
+}
+
+export interface DashboardResponse {
+  month: string;
+  currency: string;
+  total: string;
+  paid_total: string;
+  unpaid_total: string;
+  bills_count: number;
+  audit_status: AuditStatus;
+  previous_month: string | null;
+  previous_total: string | null;
+  delta_pct: number | null;
+  average_total: string | null;
+  slices: DashboardSlice[]; // sorted by total desc
+  months: DashboardMonth[]; // oldest first, max 12
+}
+
+export interface ProviderSummary {
+  provider: string;
+  slug: string;
+  category: Category;
+  bills_count: number;
+  last_bill_id: number;
+  last_period_end: string;
+  last_total: string;
+  average_total: string | null;
+  trend_pct: number | null;
+  audit_status: AuditStatus;
+  anomalies_count: number;
+  totals: string[]; // oldest first, max 12
+}
+
+export interface AnomalyShort {
+  id: string;
+  severity: Exclude<Severity, 'ok'>;
+  title: string;
+}
+
+export interface ProviderBill {
+  id: number;
+  period_start: string | null;
+  period_end: string;
+  total: string;
+  consumption: number | null;
+  index_old: number | null;
+  index_new: number | null;
+  index_type: IndexType;
+  unit_price: number | null;
+  status: BillStatus;
+  audit_status: AuditStatus;
+  delta_total_pct: number | null;
+  delta_consumption_pct: number | null;
+  anomalies: AnomalyShort[];
+}
+
+export type DiscrepancyType =
+  | 'total_jump'
+  | 'consumption_jump'
+  | 'price_change'
+  | 'estimated_index'
+  | 'index_gap'
+  | 'new_line_item'
+  | 'missing_month';
+
+export interface Discrepancy {
+  id: string; // "{type}:{bill_id}"
+  bill_id: number;
+  period_end: string;
+  type: DiscrepancyType;
+  severity: Exclude<Severity, 'ok'>;
+  title: string;
+  message: string;
+  previous_value: number | null;
+  current_value: number | null;
+  unit: string;
+}
+
+export interface ProviderHistory {
+  provider: string;
+  slug: string;
+  category: Category;
+  currency: string;
+  consumption_unit: string;
+  stats: {
+    average_total: string | null;
+    min_total: string;
+    max_total: string;
+    sum_12m: string;
+    average_consumption: number | null;
+  };
+  bills: ProviderBill[]; // newest first
+  discrepancies: Discrepancy[]; // newest first, then by severity
+}

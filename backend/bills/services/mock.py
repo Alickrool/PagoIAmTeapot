@@ -1,4 +1,4 @@
-"""Canned AI responses used when AI_MOCK is on (or no ANTHROPIC_API_KEY is set).
+"""Canned AI responses used when AI_MOCK is on (or no GEMINI_API_KEY is set).
 
 Lets the frontend build every screen before the real AI pipeline works, and gives
 us an offline fallback during the demo.

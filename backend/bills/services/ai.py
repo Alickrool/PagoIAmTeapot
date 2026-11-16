@@ -1,14 +1,10 @@
-"""All LLM calls live here: bill extraction, contextual Q&A, dispute letters.
+"""All LLM calls live here (Gemini via google-genai): bill extraction, contextual Q&A, dispute letters.
 
-Two providers behind one function (`_generate`), picked with AI_PROVIDER in backend/.env:
-- "anthropic": Claude via the Anthropic SDK (structured outputs)
-- "gemini":    Gemini via the google-genai SDK (JSON schema output)
-Prompts and output schemas are shared, so switching provider changes nothing else.
+Every call goes through `_generate`, which asks for JSON matching a Pydantic schema and validates it.
 """
 
 from __future__ import annotations
 
-import base64
 import json
 from datetime import date
 from functools import lru_cache
@@ -20,14 +16,7 @@ from pydantic import BaseModel, Field
 T = TypeVar("T", bound=BaseModel)
 Part = Union[str, tuple[bytes, str]]  # text, or (file bytes, mime type)
 
-# ---------- providers ----------
-
-
-@lru_cache
-def client():
-    import anthropic
-
-    return anthropic.Anthropic()
+# ---------- Gemini ----------
 
 
 @lru_cache
@@ -40,30 +29,6 @@ def gemini_client():
 @lru_cache
 def knowledge_base() -> str:
     return "\n\n".join(p.read_text(encoding="utf-8") for p in sorted(settings.KNOWLEDGE_DIR.glob("*.md")))
-
-
-def _file_block(data: bytes, media_type: str) -> dict:
-    b64 = base64.standard_b64encode(data).decode("utf-8")
-    kind = "document" if media_type == "application/pdf" else "image"
-    return {"type": kind, "source": {"type": "base64", "media_type": media_type, "data": b64}}
-
-
-def _anthropic(parts: list[Part], schema: type[T], system: str | None, effort: str, max_tokens: int) -> T | None:
-    content = [{"type": "text", "text": p} if isinstance(p, str) else _file_block(*p) for p in parts]
-    kwargs = {"system": system, "cache_control": {"type": "ephemeral"}} if system else {}
-    response = client().beta.messages.parse(
-        model=settings.ANTHROPIC_MODEL,
-        max_tokens=max_tokens,
-        betas=["server-side-fallback-2026-07-01"],
-        fallbacks="default",
-        output_config={"effort": effort},
-        messages=[{"role": "user", "content": content}],
-        output_format=schema,
-        **kwargs,
-    )
-    if response.stop_reason == "refusal":
-        return None
-    return response.parsed_output
 
 
 def _inline_refs(schema: dict) -> dict:
@@ -82,7 +47,8 @@ def _inline_refs(schema: dict) -> dict:
     return walk(schema)
 
 
-def _gemini(parts: list[Part], schema: type[T], system: str | None, effort: str, max_tokens: int) -> T | None:
+def _generate(parts: list[Part], schema: type[T], *, system: str | None = None, max_tokens: int = 4000) -> T | None:
+    """One structured LLM call. Returns None when the answer is blocked/empty."""
     from google.genai import types
 
     contents = [p if isinstance(p, str) else types.Part.from_bytes(data=p[0], mime_type=p[1]) for p in parts]
@@ -99,13 +65,6 @@ def _gemini(parts: list[Part], schema: type[T], system: str | None, effort: str,
     if not response.text:  # blocked by safety filters or empty
         return None
     return schema.model_validate_json(response.text)
-
-
-def _generate(parts: list[Part], schema: type[T], *, system: str | None = None, effort: str = "low",
-              max_tokens: int = 4000) -> T | None:
-    """One structured LLM call. Returns None when the model refuses / is blocked."""
-    impl = _gemini if settings.AI_PROVIDER == "gemini" else _anthropic
-    return impl(parts, schema, system, effort, max_tokens)
 
 
 # ---------- 1. extraction ----------
@@ -158,7 +117,7 @@ Rules:
 
 
 def _parse_bill(parts: list[Part]) -> ExtractedBill:
-    bill = _generate(parts, ExtractedBill, effort="medium", max_tokens=16000)
+    bill = _generate(parts, ExtractedBill, max_tokens=16000)
     if bill is None:
         raise ValueError("Could not read this bill")
     return bill
@@ -173,7 +132,7 @@ def extract_bill_from_text(text: str) -> ExtractedBill:
     """Text path: PDF text extracted locally (2-3x fewer tokens, exact numbers)."""
     note = ("The bill below is the text layer of a PDF, extracted with layout preserved. "
             "Table columns may be slightly misaligned: use the column headers to map quantity, unit price and amount.")
-    return _parse_bill([{"type": "text", "text": f"{EXTRACTION_PROMPT}\n{note}\n\n<bill_text>\n{text}\n</bill_text>"}])
+    return _parse_bill([f"{EXTRACTION_PROMPT}\n{note}\n\n<bill_text>\n{text}\n</bill_text>"])
 
 
 def is_consistent(bill: ExtractedBill, tolerance: float = 0.01) -> bool:
@@ -219,7 +178,7 @@ def answer_question(bill_context: dict, question: str, line_item: dict | None) -
     user = (
         f"<bill>\n{json.dumps(bill_context, ensure_ascii=False, default=str)}\n</bill>{focus}\n\nQuestion: {question}"
     )
-    result = _generate([user], AskAnswer, system=ASK_SYSTEM.format(kb=knowledge_base()), effort="low")
+    result = _generate([user], AskAnswer, system=ASK_SYSTEM.format(kb=knowledge_base()))
     return result or AskAnswer(answer="Sorry, I can't answer that one.", sources=[], suggested_actions=[])
 
 
@@ -246,7 +205,7 @@ def write_dispute(bill_context: dict, anomaly: dict | None) -> DisputeLetter:
         bill=json.dumps(bill_context, ensure_ascii=False, default=str),
         anomaly=json.dumps(anomaly, ensure_ascii=False) if anomaly else "general clarification request",
     )
-    letter = _generate([prompt], DisputeLetter, effort="low")
+    letter = _generate([prompt], DisputeLetter)
     if letter is None:
         raise ValueError("Could not draft the letter")
     return letter

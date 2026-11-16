@@ -1,4 +1,4 @@
-"""Run Claude extraction on sample bills ahead of the demo so the live scan is instant.
+"""Run Gemini extraction on sample bills ahead of the demo so the live scan is instant.
 
 Usage: python manage.py prewarm_cache ../samples/engie.pdf ../samples/ppc.jpg
 """
@@ -14,7 +14,7 @@ TYPES = {".pdf": "application/pdf", ".jpg": "image/jpeg", ".jpeg": "image/jpeg",
 
 
 class Command(BaseCommand):
-    help = "Extract bills with Claude and store the result in ExtractionCache."
+    help = "Extract bills with Gemini and store the result in ExtractionCache."
 
     def add_arguments(self, parser):
         parser.add_argument("files", nargs="+")

@@ -29,15 +29,11 @@ ALLOWED_HOSTS = ["*"]
 CORS_ALLOW_ALL_ORIGINS = True
 
 # --- AI ---
-ANTHROPIC_MODEL = os.getenv("ANTHROPIC_MODEL", "claude-opus-5-5")
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
-GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-3.8-flash")
-# "anthropic" or "gemini". Default: whichever key is set (Claude wins if both are).
-AI_PROVIDER = os.getenv("AI_PROVIDER") or ("anthropic" if os.getenv("ANTHROPIC_API_KEY") or not GEMINI_API_KEY else "gemini")
-_has_key = bool(GEMINI_API_KEY) if AI_PROVIDER == "gemini" else bool(os.getenv("ANTHROPIC_API_KEY"))
-# When true (or when the chosen provider has no key) AI endpoints return canned fixtures,
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-4-hydrogen")
+# When true (or when there is no GEMINI_API_KEY) AI endpoints return canned fixtures,
 # so the frontend can work before the AI pipeline is ready.
-AI_MOCK = os.getenv("AI_MOCK", "0") == "1" or not _has_key
+AI_MOCK = os.getenv("AI_MOCK", "0") == "1" or not GEMINI_API_KEY
 
 SAMPLES_DIR = REPO_ROOT / "samples"
 FIXTURES_DIR = REPO_ROOT / "shared" / "fixtures"

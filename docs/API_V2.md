@@ -44,8 +44,8 @@ files: annex.pdf  (application/pdf)
 - Accepted types: `image/jpeg`, `image/png`, `image/webp`, `image/heic`, `application/pdf`.
 - Max **10 files**, **10 MB per file**, **25 MB total**.
 - Keep accepting the old single field **`file`** (backward compatible, same behaviour as 1 file).
-- Suggested implementation: send all pages in **one** Claude message (images as `image` blocks, PDFs as `document`
-  blocks, in order) with the existing `EXTRACTION_PROMPT`.
+- Suggested implementation: send all pages in **one** Gemini request (images and PDFs as inline parts,
+  in order) with the existing `EXTRACTION_PROMPT`.
 - Cache key: `sha256` of the concatenated file hashes in order, so re-sending the same pages is instant.
 
 **Response** – unchanged: `BillDetail`. `201` = new bill created, `200` = same files already scanned (that bill).

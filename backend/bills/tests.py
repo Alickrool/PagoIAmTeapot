@@ -166,7 +166,7 @@ class DemoScenarioTests(TestCase):
             return SimpleNamespace(text=sample.model_dump_json())
 
         fake = SimpleNamespace(models=SimpleNamespace(generate_content=fake_generate))
-        with override_settings(AI_PROVIDER="gemini", GEMINI_MODEL="gemini-test"), \
+        with override_settings(GEMINI_MODEL="gemini-test"), \
                 um.patch.object(ai, "gemini_client", return_value=fake):
             bill = ai.extract_bill(b"%PDF fake", "application/pdf")
         self.assertEqual(bill.total, sample.total)
@@ -174,6 +174,12 @@ class DemoScenarioTests(TestCase):
         self.assertEqual(model, "gemini-test")
         self.assertEqual(contents[0].inline_data.mime_type, "application/pdf")
         self.assertNotIn("$ref", json.dumps(config.response_json_schema))  # nested models inlined
+
+        # Text path, unmocked down to the client: the prompt goes in as plain text.
+        with override_settings(GEMINI_MODEL="gemini-test"), um.patch.object(ai, "gemini_client", return_value=fake):
+            ai.extract_bill_from_text("FACTURĂ ... TOTAL 517,06")
+        self.assertIsInstance(calls[-1][1][0], str)
+        self.assertIn("<bill_text>", calls[-1][1][0])
 
     def test_gemini_blocked_answer(self):
         from types import SimpleNamespace
@@ -184,7 +190,7 @@ class DemoScenarioTests(TestCase):
         from bills.services import ai
 
         fake = SimpleNamespace(models=SimpleNamespace(generate_content=lambda **kw: SimpleNamespace(text=None)))
-        with override_settings(AI_PROVIDER="gemini"), um.patch.object(ai, "gemini_client", return_value=fake):
+        with override_settings(), um.patch.object(ai, "gemini_client", return_value=fake):
             self.assertIn("can't answer", ai.answer_question({}, "q", None).answer)
 
     def test_autopay_blocks_estimated(self):

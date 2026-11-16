@@ -88,5 +88,5 @@ Demo tip: PPC `index_old` + 182 → the 🔴 estimated-index anomaly disappears 
   every time.
 
 - Money fields from Django `DecimalField` arrive as **strings** (`"297.50"`). Use `Number()`.
-- With no `ANTHROPIC_API_KEY` (or `AI_MOCK=1`) `scan/ask/dispute` return canned answers prefixed with `[mock]`;
+- With no `GEMINI_API_KEY` (or `AI_MOCK=1`) `scan/ask/dispute` return canned answers prefixed with `[mock]`;
   the audit is always real (it is rule-based, no AI).

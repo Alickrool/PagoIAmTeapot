@@ -12,7 +12,7 @@ from bills.services.reading import ReadingError, submit_reading
 from bills.services import scan as scan_service
 from bills.services.audit import audit_bill
 
-ALLOWED_TYPES = {"image/jpeg", "image/png", "image/webp", "image/gif", "application/pdf"}
+ALLOWED_TYPES = {"image/jpeg", "image/png", "image/webp", "image/heic", "image/heif", "application/pdf"}
 
 
 def _bill_context(bill: Bill, request) -> dict:
@@ -45,8 +45,7 @@ class BillViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, viewsets.Gen
         upload = request.FILES.get("file")
         if not upload:
             return Response({"detail": "Send the bill as multipart field 'file'."}, status=400)
-        allowed = ALLOWED_TYPES | ({"image/heic", "image/heif"} if settings.AI_PROVIDER == "gemini" else set())
-        if upload.content_type not in allowed:
+        if upload.content_type not in ALLOWED_TYPES:
             return Response({"detail": f"Unsupported type {upload.content_type}."}, status=400)
         try:
             bill, created = scan_service.scan(upload.read(), upload.content_type, upload.name)

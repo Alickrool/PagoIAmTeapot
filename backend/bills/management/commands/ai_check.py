@@ -1,4 +1,4 @@
-"""Live check of the configured LLM provider: one extraction + one question, with timings.
+"""Live check of the Gemini key/model: one extraction + one question, with timings.
 
 Usage:  python manage.py ai_check                       (uses samples/demo_ppc_2026_10.pdf)
         python manage.py ai_check ../samples/my_bill.jpg
@@ -26,10 +26,9 @@ class Command(BaseCommand):
         parser.add_argument("file", nargs="?", default=str(settings.SAMPLES_DIR / "demo_ppc_2026_10.pdf"))
 
     def handle(self, *args, file, **opts):
-        model = settings.GEMINI_MODEL if settings.AI_PROVIDER == "gemini" else settings.ANTHROPIC_MODEL
-        self.stdout.write(f"Provider: {settings.AI_PROVIDER}  model: {model}")
+        self.stdout.write(f"Model: {settings.GEMINI_MODEL}")
         if settings.AI_MOCK:
-            raise CommandError("AI_MOCK is on (AI_MOCK=1 or no key for this provider in backend/.env).")
+            raise CommandError("AI_MOCK is on (AI_MOCK=1 or no GEMINI_API_KEY in backend/.env).")
         path = Path(file)
         if not path.is_file():
             raise CommandError(f"No such file: {path}  (run `python manage.py make_sample_pdfs` first)")

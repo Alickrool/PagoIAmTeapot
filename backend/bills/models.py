@@ -103,11 +103,11 @@ class LineItem(models.Model):
 
 
 class ExtractionCache(models.Model):
-    """sha256(file) -> Claude extraction. Survives seed_demo, so pre-warmed demo bills scan instantly."""
+    """sha256(file) -> Gemini extraction. Survives seed_demo, so pre-warmed demo bills scan instantly."""
 
     class Method(models.TextChoices):
-        TEXT = "text"                        # PDF text layer -> Claude (cheapest)
-        VISION = "vision"                    # photo / scanned PDF -> Claude vision
+        TEXT = "text"                        # PDF text layer -> Gemini as text (cheapest)
+        VISION = "vision"                    # photo / scanned PDF -> Gemini vision
         VISION_FALLBACK = "vision_fallback"  # text result didn't add up -> retried with vision
 
     file_hash = models.CharField(max_length=64, unique=True)

@@ -30,6 +30,12 @@
       "member": 2,
       "time": "2026-11-16 15:37",
       "headline": "Backend-ul vorbește românește, deschide facturile scanate ca PDF și a trecut toate cele 28 de verificări"
+    },
+    {
+      "n": 6,
+      "member": 2,
+      "time": "2026-11-16 17:37",
+      "headline": "Backend-ul e curat și gata de lucru; așteptăm planul nou făcut împreună cu colegul"
     }
   ],
   "members": {
@@ -71,8 +77,8 @@
     },
     "2": {
       "building": "Pago Bill Audit: înainte să apeși «Plătește», AI-ul citește factura, ți-o explică pe înțeles și prinde greșelile (index estimat, scumpiri ascunse, opțiuni plătite uitate). Ca un contabil de buzunar care se uită pe factură în locul tău.",
-      "works": "Tot ce scrie backend-ul e acum în română (carduri de audit, discrepanțe, răspunsuri Gemini, erori). Modelul mai rapid răspunde la întrebări în 1–6 secunde și trece singur pe alt model când e aglomerat. Răspunsurile explică TVA-ul corect și nu contrazic cardurile de audit. O poză care nu e factură sau e prea neclară e respinsă. Facturile scanate se pot redeschide: originalul, sau toate paginile lipite într-un PDF. Verificarea completă pe un server real cu Gemini: 28 din 28. Aplicația colegului e unită în main.",
-      "blocking": "Nimic blocant acum. Pe Wi-Fi-ul obișnuit telefonul nu vede laptopul, testăm prin hotspot; mai trebuie verificate câteva facturi reale.",
+      "works": "Tot ce scrie backend-ul e acum în română (carduri de audit, discrepanțe, răspunsuri Gemini, erori). Modelul mai rapid răspunde la întrebări în 1–6 secunde și trece singur pe alt model când e aglomerat. Răspunsurile explică TVA-ul corect și nu contrazic cardurile de audit. O poză care nu e factură sau e prea neclară e respinsă. Facturile scanate se pot redeschide: originalul, sau toate paginile lipite într-un PDF. Verificarea completă pe un server real cu Gemini: 28 din 28. Aplicația colegului e unită în main. O scanare greșită de test a fost ștearsă, cu tot cu fișierele ei; în baza de date rămân doar facturile reale.",
+      "blocking": "Nimic blocant. Așteptăm planul nou discutat cu colegul; câteva facturi reale Digi au date ciudate și trebuie verificate pe hârtie.",
       "features": [
         {
           "name": "Claude Code",
@@ -103,7 +109,7 @@
           "for": "actualizează pagina Pulse la fiecare 2 ore"
         }
       ],
-      "next": "Așteptăm planul nou discutat cu colegul, apoi testăm din nou pe telefon cu facturi reale."
+      "next": "Așteptăm planul nou discutat cu colegul, apoi îl facem pe backend și testăm din nou pe telefon cu facturi reale."
     }
   }
 }

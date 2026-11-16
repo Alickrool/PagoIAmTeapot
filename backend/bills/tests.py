@@ -257,6 +257,64 @@ class DemoScenarioTests(TestCase):
             r = self.c.post(f"/api/bills/{bill['id']}/ask/", {"question": "TVA?"}, format="json")
             self.assertEqual((r.status_code, r.json()["code"]), (503, "ai_busy"))
 
+    # ---- original uploads + bill PDF (docs/API_V2.md §5) ----
+
+    def _png(self, color="red") -> bytes:
+        from PIL import Image
+
+        out = io.BytesIO()
+        Image.new("RGB", (300, 400), color).save(out, "PNG")
+        return out.getvalue()
+
+    def test_uploaded_pages_are_kept_and_openable(self):
+        from pypdf import PdfReader
+
+        pdf = self._demo_pdf()
+        r = self._post_files(("photo.png", self._png(), "image/png"), ("annex.pdf", pdf, "application/pdf"))
+        bill = r.json()
+        self.assertEqual([(f["index"], f["mime"]) for f in bill["files"]], [(0, "image/png"), (1, "application/pdf")])
+        orig = self.c.get(f"/api/bills/{bill['id']}/files/1/")
+        self.assertEqual((orig.status_code, orig["Content-Type"]), (200, "application/pdf"))
+        self.assertEqual(b"".join(orig.streaming_content), pdf)  # unchanged original
+        self.assertTrue(orig["Content-Disposition"].startswith("inline"))
+
+        r = self.c.get(f"/api/bills/{bill['id']}/pdf/")
+        self.assertEqual((r.status_code, r["Content-Type"]), (200, "application/pdf"))
+        pages = len(PdfReader(io.BytesIO(r.content)).pages)
+        self.assertEqual(pages, 1 + len(PdfReader(io.BytesIO(pdf)).pages))  # photo page + the PDF's pages
+        self.assertEqual(self.c.get(f"/api/bills/{bill['id']}/pdf/").content, r.content)  # cached, identical
+        self.assertEqual(self.c.head(f"/api/bills/{bill['id']}/pdf/").status_code, 200)
+
+    def test_single_pdf_is_returned_unchanged_and_seed_bills_render(self):
+        pdf = self._demo_pdf("Engie")
+        bill = self._post_files(("engie.pdf", pdf, "application/pdf")).json()
+        self.assertEqual(self.c.get(f"/api/bills/{bill['id']}/pdf/").content, pdf)
+        seeded = Bill.objects.filter(source="seed").first()
+        r = self.c.get(f"/api/bills/{seeded.id}/pdf/")
+        self.assertTrue(r.content.startswith(b"%PDF"))
+        self.assertIn(f'{seeded.period_end:%Y-%m}.pdf"', r["Content-Disposition"])
+
+    def test_pdf_and_file_404s(self):
+        bill = self._post_files(("gone.png", self._png("blue"), "image/png")).json()
+        page = Bill.objects.get(id=bill["id"]).files.first()
+        page.file.storage.delete(page.file.name)  # file vanished from disk
+        r = self.c.get(f"/api/bills/{bill['id']}/pdf/")
+        self.assertEqual((r.status_code, r.json()["code"]), (404, "no_pdf"))
+        self.assertEqual(self.c.get(f"/api/bills/{bill['id']}/files/0/").json()["code"], "no_file")
+        self.assertEqual(self.c.get("/api/bills/999999/pdf/").status_code, 404)
+
+    def test_uploads_list_and_files_deleted_with_bill(self):
+        first = self._post_files(("a.png", self._png("green"), "image/png")).json()
+        second = self._post_files(("b.png", self._png("yellow"), "image/png")).json()
+        rows = self.c.get("/api/bills/?source=upload").json()
+        self.assertEqual([r["id"] for r in rows], [second["id"], first["id"]])  # newest first
+        self.assertTrue(all(r["source"] == "upload" for r in rows))
+        page = Bill.objects.get(id=first["id"]).files.first()
+        path = page.file.name
+        self.assertTrue(page.file.storage.exists(path))
+        Bill.objects.get(id=first["id"]).delete()
+        self.assertFalse(page.file.storage.exists(path))
+
     # ---- test sessions (manage.py dev) ----
 
     def test_reset_month_keeps_older_months(self):

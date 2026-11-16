@@ -95,7 +95,8 @@ def render(bill: Bill, path: Path, font: str, bold: str):
               Spacer(1, 8 * mm),
               p(f"Total de plată: <b>{ro(bill.total)} lei</b> până la data de "
                 f"{bill.due_date:%d.%m.%Y}." if bill.due_date else "", 10)]
-    SimpleDocTemplate(str(path), pagesize=A4, leftMargin=15 * mm, rightMargin=15 * mm, topMargin=15 * mm,
+    target = path if hasattr(path, "write") else str(path)  # a file path or an in-memory buffer
+    SimpleDocTemplate(target, pagesize=A4, leftMargin=15 * mm, rightMargin=15 * mm, topMargin=15 * mm,
                       title=f"{bill.provider} demo bill").build(story)
 
 

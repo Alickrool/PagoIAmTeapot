@@ -1,6 +1,8 @@
 import re
 
 from django.conf import settings
+from django.http import FileResponse, HttpResponse, JsonResponse
+from django.views.decorators.http import require_http_methods
 from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
@@ -8,10 +10,10 @@ from rest_framework.response import Response
 from google.genai import errors as genai_errors
 from rest_framework.views import APIView
 
-from bills.models import AutoPayRule, Bill
+from bills.models import AutoPayRule, Bill, BillFile
 from bills.serializers import (AskSerializer, AutoPayRuleSerializer, BillDetailSerializer, BillListSerializer,
                                DisputeSerializer, LineItemSerializer, PaySerializer, ReadingSerializer)
-from bills.services import ai, market, mock, overview
+from bills.services import ai, billpdf, market, mock, overview
 from bills.services.reading import ReadingError, submit_reading
 from bills.services.ro import lei
 from bills.services import scan as scan_service
@@ -32,11 +34,15 @@ def _bill_context(bill: Bill, request) -> dict:
 
 
 class BillViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, viewsets.GenericViewSet):
-    queryset = Bill.objects.prefetch_related("line_items")
+    queryset = Bill.objects.prefetch_related("line_items", "files")
     parser_classes = [JSONParser, MultiPartParser, FormParser]
 
     def get_queryset(self):
         qs = super().get_queryset()
+        source = self.request.query_params.get("source")
+        if self.action == "list" and source in ("upload", "seed"):
+            # Every bill of that source, newest scan first (?source=upload = "my scanned bills").
+            return qs.filter(source=source).order_by("-created_at", "-id")
         if self.action == "list" and self.request.query_params.get("all") != "1":
             # One (latest) bill per provider: what the home screen shows.
             latest_ids = {}
@@ -176,3 +182,39 @@ class ProviderDetailView(APIView):
             return Response(overview.provider_history(slug))
         except overview.UnknownProvider:
             return Response({"code": "unknown_provider", "detail": f"Nu există furnizorul „{slug}”."}, status=404)
+
+
+# ---- original uploads and the bill as PDF (docs/API_V2.md §5) ----
+# Plain Django views, not DRF: DRF content negotiation would answer 406 to a viewer that asks for application/pdf.
+
+
+def _not_found(code: str, detail: str) -> JsonResponse:
+    return JsonResponse({"code": code, "detail": detail}, status=404)
+
+
+def _inline(resp: HttpResponse, name: str) -> HttpResponse:
+    resp["Content-Disposition"] = f'inline; filename="{name}"'
+    resp["Cache-Control"] = "private, max-age=300"
+    return resp
+
+
+@require_http_methods(["GET", "HEAD"])
+def bill_pdf_view(request, pk: int):
+    """GET/HEAD /api/bills/{id}/pdf/: original PDF, uploaded pages combined, or the rendered demo bill."""
+    bill = Bill.objects.filter(pk=pk).first()
+    if not bill:
+        return _not_found("no_pdf", "Factura nu există.")
+    try:
+        data = billpdf.bill_pdf(bill)
+    except billpdf.NoPdf:
+        return _not_found("no_pdf", "PDF-ul acestei facturi nu e încă disponibil.")
+    return _inline(HttpResponse(data, content_type="application/pdf"), billpdf.filename(bill))
+
+
+@require_http_methods(["GET", "HEAD"])
+def bill_file_view(request, pk: int, index: int):
+    """GET/HEAD /api/bills/{id}/files/{index}/: one original uploaded page (photo or PDF), unchanged."""
+    page = BillFile.objects.filter(bill_id=pk, order=index).first()
+    if not page or not page.file or not page.file.storage.exists(page.file.name):
+        return _not_found("no_file", "Fișierul nu există.")
+    return _inline(FileResponse(page.file.open("rb"), content_type=page.mime), page.name or f"pagina-{index + 1}")

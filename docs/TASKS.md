@@ -54,6 +54,7 @@ from its on-phone fallback (`mobile/src/api/derive.ts`) automatically; `derive.t
 | B14 | ✅ | Romanian backend texts: audit cards + action labels, discrepancies, Gemini answers/sources/buttons, AutoPay reasons, all error `detail`s, offers disclaimer; amounts as "352,53 lei"; fixtures re-exported | Done |
 | B16 | ✅ | Model `gemini-3.5-flash-lite` (extraction 4–10 s, Q&A 1–6 s, exact on the demo bills) with automatic fallback to `gemini-3.6-flash`, `gemini-4-hydrogen` on 503/429; clean 503 `ai_busy` / 502 `ai_error` instead of a 500 page | Done |
 | B15 | – | Null text fields from Gemini stored as "" (fix from the frontend side during the merge) + regression test | ✅ |
+| B17 | ✅ | Uploaded bills can be fetched and opened again: every page stored (`BillFile`, old scans migrated), `GET /bills/{id}/pdf/` per API_V2 §5 (original PDF / photos combined on A4 incl. HEIC / rendered demo bill, HEAD, 404 `no_pdf`), originals at `/bills/{id}/files/{n}/`, `files[]` + `pdf_url` in the bill, `?source=upload` list; files deleted with the bill | Done |
 | B8 | P2 | Streaming `/ask` | open |
 
 ## Timeline

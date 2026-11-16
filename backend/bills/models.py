@@ -1,4 +1,6 @@
 from django.db import models
+from django.db.models.signals import post_delete
+from django.dispatch import receiver
 
 
 class Category(models.TextChoices):
@@ -50,7 +52,8 @@ class Bill(models.Model):
 
     status = models.CharField(max_length=16, choices=Status.choices, default=Status.UNPAID)
     source = models.CharField(max_length=16, choices=Source.choices, default=Source.SEED)
-    file = models.FileField(upload_to="bills/", null=True, blank=True)
+    file = models.FileField(upload_to="bills/", null=True, blank=True)  # first uploaded page (see BillFile)
+    pdf_cache = models.FileField(upload_to="bills/pdf/", null=True, blank=True)  # combined pages, built on demand
     file_hash = models.CharField(max_length=64, blank=True, db_index=True)
     raw_extraction = models.JSONField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -100,6 +103,33 @@ class LineItem(models.Model):
 
     def __str__(self):
         return f"{self.label}: {self.amount}"
+
+
+class BillFile(models.Model):
+    """One uploaded page of a bill (photo or PDF), in upload order. Bill.file points at the first one."""
+
+    bill = models.ForeignKey(Bill, related_name="files", on_delete=models.CASCADE)
+    order = models.PositiveIntegerField(default=0)
+    file = models.FileField(upload_to="bills/")
+    name = models.CharField(max_length=255, blank=True)
+    mime = models.CharField(max_length=64)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["order", "id"]
+
+    def __str__(self):
+        return f"{self.bill_id}#{self.order} {self.name}"
+
+
+@receiver(post_delete, sender=BillFile)
+@receiver(post_delete, sender=Bill)
+def _delete_stored_files(sender, instance, **kwargs):
+    """Deleting a bill (also the `dev` test reset) removes its uploads and cached PDF from disk."""
+    for field in ("file", "pdf_cache"):
+        f = getattr(instance, field, None)
+        if f and f.name:
+            f.storage.delete(f.name)  # FileSystemStorage ignores files that are already gone
 
 
 class ExtractionCache(models.Model):

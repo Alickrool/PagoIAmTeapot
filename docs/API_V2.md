@@ -253,7 +253,7 @@ Backend details (same as `derive.ts` where both compute a rule):
 
 ---
 
-## 5. `GET /api/bills/{id}/pdf/` – the bill as a PDF
+## 5. `GET /api/bills/{id}/pdf/` – the bill as a PDF ✅ live
 
 The bill screen has a "Vezi factura (PDF)" button. The app first sends `HEAD /api/bills/{id}/pdf/`; on 200 it opens
 the same URL (`GET`) in the phone's browser / PDF viewer, otherwise it shows "PDF-ul acestei facturi nu e încă
@@ -266,11 +266,22 @@ disponibil." If `file_url` already ends in `.pdf`, the app opens that directly.
 - **Seeded / demo bills** → render it with the same code as `make_sample_pdfs` (so every bill has a PDF in the demo).
 - **HEAD** must answer like GET without the body (Django does this for GET views automatically).
 - **404** `{ "code": "no_pdf", "detail": "..." }` when there is nothing to show.
-- Optional: cache the generated PDF next to the upload so a second tap is instant.
+- Optional: cache the generated PDF next to the upload so a second tap is instant. ✅ (combined uploads are cached;
+  rendered demo bills are not, because submitting a reading changes their lines)
+
+### Original uploads (backend addition)
+
+- `BillDetail.files`: `[{index, name, mime, url}]`, every uploaded page in upload order; `url` =
+  `GET /api/bills/{id}/files/{index}/` → the original photo/PDF, unchanged, `Content-Disposition: inline`
+  (`HEAD` works; `404 {code: "no_file"}`).
+- `BillDetail.pdf_url`: absolute URL of `/api/bills/{id}/pdf/` (the app can use it instead of building the URL).
+- `GET /api/bills/?source=upload`: every scanned bill, newest scan first (`BillSummary` now also has `source` and
+  `created_at`). `?source=seed` = only demo bills.
+- Deleting a bill (also the `manage.py dev` test reset) deletes its files from disk.
 
 ## Checklist for the backend
 
-- [ ] `GET /bills/{id}/pdf/` (§5): original PDF, combined photos, or rendered demo bill; 404 `no_pdf`
+- [x] `GET /bills/{id}/pdf/` (§5): original PDF, combined photos, or rendered demo bill; 404 `no_pdf`
 
 - [x] `scan`: accept `files` (repeated) + keep `file`; error body `{code, detail}`
       (`not_a_bill` / `unreadable` come from the model's `is_bill` / `readable` flags; nothing is saved)

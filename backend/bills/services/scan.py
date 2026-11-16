@@ -12,7 +12,7 @@ from google.genai import errors as genai_errors
 from django.core.files.base import ContentFile
 from django.db import transaction
 
-from bills.models import Bill, ExtractionCache, LineItem
+from bills.models import Bill, BillFile, ExtractionCache, LineItem
 from bills.services import ai, mock, pdf_text, providers
 
 log = logging.getLogger(__name__)
@@ -143,9 +143,13 @@ def scan(files: list[Upload]) -> tuple[Bill, bool]:
         fields = _blank_nulls(Bill, extracted.model_dump(exclude={"line_items", "is_bill", "readable"}))
         fields["provider"] = providers.normalize(fields["provider"])
         bill = Bill(**fields, source=Bill.Source.UPLOAD, file_hash=h, raw_extraction=extracted.model_dump(mode="json"))
-        first = files[0]
-        bill.file.save(first.name or "bill", ContentFile(first.data), save=False)  # file_url = first file
         bill.save()
+        for i, f in enumerate(files):  # every page, in upload order
+            page = BillFile(bill=bill, order=i, name=f.name or f"page-{i + 1}", mime=f.mime)
+            page.file.save(f.name or f"bill-page-{i + 1}", ContentFile(f.data), save=True)
+            if i == 0:
+                bill.file.name = page.file.name  # file_url = first page (same stored file, not a copy)
+        bill.save(update_fields=["file"])
         for i, li in enumerate(extracted.line_items):
             LineItem.objects.create(bill=bill, order=i, bbox=boxes.get(i), **_blank_nulls(LineItem, li.model_dump()))
     return bill, True

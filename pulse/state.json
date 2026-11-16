@@ -12,6 +12,12 @@
       "member": 1,
       "time": "2026-11-16 13:21",
       "headline": "Aplicația are 3 interfețe pe generații și citește facturi reale cu Gemini"
+    },
+    {
+      "n": 3,
+      "member": 2,
+      "time": "2026-11-16 13:37",
+      "headline": "Toate ecranele noi primesc date reale din backend; testăm pe telefon prin hotspot"
     }
   ],
   "members": {
@@ -53,12 +59,12 @@
     },
     "2": {
       "building": "Pago Bill Audit: înainte să apeși «Plătește», AI-ul citește factura, ți-o explică pe înțeles și prinde greșelile (index estimat, scumpiri ascunse, opțiuni plătite uitate). Ca un contabil de buzunar care se uită pe factură în locul tău.",
-      "works": "Backend Django gata: audit pe reguli cu 🟢🟡🔴; citire factură din PDF sau poză cu Gemini, cu sume exacte pe facturile demo; întrebări pe orice rând al facturii, cu surse; trimiterea indexului real recalculează factura; scrisoare de contestație; Auto-Pay cu prag de siguranță; bază de cunoștințe verificată (TVA 21%, plafonul la gaze 0,31 lei/kWh, tarife ANRE 2026); aplicația colegului e unită în main.",
-      "blocking": "Endpoint-urile noi pentru ecranele Overview și Providers nu există încă pe backend (aplicația le calculează pe telefon între timp); un răspuns AI durează cam 7 secunde.",
+      "works": "Backend-ul are toate endpoint-urile noi: scanare din 1–10 poze sau PDF-uri ca o singură factură, prezentarea lunară (+56% în octombrie față de septembrie) și istoricul pe furnizori cu 7 reguli de discrepanțe. Gemini citește corect facturile demo din PDF, din poză și chiar dintr-o factură tăiată în două poze. Trimiterea indexului real reface factura. Branch-ul colegului e unit în main; 27 de teste trec. Backend-ul și aplicația rulează pe laptop, cu cheia Gemini reală.",
+      "blocking": "Textele scrise de backend (cardurile de audit, discrepanțele, răspunsurile Gemini) sunt încă în engleză, iar aplicația e în română. Pe Wi-Fi-ul obișnuit telefonul nu vede laptopul, merge doar prin hotspot. Expo Go cere același cont Expo pe telefon și pe laptop.",
       "features": [
         {
           "name": "Claude Code",
-          "for": "a scris backend-ul Django, regulile de audit, testele și comiturile"
+          "for": "a scris backend-ul Django, endpoint-urile noi, regulile de audit, testele și comiturile"
         },
         {
           "name": "Căutare pe web",
@@ -73,6 +79,10 @@
           "for": "a luat documentația SDK la începutul proiectului"
         },
         {
+          "name": "Panoul Terminal",
+          "for": "a pornit backend-ul și Expo cu codul QR pentru telefon"
+        },
+        {
           "name": "Subagent",
           "for": "desenează această pagină Pulse"
         },
@@ -81,7 +91,7 @@
           "for": "actualizează pagina Pulse la fiecare 2 ore"
         }
       ],
-      "next": "Scanare din mai multe fișiere, apoi ecranele noi (prezentarea lunară și istoricul pe furnizori, cu regulile de discrepanțe) pentru verificarea comună de la ora 20:00."
+      "next": "Test complet pe telefon cu cheia Gemini, apoi textele din backend în română, ca să se potrivească cu aplicația."
     }
   }
 }

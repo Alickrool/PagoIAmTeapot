@@ -5,6 +5,7 @@ import { ActivityIndicator, Alert, Image, Pressable, ScrollView, StyleSheet, Tex
 import { api } from '../api/client';
 import { slugify } from '../api/derive';
 import { markPending } from '../providerList';
+import { monthNotice, scanFailure } from '../validation';
 import type { UploadFile } from '../api/types';
 import { Button } from '../components/Button';
 import { Icon, type IconName } from '../components/Icon';
@@ -24,14 +25,6 @@ const STEP_MS = 2500;
 
 type Page = UploadFile & { key: string };
 
-/** Turn transport errors into something a person can act on; backend errors already come as readable text. */
-function scanErrorMessage(e: unknown): string {
-  const msg = e instanceof Error ? e.message : String(e);
-  if (e instanceof Error && e.name === 'AbortError') return 'Citirea a durat prea mult. Încearcă din nou, eventual cu mai puține pagini.';
-  if (/network request failed|failed to fetch|load failed|networkerror/i.test(msg))
-    return 'Nu am putut ajunge la server. Verifică internetul (telefonul și laptopul în aceeași rețea) și încearcă din nou.';
-  return msg;
-}
 let nextKey = 0;
 const toPage = (f: UploadFile): Page => ({ ...f, key: String(nextKey++) });
 const isPdf = (p: UploadFile) => p.mimeType === 'application/pdf' || p.name.toLowerCase().endsWith('.pdf');
@@ -103,9 +96,15 @@ export default function ScanScreen() {
       const list = await api.providers().catch(() => []);
       const entry = list.find((p) => p.provider.toLowerCase() === bill.provider.toLowerCase());
       if (!entry || entry.bills_count <= 1) await markPending(entry?.slug ?? slugify(bill.provider));
-      navigation.navigate('Bill', { id: bill.id });
+      navigation.navigate('Bill', { id: bill.id, notice: monthNotice(bill) ?? undefined });
     } catch (e) {
-      setError(scanErrorMessage(e));
+      const failure = scanFailure(e);
+      if (failure.kind === 'duplicate') {
+        setPages([]);
+        navigation.navigate('Bill', { id: failure.billId, notice: failure.notice });
+      } else {
+        setError(failure.message);
+      }
     } finally {
       setStep(null);
     }

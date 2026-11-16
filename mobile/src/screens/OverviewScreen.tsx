@@ -2,7 +2,9 @@ import { useFocusEffect } from '@react-navigation/native';
 import { useCallback, useState } from 'react';
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, Share, Text, View } from 'react-native';
 import { api, MOCK } from '../api/client';
-import type { DashboardMonth, DashboardResponse, DashboardSlice } from '../api/types';
+import type { DashboardMonth, DashboardResponse, ValidationStatus } from '../api/types';
+import { ReviewMark } from '../components/ValidationCard';
+import { isFlagged } from '../validation';
 import { useBudget } from '../budget';
 import { BudgetModal } from '../components/BudgetModal';
 import { Button } from '../components/Button';
@@ -12,31 +14,8 @@ import { MonthPager } from '../components/MonthPager';
 import { SeverityBadge } from '../components/SeverityBadge';
 import { useCopy, useStyles, useTheme, type Theme } from '../mode';
 import { useStackNavigation } from '../navigation';
-import { category, deltaColor, deltaLabel, money, monthLabel, monthName, tabular } from '../theme';
-
-const EXTRA = ['#10B981', '#EC4899', '#14B8A6', '#F97316', '#6366F1'];
-
-/** Category colour per slice; a second provider of the same category gets an extra colour. */
-function sliceColors(slices: DashboardSlice[]) {
-  const used = new Set<string>();
-  let extra = 0;
-  return Object.fromEntries(
-    slices.map((s) => {
-      let c = (category[s.category] ?? category.other).color;
-      if (used.has(c)) c = EXTRA[extra++ % EXTRA.length];
-      used.add(c);
-      return [s.slug, c];
-    }),
-  );
-}
-
-/** Suggested budget: the average month + 10%, rounded up to 50 lei. */
-const suggestBudget = (avg: string | null, total: number) => Math.ceil(((avg ? Number(avg) : total) * 1.1) / 50) * 50;
-
-/** Every month we've seen, oldest first. The API returns a 12-month window ending at the selected month,
- *  so picking an older month must not drop the newer ones (the "disappearing months" bug). */
-const mergeMonths = (a: DashboardMonth[], b: DashboardMonth[]) =>
-  Object.values(Object.fromEntries([...a, ...b].map((m) => [m.month, m]))).sort((x, y) => x.month.localeCompare(y.month));
+import { mergeMonths, sliceColors, suggestBudget } from '../overviewMath';
+import { deltaColor, deltaLabel, money, monthLabel, monthName, tabular } from '../theme';
 
 const capital = (s: string) => s[0].toUpperCase() + s.slice(1);
 
@@ -51,6 +30,7 @@ export default function OverviewScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [budgetOpen, setBudgetOpen] = useState(false);
+  const [statuses, setStatuses] = useState<Map<number, ValidationStatus>>(new Map());
 
   const current = history.length ? history[history.length - 1].month : data?.month; // latest month = "this month"
   const { budget, setBudget } = useBudget(current);
@@ -63,6 +43,7 @@ export default function OverviewScreen() {
       .then((d) => {
         setData(d);
         setHistory((h) => mergeMonths(h, d.months));
+        api.billStatuses().then(setStatuses).catch(() => {});
       })
       .catch((e) => setError(String(e?.message ?? e)))
       .finally(() => setLoading(false));
@@ -149,6 +130,7 @@ export default function OverviewScreen() {
             <Text style={[styles.rowTitle, { flex: 1 }]} numberOfLines={1}>
               {s.provider}
             </Text>
+            {isFlagged(statuses.get(s.bill_id)) && <ReviewMark />}
             {s.audit_status !== 'ok' && <SeverityBadge severity={s.audit_status} />}
             <Text style={[styles.rowTotal, tabular]}>{money(s.total)}</Text>
           </Pressable>

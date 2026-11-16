@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { api } from '../api/client';
-import type { Discrepancy, IndexType, ProviderBill, ProviderHistory } from '../api/types';
+import type { Discrepancy, IndexType, ProviderBill, ProviderHistory, ValidationStatus } from '../api/types';
+import { ReviewMark } from '../components/ValidationCard';
+import { isFlagged } from '../validation';
 import { Button } from '../components/Button';
 import { MonthBars } from '../components/charts/MonthBars';
 import { ProviderAvatar } from '../components/ProviderAvatar';
@@ -19,6 +21,7 @@ export default function ProviderScreen({ route, navigation }: ScreenProps<'Provi
   const styles = useStyles(makeStyles);
   const { slug, provider } = route.params;
   const [data, setData] = useState<ProviderHistory | null>(null);
+  const [statuses, setStatuses] = useState<Map<number, ValidationStatus>>(new Map());
   const [error, setError] = useState<string | null>(null);
   const [metric, setMetric] = useState<Metric>('total');
   const [selected, setSelected] = useState<number | null>(null);
@@ -27,7 +30,10 @@ export default function ProviderScreen({ route, navigation }: ScreenProps<'Provi
     () =>
       api
         .providerHistory(slug)
-        .then(setData)
+        .then((d) => {
+          setData(d);
+          api.billStatuses().then(setStatuses).catch(() => {});
+        })
         .catch((e) => setError(String(e?.message ?? e))),
     [slug],
   );
@@ -138,7 +144,7 @@ export default function ProviderScreen({ route, navigation }: ScreenProps<'Provi
       <View style={styles.list}>
         <ScrollView style={{ maxHeight: t.mode === 'senior' ? 420 : 340 }} nestedScrollEnabled showsVerticalScrollIndicator>
           {data.bills.map((b) => (
-            <BillRow key={b.id} bill={b} unit={unit} onPress={() => open(b.id)} />
+            <BillRow key={b.id} bill={b} unit={unit} flagged={isFlagged(statuses.get(b.id))} onPress={() => open(b.id)} />
           ))}
         </ScrollView>
       </View>
@@ -192,14 +198,17 @@ function DiscrepancyCard({ d, onPress }: { d: Discrepancy; onPress: () => void }
   );
 }
 
-function BillRow({ bill, unit, onPress }: { bill: ProviderBill; unit: string; onPress: () => void }) {
+function BillRow({ bill, unit, flagged, onPress }: { bill: ProviderBill; unit: string; flagged: boolean; onPress: () => void }) {
   const t = useTheme();
   const styles = useStyles(makeStyles);
   return (
     <Pressable onPress={onPress} style={({ pressed }) => [styles.row, pressed && { opacity: 0.6 }]}>
       <View style={[styles.statusBar, { backgroundColor: t.sev[bill.audit_status].color }]} />
       <View style={{ flex: 1, gap: 4 }}>
-        <Text style={styles.rowTitle}>{monthLabel(bill.period_end.slice(0, 7))}</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+          <Text style={styles.rowTitle}>{monthLabel(bill.period_end.slice(0, 7))}</Text>
+          {flagged && <ReviewMark />}
+        </View>
         <View style={styles.chips}>
           {bill.consumption != null && (
             <Text style={styles.chip}>

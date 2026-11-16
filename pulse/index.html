@@ -57,7 +57,7 @@ section.block > h2 { color: var(--ink); }
 .m1 { background: var(--accent); color: var(--on-accent); }
 .m2 { background: #FFD54A; color: #161F28; }
 .here { background: #FFD54A; color: #161F28; }
-.trail { list-style: none; margin: 0; padding: 0 0 0 0; position: relative; display: flex; flex-direction: column; gap: 14px; }
+.trail { list-style: none; margin: 0; padding: 0; position: relative; display: flex; flex-direction: column; gap: 14px; }
 .trail::before { content: ""; position: absolute; left: 15px; top: 8px; bottom: 8px; width: 2px; background: var(--line); }
 .stop { position: relative; padding-left: 44px; min-width: 0; }
 .dot { position: absolute; left: 6px; top: 6px; width: 20px; height: 20px; border-radius: 50%; background: var(--surface); border: 3px solid var(--accent); }
@@ -115,7 +115,6 @@ footer { font-size: 12.5px; color: var(--muted); border-top: 1px solid var(--lin
         <rect x="75" y="35" width="70" height="90" rx="8"/>
         <path d="M87 57h46M87 73h46M87 89h26"/>
         <circle cx="135" cy="107" r="3" fill="var(--accent)" stroke="var(--accent)"/>
-        <path d="M110 112v0" stroke="none"/>
         <path d="M150 38l8-8M150 30l8 8" stroke="var(--accent)"/>
         <text x="110" y="160" text-anchor="middle" font-size="18" font-weight="700" fill="var(--ink)" stroke="none">Problemă</text>
         <text x="110" y="184" text-anchor="middle" font-size="13" fill="var(--muted)" stroke="none">Greșeli ascunse</text>
@@ -162,9 +161,18 @@ footer { font-size: 12.5px; color: var(--muted); border-top: 1px solid var(--lin
         <li class="stop"><span class="dot"></span>
           <div class="meta"><span class="pill m2" title="Membrul 2">M2</span><span>2026-11-16 15:37</span></div>
           <div class="head">Backend-ul vorbește românește, deschide facturile scanate ca PDF și a trecut toate cele 28 de verificări</div></li>
-        <li class="stop last"><span class="dot"></span>
-          <div class="meta"><span class="pill m2" title="Membrul 2">M2</span><span>2026-11-16 17:37</span><span class="pill here">Ești aici</span></div>
+        <li class="stop"><span class="dot"></span>
+          <div class="meta"><span class="pill m1" title="Membrul 1">M1</span><span>2026-11-16 17:29</span></div>
+          <div class="head">Scanare cu camera, swipe între tab-uri și un plan pentru verificarea facturilor</div></li>
+        <li class="stop"><span class="dot"></span>
+          <div class="meta"><span class="pill m2" title="Membrul 2">M2</span><span>2026-11-16 17:37</span></div>
           <div class="head">Backend-ul e curat și gata de lucru; așteptăm planul nou făcut împreună cu colegul</div></li>
+        <li class="stop"><span class="dot"></span>
+          <div class="meta"><span class="pill m1" title="Membrul 1">M1</span><span>2026-11-16 18:42</span></div>
+          <div class="head">Planul de verificare a facturilor e scris și așteaptă discuția în echipă</div></li>
+        <li class="stop last"><span class="dot"></span>
+          <div class="meta"><span class="pill m2" title="Membrul 2">M2</span><span>2026-11-16 19:37</span><span class="pill here">Ești aici</span></div>
+          <div class="head">Backend-ul e pregătit pentru planul de verificare la scanare; îl facem după discuția în echipă</div></li>
       </ol>
     </div>
   </section>
@@ -177,7 +185,7 @@ footer { font-size: 12.5px; color: var(--muted); border-top: 1px solid var(--lin
         <div class="icon"><svg viewBox="0 0 24 24"><path d="M8 7l-5 5 5 5M16 7l5 5-5 5M14 5l-4 14"/></svg></div>
         <h3>Claude Code</h3>
         <div class="uses">
-          <div class="use"><span class="pill m1" title="Membrul 1">M1</span><span class="t">a făcut cele 3 interfețe și butonul de schimbare, a unit branch-ul cu main și a rezolvat conflictele</span></div>
+          <div class="use"><span class="pill m1" title="Membrul 1">M1</span><span class="t">a făcut scanarea cu camera, swipe-ul între tab-uri, roata pe luni, bugetul și întrebările pe fiecare factură, și a scris planul de verificare a datelor la scanare</span></div>
           <div class="use"><span class="pill m2" title="Membrul 2">M2</span><span class="t">a scris backend-ul Django, traducerea în română, PDF-ul facturii, testele și comiturile</span></div>
         </div>
       </div>
@@ -256,8 +264,8 @@ footer { font-size: 12.5px; color: var(--muted); border-top: 1px solid var(--lin
   <section class="block" aria-label="Pasul următor">
     <h2>Pasul următor</h2>
     <div class="card nexts">
-      <div class="next"><span class="pill m1" title="Membrul 1">M1</span><span class="t">Testăm aplicația pe telefon prin hotspot, cu facturi reale fotografiate.</span></div>
-      <div class="next"><span class="pill m2" title="Membrul 2">M2</span><span class="t">Așteptăm planul nou discutat cu colegul, apoi îl facem pe backend și testăm din nou pe telefon cu facturi reale.</span></div>
+      <div class="next"><span class="pill m1" title="Membrul 1">M1</span><span class="t">Discutăm în echipă planul de verificare a datelor și de securitate la scanare (lună, furnizor din România, nume, duplicate, fișiere suspecte), apoi îl implementăm pe backend.</span></div>
+      <div class="next"><span class="pill m2" title="Membrul 2">M2</span><span class="t">Discutăm planul de verificare la scanare cu colegul, apoi îl implementăm pe backend și îl testăm pe telefon cu facturi reale.</span></div>
     </div>
   </section>
 
@@ -298,20 +306,38 @@ footer { font-size: 12.5px; color: var(--muted); border-top: 1px solid var(--lin
     },
     {
       "n": 6,
+      "member": 1,
+      "time": "2026-11-16 17:29",
+      "headline": "Scanare cu camera, swipe între tab-uri și un plan pentru verificarea facturilor"
+    },
+    {
+      "n": 7,
       "member": 2,
       "time": "2026-11-16 17:37",
       "headline": "Backend-ul e curat și gata de lucru; așteptăm planul nou făcut împreună cu colegul"
+    },
+    {
+      "n": 8,
+      "member": 1,
+      "time": "2026-11-16 18:42",
+      "headline": "Planul de verificare a facturilor e scris și așteaptă discuția în echipă"
+    },
+    {
+      "n": 9,
+      "member": 2,
+      "time": "2026-11-16 19:37",
+      "headline": "Backend-ul e pregătit pentru planul de verificare la scanare; îl facem după discuția în echipă"
     }
   ],
   "members": {
     "1": {
       "building": "Aplicația mobilă Pago Bill Audit (Expo) în 3 interfețe, Gen Z, Millennials și Senior: vezi facturile lunii într-o roată, scanezi factura din poze sau PDF, Gemini o citește și prinde greșelile. Ca un detectiv care vorbește pe limba fiecărui client.",
-      "works": "3 interfețe (Gen Z întunecată și cu slang, Millennials cu roata bugetului, Senior cu text mare), schimbate dintr-un buton din colțul de sus al fiecărui ecran. Ecranele Overview și Furnizori iau acum datele direct din backend. Trimiterea indexului real reface factura PPC de la 517,06 la 268,84 lei. O factură 🔴 cere confirmare înainte de plată. Întrebările sugerate primesc răspuns de la Gemini. Branch-ul cu interfețele e unit în main, fără conflicte.",
-      "blocking": "Telefonul nu vedea laptopul pe Wi-Fi-ul obișnuit, așa că testăm prin hotspot. Răspunsurile Gemini și textele anomaliilor vin încă în engleză.",
+      "works": "Scanarea pornește pe cameră, cu comutare la imagine sau PDF. Tab-urile se schimbă cu swipe, iar roata lunii se glisează între luni și se desenează animat. Bugetul lunii se setează dintr-un buton. Fiecare factură are întrebări pe tipul ei (apă, gaz, curent) și buton „Vezi factura (PDF)”. Furnizorii noi din facturi scanate se adaugă cu un tap. Iconițele sunt simple, fără emoji. Branch-ul frontend-final e unit în main.",
+      "blocking": "Cheia Gemini trebuie rotită înainte de demo, pentru că a fost lipită într-o conversație. Verificarea datelor din factură (lună, furnizor din România, nume, sume) e doar în plan, nu e încă în cod.",
       "features": [
         {
           "name": "Claude Code",
-          "for": "a făcut cele 3 interfețe și butonul de schimbare, a unit branch-ul cu main și a rezolvat conflictele"
+          "for": "a făcut scanarea cu camera, swipe-ul între tab-uri, roata pe luni, bugetul și întrebările pe fiecare factură, și a scris planul de verificare a datelor la scanare"
         },
         {
           "name": "Browserul integrat",
@@ -338,12 +364,12 @@ footer { font-size: 12.5px; color: var(--muted); border-top: 1px solid var(--lin
           "for": "actualizează pagina Pulse la fiecare 2 ore"
         }
       ],
-      "next": "Testăm aplicația pe telefon prin hotspot, cu facturi reale fotografiate."
+      "next": "Discutăm în echipă planul de verificare a datelor și de securitate la scanare (lună, furnizor din România, nume, duplicate, fișiere suspecte), apoi îl implementăm pe backend."
     },
     "2": {
       "building": "Pago Bill Audit: înainte să apeși «Plătește», AI-ul citește factura, ți-o explică pe înțeles și prinde greșelile (index estimat, scumpiri ascunse, opțiuni plătite uitate). Ca un contabil de buzunar care se uită pe factură în locul tău.",
-      "works": "Tot ce scrie backend-ul e acum în română (carduri de audit, discrepanțe, răspunsuri Gemini, erori). Modelul mai rapid răspunde la întrebări în 1–6 secunde și trece singur pe alt model când e aglomerat. Răspunsurile explică TVA-ul corect și nu contrazic cardurile de audit. O poză care nu e factură sau e prea neclară e respinsă. Facturile scanate se pot redeschide: originalul, sau toate paginile lipite într-un PDF. Verificarea completă pe un server real cu Gemini: 28 din 28. Aplicația colegului e unită în main. O scanare greșită de test a fost ștearsă, cu tot cu fișierele ei; în baza de date rămân doar facturile reale.",
-      "blocking": "Nimic blocant. Așteptăm planul nou discutat cu colegul; câteva facturi reale Digi au date ciudate și trebuie verificate pe hârtie.",
+      "works": "Tot ce scrie backend-ul e în română (carduri de audit, discrepanțe, răspunsuri Gemini, erori). Modelul mai rapid răspunde în 1–6 secunde și trece singur pe alt model când e aglomerat. O poză care nu e factură sau e prea neclară e respinsă. Facturile scanate se pot redeschide: originalul, sau toate paginile lipite într-un PDF. Verificarea completă pe un server real cu Gemini: 28 din 28. Baza de date e curată: scanarea greșită de test a fost ștearsă, rămân doar facturile reale.",
+      "blocking": "Nimic blocant în cod. Planul de verificare la scanare (lună, furnizor din România, nume, duplicate, fișiere suspecte) e scris de coleg, dar încă nu l-am discutat împreună, așa că nu am început.",
       "features": [
         {
           "name": "Claude Code",
@@ -374,7 +400,7 @@ footer { font-size: 12.5px; color: var(--muted); border-top: 1px solid var(--lin
           "for": "actualizează pagina Pulse la fiecare 2 ore"
         }
       ],
-      "next": "Așteptăm planul nou discutat cu colegul, apoi îl facem pe backend și testăm din nou pe telefon cu facturi reale."
+      "next": "Discutăm planul de verificare la scanare cu colegul, apoi îl implementăm pe backend și îl testăm pe telefon cu facturi reale."
     }
   }
 }</script>

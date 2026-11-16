@@ -9,9 +9,8 @@ Ownership: **Frontend = `mobile/`**, **Backend = `backend/` + `shared/fixtures/`
 
 **Works end to end now:** seeded 12-month demo data, rule-based audit, all screens, mock AI, scan cache,
 submit reading, line highlight boxes for text PDFs, fact-checked knowledge base.
-**The app's v2 screens (Overview, Providers) currently compute their data on the phone** (`mobile/src/api/derive.ts`)
-because the backend returns 404 for `/dashboard/` and `/providers/`. As soon as the backend endpoints exist the app
-switches to them automatically. No app change needed.
+**All API v2 endpoints are live** (scan v2, `/dashboard/`, `/providers/`, `/providers/{slug}/`). The app switches
+from its on-phone fallback (`mobile/src/api/derive.ts`) automatically; `derive.ts` stays as the offline fallback.
 
 ## Frontend (React Native / Expo) – Person A
 
@@ -27,7 +26,7 @@ switches to them automatically. No app change needed.
 | A2 | P1 | Pago look & feel pass over all screens | partly (theme, categories, avatars) |
 | A8 | P2 | Original PDF page with highlight boxes from `line_items[].bbox` (backend ready; test with `samples/demo_ppc_2026_10.pdf`) | open |
 | A9 | P2 | Small "scan → audit" badge animation | open |
-| A10 | P1 | After B10/B11 are live: check Overview/Providers against the real endpoints, then delete nothing – keep `derive.ts` as offline fallback | waiting for backend |
+| A10 | P1 | After B10/B11 are live: check Overview/Providers against the real endpoints, then delete nothing – keep `derive.ts` as offline fallback | ready: backend is live |
 
 ## Backend (Django + Gemini) – Person B
 
@@ -37,7 +36,7 @@ switches to them automatically. No app change needed.
 | B5 | – | `POST /bills/{id}/reading/` | ✅ |
 | B6 | – | bbox for text PDFs + text-first PDF extraction with vision fallback | ✅ |
 | B10 | ✅ | `GET /dashboard/` live, same rules as `derive.ts`; newest bill per provider per month (re-scans don't double totals); `bad_month` / `no_bills` errors | Done |
-| B11 | **P0** | `GET /providers/` and `GET /providers/{slug}/` with the discrepancy rules (API_V2 §3–4), including `index_gap` and `new_line_item` that the app can't compute + the tests from the API_V2 checklist | open |
+| B11 | ✅ | `GET /providers/` and `/providers/{slug}/` live with all 7 discrepancy rules (incl. `index_gap`, `new_line_item`) and the API_V2 checklist tests | Done |
 | B12 | ✅ | Scan v2 live: `files` (1–10) + legacy `file`, limits, `{code, detail}` errors, multi-page in one Gemini request (text if all PDFs have text), bbox pages across files, cache by file order. Verified live with a bill split into 2 photos | Done |
 | B13 | P1 | `not_a_bill` / `unreadable` (422): add `is_bill` + `readable` to the extraction schema. (HEIC needs no conversion: Gemini accepts it, the backend already allows it) | open |
 | B7 | P0 | LAN hosting from both phones (`runserver 0.0.0.0:8000`, firewall), plan B `AI_MOCK=1` | open |

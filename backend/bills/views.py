@@ -144,3 +144,20 @@ class DashboardView(APIView):
             return Response(overview.dashboard(month))
         except overview.NoBills:
             return Response({"code": "no_bills", "detail": "No bills yet. Scan your first bill."}, status=404)
+
+
+class ProvidersView(APIView):
+    """GET /api/providers/ - one card per provider (docs/API_V2.md §3)."""
+
+    def get(self, request):
+        return Response(overview.providers())
+
+
+class ProviderDetailView(APIView):
+    """GET /api/providers/{slug}/ - history + discrepancies (docs/API_V2.md §4)."""
+
+    def get(self, request, slug):
+        try:
+            return Response(overview.provider_history(slug))
+        except overview.UnknownProvider:
+            return Response({"code": "unknown_provider", "detail": f"No provider '{slug}'."}, status=404)

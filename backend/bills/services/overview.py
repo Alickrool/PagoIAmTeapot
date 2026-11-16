@@ -130,3 +130,188 @@ def dashboard(month: str | None = None) -> dict:
             for m in window
         ],
     }
+
+
+# ---------- providers (docs/API_V2.md §3-4) ----------
+
+
+class UnknownProvider(Exception):
+    pass
+
+
+def _by_provider(pts: list[Point]) -> dict[str, list[Point]]:
+    groups: dict[str, list[Point]] = {}
+    for p in pts:  # pts are oldest first, so each group is too
+        groups.setdefault(p.slug, []).append(p)
+    return groups
+
+
+def _short_anomalies(p: Point) -> list[dict]:
+    return [{"id": a["id"], "severity": a["severity"], "title": a["title"]} for a in p.audit["anomalies"]]
+
+
+def providers() -> list[dict]:
+    result = []
+    for slug, ps in _by_provider(points()).items():
+        last = ps[-1]
+        previous = [p.total for p in ps[:-1]]
+        average = mean(previous) if previous else None
+        result.append({
+            "provider": last.bill.provider,
+            "slug": slug,
+            "category": last.bill.category,
+            "bills_count": len(ps),
+            "last_bill_id": last.bill.id,
+            "last_period_end": last.bill.period_end.isoformat(),
+            "last_total": money(last.total),
+            "average_total": money(average) if average is not None else None,
+            "trend_pct": pct(last.total, average),
+            "audit_status": last.audit_status,
+            "anomalies_count": sum(1 for a in last.audit["anomalies"] if a["severity"] != "info"),
+            "totals": [money(p.total) for p in ps[-12:]],
+        })
+    # last_period_end desc, then provider name
+    result.sort(key=lambda r: r["provider"])
+    result.sort(key=lambda r: r["last_period_end"], reverse=True)
+    return result
+
+
+def _months_between(a: str, b: str) -> int:
+    (ya, ma), (yb, mb) = (map(int, a.split("-")), map(int, b.split("-")))
+    return (yb - ya) * 12 + (mb - ma)
+
+
+def _unit_price(p: Point) -> float | None:
+    return float(p.total) / p.bill.consumption if p.bill.consumption else None
+
+
+def _fmt(x) -> str:
+    return f"{float(x):g}"
+
+
+def discrepancies(ps: list[Point]) -> list[dict]:
+    """Compare every bill with the previous bill of the same provider (rules in docs/API_V2.md §4)."""
+    out = []
+    unit = ps[-1].bill.consumption_unit
+    consumptions = [p.bill.consumption for p in ps if p.bill.consumption is not None]
+    avg_cons = mean(consumptions) if consumptions else None
+
+    for i, cur in enumerate(ps):
+        prev = ps[i - 1] if i > 0 else None
+        b = cur.bill
+
+        def add(type_, severity, title, message, previous_value=None, current_value=None, unit_=""):
+            out.append({"id": f"{type_}:{b.id}", "bill_id": b.id, "period_end": b.period_end.isoformat(),
+                        "type": type_, "severity": severity, "title": title, "message": message,
+                        "previous_value": previous_value, "current_value": current_value, "unit": unit_})
+
+        if b.index_type == "estimated":
+            high = avg_cons is not None and b.consumption is not None and b.consumption >= avg_cons * 1.3
+            add("estimated_index", "critical" if high else "warning", "Estimated index",
+                f"Billed on an estimated index: {_fmt(b.consumption)} {unit} vs your average "
+                f"{round(avg_cons, 1):g} {unit}." if high else "Billed on an estimated index, not a real meter reading.",
+                round(avg_cons, 1) if avg_cons is not None else None, b.consumption, unit)
+        if not prev:
+            continue
+        pb = prev.bill
+
+        gap = _months_between(prev.month, cur.month)
+        if gap > 1:
+            add("missing_month", "info", "Missing bill",
+                f"No bill between {prev.month} and {cur.month} ({gap - 1} month{'s' if gap > 2 else ''}).")
+
+        if b.index_old is not None and pb.index_new is not None and abs(b.index_old - pb.index_new) > 0.5:
+            diff = b.index_old - pb.index_new
+            add("index_gap", "critical", "Meter index doesn't continue",
+                f"This bill starts at index {_fmt(b.index_old)}, the previous one ended at {_fmt(pb.index_new)} "
+                f"({'+' if diff > 0 else ''}{_fmt(round(diff, 2))}): consumption was "
+                f"{'skipped' if diff > 0 else 'billed twice'}.", pb.index_new, b.index_old, "index")
+
+        dc = pct(b.consumption, pb.consumption)
+        if dc is not None and abs(dc) >= 30:
+            up = dc > 0
+            add("consumption_jump",
+                "critical" if up and (dc >= 60 or b.index_type == "estimated") else "warning" if up else "info",
+                ("Consumption doubled" if dc >= 90 else "Consumption jumped") if up else "Consumption dropped",
+                f"{_fmt(b.consumption)} {unit} this month vs {_fmt(pb.consumption)} {unit} last bill "
+                f"({'+' if up else ''}{dc:g}%)." + (" The index was estimated." if b.index_type == "estimated" else ""),
+                pb.consumption, b.consumption, unit)
+
+        dt = pct(b.total, pb.total)
+        if dt is not None and abs(dt) >= 25:
+            up = dt > 0
+            price_driven = f" Consumption only {'+' if dc >= 0 else ''}{dc:g}%." if up and dc is not None and dc < dt / 2 else ""
+            add("total_jump", "info" if not up else "critical" if dt >= 50 else "warning",
+                "Bill went up" if up else "Bill went down",
+                f"{money(b.total)} RON vs {money(pb.total)} RON last bill ({'+' if up else ''}{dt:g}%).{price_driven}",
+                float(pb.total), float(b.total), "RON")
+
+        dp = pct(_unit_price(cur), _unit_price(prev))
+        if dp is not None and abs(dp) >= 10:
+            add("price_change", "warning", "Price per unit went up" if dp > 0 else "Price per unit went down",
+                f"{_unit_price(cur):.3f} RON/{unit} vs {_unit_price(prev):.3f} RON/{unit} ({'+' if dp > 0 else ''}{dp:g}%).",
+                round(_unit_price(prev), 3), round(_unit_price(cur), 3), f"RON/{unit}")
+
+        seen = {li.code for p in ps[max(0, i - 3):i] for li in p.bill.line_items.all()}
+        vat_factor = 1 + float(b.vat_rate or 0) / 100
+        for li in b.line_items.all():
+            if li.code not in seen:
+                # what the user really pays for it, VAT included (same as the audit card)
+                gross = float(li.amount) * (1 if li.kind == "tax" else vat_factor)
+                add("new_line_item", "warning", "New charge on the bill",
+                    f"\"{li.label_en or li.label}\" ({money(gross)} RON with VAT) was not on your previous "
+                    f"{min(i, 3)} bill{'s' if min(i, 3) > 1 else ''}.", None, round(gross, 2), "RON")
+                out[-1]["id"] = f"new_line_item:{b.id}:{li.code}"  # several new lines on one bill stay unique
+
+    sev = {"critical": 0, "warning": 1, "info": 2}
+    out.sort(key=lambda d: sev[d["severity"]])
+    out.sort(key=lambda d: d["period_end"], reverse=True)  # newest first, then by severity (stable sort)
+    return out
+
+
+def provider_history(slug: str) -> dict:
+    ps = _by_provider(points()).get(slug)
+    if not ps:
+        raise UnknownProvider(slug)
+    last = ps[-1]
+    totals = [p.total for p in ps]
+    cons = [p.bill.consumption for p in ps if p.bill.consumption is not None]
+    previous = totals[:-1]
+
+    bills = []
+    for i, p in enumerate(ps):
+        prev = ps[i - 1] if i > 0 else None
+        price = _unit_price(p)
+        bills.append({
+            "id": p.bill.id,
+            "period_start": p.bill.period_start.isoformat(),
+            "period_end": p.bill.period_end.isoformat(),
+            "total": money(p.total),
+            "consumption": p.bill.consumption,
+            "index_old": p.bill.index_old,
+            "index_new": p.bill.index_new,
+            "index_type": p.bill.index_type,
+            "unit_price": round(price, 3) if price is not None else None,
+            "status": p.bill.status,
+            "audit_status": p.audit_status,
+            "delta_total_pct": pct(p.total, prev.total if prev else None),
+            "delta_consumption_pct": pct(p.bill.consumption, prev.bill.consumption if prev else None),
+            "anomalies": _short_anomalies(p),
+        })
+
+    return {
+        "provider": last.bill.provider,
+        "slug": slug,
+        "category": last.bill.category,
+        "currency": "RON",
+        "consumption_unit": last.bill.consumption_unit,
+        "stats": {
+            "average_total": money(mean(previous)) if previous else None,
+            "min_total": money(min(totals)),
+            "max_total": money(max(totals)),
+            "sum_12m": money(sum(totals[-12:], Decimal("0"))),
+            "average_consumption": round(mean(cons), 1) if cons else None,
+        },
+        "bills": list(reversed(bills))[:24],
+        "discrepancies": discrepancies(ps),
+    }

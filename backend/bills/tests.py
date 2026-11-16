@@ -193,6 +193,51 @@ class DemoScenarioTests(TestCase):
         self.assertEqual((d["bills_count"], d["total"]), (4, "1001.83"))
         self.assertEqual(next(s for s in d["slices"] if s["slug"] == "ppc")["bill_id"], new_id)
 
+    # ---- providers (docs/API_V2.md §3-4) ----
+
+    def _discrepancies(self, slug):
+        return self.c.get(f"/api/providers/{slug}/").json()["discrepancies"]
+
+    def test_providers_list(self):
+        rows = self.c.get("/api/providers/").json()
+        self.assertEqual([r["slug"] for r in rows], ["apa-brasov", "digi", "engie", "ppc"])  # same date -> by name
+        ppc = next(r for r in rows if r["slug"] == "ppc")
+        self.assertEqual((ppc["bills_count"], ppc["last_total"], ppc["audit_status"]), (12, "517.06", "critical"))
+        self.assertEqual(ppc["anomalies_count"], 2)  # info (county average) not counted
+        self.assertEqual((len(ppc["totals"]), ppc["totals"][-1]), (12, "517.06"))  # oldest first
+
+    def test_provider_checklist_from_api_v2(self):
+        ppc = {(d["type"], d["severity"]) for d in self._discrepancies("ppc") if d["period_end"] == "2026-10-31"}
+        self.assertTrue({("consumption_jump", "critical"), ("estimated_index", "critical")} <= ppc)
+        digi = self._discrepancies("digi")
+        self.assertIn("new_line_item", [d["type"] for d in digi])
+        self.assertIn("15.00 RON with VAT", next(d for d in digi if d["type"] == "new_line_item")["message"])
+        self.assertIn("total_jump", [d["type"] for d in self._discrepancies("engie")])
+        self.assertEqual(self._discrepancies("apa-brasov"), [])
+
+    def test_provider_history_shape_and_order(self):
+        d = self.c.get("/api/providers/ppc/").json()
+        self.assertEqual(d["bills"][0]["period_end"], "2026-10-31")  # newest first
+        self.assertEqual(d["bills"][0]["index_type"], "estimated")
+        self.assertEqual(d["bills"][0]["anomalies"][0], {"id": "estimated_index", "severity": "critical",
+                                                         "title": "Estimated index"})
+        self.assertIsNone(d["bills"][-1]["delta_total_pct"])
+        sev = {"critical": 0, "warning": 1, "info": 2}
+        keys = [(d_["period_end"], -sev[d_["severity"]]) for d_ in d["discrepancies"]]
+        self.assertEqual(keys, sorted(keys, reverse=True))
+        self.assertEqual(len({x["id"] for x in d["discrepancies"]}), len(d["discrepancies"]))
+        r = self.c.get("/api/providers/nope/")
+        self.assertEqual((r.status_code, r.json()["code"]), (404, "unknown_provider"))
+
+    def test_index_gap(self):
+        bill = Bill.objects.filter(provider="Engie").order_by("-period_end")[3]
+        bill.index_old += 40  # 40 kWh skipped between two bills
+        bill.save()
+        gaps = [d for d in self._discrepancies("engie") if d["type"] == "index_gap"]
+        self.assertEqual(len(gaps), 1)
+        self.assertEqual((gaps[0]["bill_id"], gaps[0]["severity"]), (bill.id, "critical"))
+        self.assertIn("skipped", gaps[0]["message"])
+
     # ---- scan v2 (docs/API_V2.md §1) ----
 
     def _post_files(self, *files, field="files"):

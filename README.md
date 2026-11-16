@@ -52,6 +52,6 @@ npx expo start                    # scan the QR code with Expo Go
 ## Notes
 
 - All seeded bills, offers, and county averages are **fictional demo data**.
-- Lines marked `[VERIFY]` in `backend/bills/knowledge/romania_utilities.md` must be checked before the demo.
+- `backend/bills/knowledge/romania_utilities.md` was fact-checked on 16 Nov 2026; every fact carries its source.
 - LLM: `AI_PROVIDER=gemini` (`GEMINI_MODEL`, default `gemini-3.8-flash`) or `anthropic` (`ANTHROPIC_MODEL`, default `claude-opus-5-5`). Prompts and schemas are shared (`backend/bills/services/ai.py`).
 - Gemini free tier: Google's terms forbid sending sensitive personal data to unpaid services, so test with the demo PDFs and redact your own bills.

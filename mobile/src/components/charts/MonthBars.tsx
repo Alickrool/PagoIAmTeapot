@@ -1,6 +1,7 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import type { AuditStatus } from '../../api/types';
-import { colors, monthLabel, severity } from '../../theme';
+import { useTheme } from '../../mode';
+import { monthLabel } from '../../theme';
 
 export interface Bar {
   key: string; // month "2026-10" or bill id
@@ -22,21 +23,22 @@ export function MonthBars({
   onSelect?: (key: string) => void;
   height?: number;
 }) {
+  const t = useTheme();
   const max = Math.max(...bars.map((b) => b.value), 1);
   return (
     <View style={[styles.row, { height: height + 34 }]}>
       {bars.map((b) => {
         const isSel = b.key === selected;
-        const color = b.highlight ? '#EF4444' : isSel ? colors.primary : '#C9C1FB';
+        const color = b.highlight ? t.sev.critical.color : isSel ? t.accent : t.surface2;
         return (
           <Pressable key={b.key} style={styles.col} onPress={() => onSelect?.(b.key)} disabled={!onSelect}>
             <View style={{ height: 10, justifyContent: 'center' }}>
-              {b.status && b.status !== 'ok' && <View style={[styles.dot, { backgroundColor: severity[b.status].color }]} />}
+              {b.status && b.status !== 'ok' && <View style={[styles.dot, { backgroundColor: t.sev[b.status].color }]} />}
             </View>
             <View style={{ height, justifyContent: 'flex-end', width: '100%', alignItems: 'center' }}>
               <View style={[styles.bar, { height: Math.max((b.value / max) * height, 3), backgroundColor: color }]} />
             </View>
-            <Text style={[styles.label, isSel && styles.labelSel]} numberOfLines={1}>
+            <Text style={[styles.label, { color: isSel ? t.accent : t.muted, fontSize: t.fs(10) }, isSel && styles.labelSel]} numberOfLines={1}>
               {b.label}
             </Text>
           </Pressable>
@@ -58,6 +60,6 @@ const styles = StyleSheet.create({
   col: { flex: 1, alignItems: 'center', gap: 4 },
   bar: { width: '70%', maxWidth: 22, borderRadius: 6 },
   dot: { width: 6, height: 6, borderRadius: 3 },
-  label: { fontSize: 10, color: colors.muted },
-  labelSel: { color: colors.primary, fontWeight: '700' },
+  label: {},
+  labelSel: { fontWeight: '800' },
 });

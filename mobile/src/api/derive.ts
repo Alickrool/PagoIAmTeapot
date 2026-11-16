@@ -196,10 +196,10 @@ function discrepancies(ps: Point[], unit: string): Discrepancy[] {
       add({
         type: 'estimated_index',
         severity: high ? 'critical' : 'warning',
-        title: 'Estimated index',
+        title: 'Index estimat',
         message: high
-          ? `Billed on an estimated index: ${cur.consumption} ${unit} vs your average ${r1(avgCons!)} ${unit}.`
-          : 'Billed on an estimated index, not a real meter reading.',
+          ? `Facturat pe index estimat: ${cur.consumption} ${unit}, media ta e ${r1(avgCons!)} ${unit}.`
+          : 'Facturat pe index estimat, nu pe citirea reală a contorului.',
         previous_value: avgCons == null ? null : r1(avgCons),
         current_value: cur.consumption,
         unit,
@@ -212,8 +212,8 @@ function discrepancies(ps: Point[], unit: string): Discrepancy[] {
       add({
         type: 'missing_month',
         severity: 'info',
-        title: 'Missing bill',
-        message: `No bill between ${prev.month} and ${cur.month} (${gap - 1} month${gap > 2 ? 's' : ''}).`,
+        title: 'Lipsește o factură',
+        message: `Nicio factură între ${prev.month} și ${cur.month} (${gap - 1} ${gap > 2 ? 'luni' : 'lună'}).`,
         previous_value: null,
         current_value: null,
         unit: '',
@@ -226,9 +226,9 @@ function discrepancies(ps: Point[], unit: string): Discrepancy[] {
       add({
         type: 'consumption_jump',
         severity: up && (dc >= 60 || cur.index_type === 'estimated') ? 'critical' : up ? 'warning' : 'info',
-        title: up ? (dc >= 90 ? 'Consumption doubled' : 'Consumption jumped') : 'Consumption dropped',
-        message: `${cur.consumption} ${unit} this month vs ${prev.consumption} ${unit} last bill (${up ? '+' : ''}${dc}%).${
-          cur.index_type === 'estimated' ? ' The index was estimated.' : ''
+        title: up ? (dc >= 90 ? 'Consumul s-a dublat' : 'Consumul a sărit') : 'Consumul a scăzut',
+        message: `${cur.consumption} ${unit} acum, față de ${prev.consumption} ${unit} pe factura trecută (${up ? '+' : ''}${dc}%).${
+          cur.index_type === 'estimated' ? ' Indexul a fost estimat.' : ''
         }`,
         previous_value: prev.consumption,
         current_value: cur.consumption,
@@ -240,15 +240,15 @@ function discrepancies(ps: Point[], unit: string): Discrepancy[] {
     if (dt != null && Math.abs(dt) >= 25) {
       const up = dt > 0;
       // Price-driven increase: the bill grew much faster than consumption.
-      const priceDriven = up && dc != null && dc < dt / 2 ? ` Consumption only ${dc >= 0 ? '+' : ''}${dc}%.` : '';
+      const priceDriven = up && dc != null && dc < dt / 2 ? ` Consumul doar ${dc >= 0 ? '+' : ''}${dc}%.` : '';
       add({
         type: 'total_jump',
         severity: !up ? 'info' : dt >= 50 ? 'critical' : 'warning',
-        title: up ? 'Bill went up' : 'Bill went down',
-        message: `${str(cur.total)} RON vs ${str(prev.total)} RON last bill (${up ? '+' : ''}${dt}%).${priceDriven}`,
+        title: up ? 'Factura a crescut' : 'Factura a scăzut',
+        message: `${str(cur.total)} lei, față de ${str(prev.total)} lei pe factura trecută (${up ? '+' : ''}${dt}%).${priceDriven}`,
         previous_value: prev.total,
         current_value: cur.total,
-        unit: 'RON',
+        unit: 'lei',
       });
     }
 
@@ -257,11 +257,11 @@ function discrepancies(ps: Point[], unit: string): Discrepancy[] {
       add({
         type: 'price_change',
         severity: 'warning',
-        title: dp > 0 ? 'Price per unit went up' : 'Price per unit went down',
-        message: `${price(cur)!.toFixed(3)} RON/${unit} vs ${price(prev)!.toFixed(3)} RON/${unit} (${dp > 0 ? '+' : ''}${dp}%).`,
+        title: dp > 0 ? 'Prețul pe unitate a crescut' : 'Prețul pe unitate a scăzut',
+        message: `${price(cur)!.toFixed(3)} lei/${unit}, față de ${price(prev)!.toFixed(3)} lei/${unit} (${dp > 0 ? '+' : ''}${dp}%).`,
         previous_value: Number(price(prev)!.toFixed(3)),
         current_value: Number(price(cur)!.toFixed(3)),
-        unit: `RON/${unit}`,
+        unit: `lei/${unit}`,
       });
     }
   });

@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
 import Svg, { Circle, G } from 'react-native-svg';
-import { colors } from '../../theme';
+import { useTheme } from '../../mode';
 
 export interface DonutSlice {
   key: string;
@@ -23,6 +23,7 @@ export function Donut({
   selected?: string | null;
   children?: ReactNode;
 }) {
+  const t = useTheme();
   const r = (size - stroke) / 2;
   const circ = 2 * Math.PI * r;
   const total = slices.reduce((a, s) => a + s.value, 0);
@@ -33,7 +34,7 @@ export function Donut({
     <View style={{ width: size, height: size }}>
       <Svg width={size} height={size}>
         <G rotation={-90} origin={`${size / 2}, ${size / 2}`}>
-          <Circle cx={size / 2} cy={size / 2} r={r} stroke={colors.border} strokeWidth={stroke} fill="none" />
+          <Circle cx={size / 2} cy={size / 2} r={r} stroke={t.surface2} strokeWidth={stroke} fill="none" />
           {total > 0 &&
             slices.map((s) => {
               const len = (s.value / total) * circ;

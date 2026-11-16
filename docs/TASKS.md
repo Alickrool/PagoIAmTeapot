@@ -21,12 +21,13 @@ switches to them automatically. No app change needed.
 | A5 | P1 | History charts | ✅ Overview (donut, month compare, 12-month bars) + provider chart |
 | A7 | P0 | Scan screen: camera/gallery/PDF, up to 10 pages, staged loader | ✅ |
 | – | – | Overview + Providers tabs, provider history with discrepancies | ✅ (on local fallback until B10/B11) |
-| A6 | **P0** | **Submit-reading modal** on the "Submit real reading" action → `POST /bills/{id}/reading/ {index_new}` (backend ready, see API.md), then show the returned bill and `recalculation.difference` ("−248.22 RON"). This is demo step 2. Also polish Dispute/Offers/AutoPay result | open |
-| A3 | P0 | Pay button asks for confirmation when the audit is 🔴 ("This bill has an anomaly. Pay anyway?") | open |
-| A4 | P0 | Ask UX: suggested-question chips ("Why is VAT so high?", "What is Contribuție CfD?", "Why did it go up?"), answer card scrolls into view; style `sources` chips + `suggested_actions` | open |
-| A2 | P1 | Pago look & feel pass over all screens | partly (theme, categories, avatars) |
+| A6 | **P0** | **Submit-reading modal** on the "Submit real reading" action → `POST /bills/{id}/reading/ {index_new}` (backend ready, see API.md), then show the returned bill and `recalculation.difference` ("−248.22 RON"). This is demo step 2. Also polish Dispute/Offers/AutoPay result | ✅ modal + recalculated bill (517,06 → 268,84 lei, 🔴 → 🟡); AutoPay result on screen |
+| A3 | P0 | Pay button asks for confirmation when the audit is 🔴 ("This bill has an anomaly. Pay anyway?") | ✅ (works on web too) |
+| A4 | P0 | Ask UX: suggested-question chips ("Why is VAT so high?", "What is Contribuție CfD?", "Why did it go up?"), answer card scrolls into view; style `sources` chips + `suggested_actions` | ✅ (Gemini still answers in English) |
+| A2 | P1 | Pago look & feel pass over all screens | ✅ 3 generation modes (Gen Z / Millennials / Senior), Romanian UI |
 | A8 | P2 | Original PDF page with highlight boxes from `line_items[].bbox` (backend ready; test with `samples/demo_ppc_2026_10.pdf`) | open |
-| A9 | P2 | Small "scan → audit" badge animation | open |
+| A9 | P2 | Small "scan → audit" badge animation | ✅ badge pops when the audit status changes |
+| A11 | P1 | Generation modes from the "Pago pe generații" mockup: picker on first launch (saved), Gen Z dark + slang, Millennials budget ring, Senior large text + family share; "Mod" button in the header | ✅ `src/mode.tsx` |
 | A10 | P1 | After B10/B11 are live: check Overview/Providers against the real endpoints, then delete nothing – keep `derive.ts` as offline fallback | waiting for backend |
 
 ## Backend (Django + Gemini) – Person B

@@ -12,6 +12,7 @@ import type {
   OffersResponse,
   PayResponse,
   ProviderHistory,
+  ReadingResponse,
   ProviderSummary,
   UploadFile,
 } from './types';
@@ -160,6 +161,33 @@ export const api = {
           disclaimer: 'Demo prices, illustrative only.',
         })
       : request(`/bills/${billId}/offers/`),
+
+  /** Submit the real meter index -> recalculated bill (A6). */
+  submitReading: (billId: number, indexNew: number): Promise<ReadingResponse> => {
+    if (!MOCK) return post(`/bills/${billId}/reading/`, { index_new: indexNew });
+    const bill = details[String(billId)];
+    const consumption = bill ? indexNew - (bill.index_old ?? 0) : 0;
+    if (!bill || consumption <= 0) return Promise.reject(new Error('Indexul nou trebuie să fie mai mare decât cel vechi.'));
+    const ratio = consumption / (bill.consumption || consumption);
+    const newTotal = Math.round(Number(bill.total) * ratio * 100) / 100;
+    const anomalies = bill.audit.anomalies.filter((a) => a.id !== 'estimated_index');
+    return delay({
+      ...bill,
+      index_new: indexNew,
+      index_type: 'self' as const,
+      consumption,
+      total: newTotal.toFixed(2),
+      audit: { status: anomalies.some((a) => a.severity === 'critical') ? 'critical' : anomalies.some((a) => a.severity === 'warning') ? 'warning' : 'ok', anomalies },
+      recalculation: {
+        previous_total: Number(bill.total),
+        new_total: newTotal,
+        difference: Math.round((newTotal - Number(bill.total)) * 100) / 100,
+        previous_consumption: bill.consumption ?? 0,
+        new_consumption: consumption,
+        unit: bill.consumption_unit,
+      },
+    }, 900);
+  },
 
   pay: (billId: number, mode: 'manual' | 'auto'): Promise<PayResponse> =>
     MOCK ? delay({ status: mode === 'auto' ? 'blocked' : 'paid', reasons: mode === 'auto' ? ['[mock] Estimated index'] : [] }) : post(`/bills/${billId}/pay/`, { mode }),

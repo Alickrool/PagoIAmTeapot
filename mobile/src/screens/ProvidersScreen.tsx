@@ -8,9 +8,13 @@ import { Sparkline } from '../components/charts/Sparkline';
 import { ProviderAvatar } from '../components/ProviderAvatar';
 import { SeverityBadge } from '../components/SeverityBadge';
 import { useStackNavigation } from '../navigation';
-import { category, colors, deltaColor, deltaLabel, money, monthLabel } from '../theme';
+import { useCopy, useStyles, useTheme, type Theme } from '../mode';
+import { category, deltaColor, deltaLabel, money, monthLabel } from '../theme';
 
 export default function ProvidersScreen() {
+  const t = useTheme();
+  const styles = useStyles(makeStyles);
+  const copy = useCopy();
   const navigation = useStackNavigation();
   const [items, setItems] = useState<ProviderSummary[] | null>(null);
   const [loading, setLoading] = useState(true);
@@ -34,7 +38,7 @@ export default function ProvidersScreen() {
         {error ? (
           <>
             <Text style={styles.muted}>{error}</Text>
-            <Button title="Try again" onPress={load} />
+            <Button title="Încearcă din nou" onPress={load} />
           </>
         ) : (
           <ActivityIndicator />
@@ -45,12 +49,12 @@ export default function ProvidersScreen() {
 
   return (
     <FlatList
-      style={{ backgroundColor: colors.bg }}
+      style={{ backgroundColor: t.bg }}
       data={items}
       keyExtractor={(p) => p.slug}
       contentContainerStyle={{ padding: 16, gap: 12 }}
       refreshControl={<RefreshControl refreshing={loading} onRefresh={load} />}
-      ListHeaderComponent={<Text style={styles.intro}>Every bill per provider, compared with the ones before it.</Text>}
+      ListHeaderComponent={<Text style={styles.intro}>{copy.providersIntro}</Text>}
       renderItem={({ item: p }) => {
         const c = category[p.category] ?? category.other;
         return (
@@ -63,19 +67,19 @@ export default function ProvidersScreen() {
               <View style={{ flex: 1 }}>
                 <Text style={styles.name}>{p.provider}</Text>
                 <Text style={styles.muted}>
-                  {c.icon} {c.label} · {p.bills_count} bills
+                  {c.icon} {c.label} · {p.bills_count} facturi
                 </Text>
               </View>
               <Sparkline values={p.totals.map(Number)} color={c.color} />
             </View>
             <View style={styles.bottom}>
               <View>
-                <Text style={styles.small}>Last · {monthLabel(p.last_period_end.slice(0, 7))}</Text>
+                <Text style={styles.small}>Ultima · {monthLabel(p.last_period_end.slice(0, 7))}</Text>
                 <Text style={styles.total}>{money(p.last_total)}</Text>
               </View>
               <View>
-                <Text style={styles.small}>vs average</Text>
-                <Text style={[styles.trend, { color: deltaColor(p.trend_pct) }]}>
+                <Text style={styles.small}>față de medie</Text>
+                <Text style={[styles.trend, { color: deltaColor(p.trend_pct, t) }]}>
                   {p.trend_pct == null ? '–' : deltaLabel(p.trend_pct)}
                 </Text>
               </View>
@@ -83,7 +87,7 @@ export default function ProvidersScreen() {
                 <SeverityBadge severity={p.audit_status} />
                 {p.anomalies_count > 0 && (
                   <Text style={styles.small}>
-                    {p.anomalies_count} issue{p.anomalies_count > 1 ? 's' : ''}
+                    {p.anomalies_count} {p.anomalies_count > 1 ? 'probleme' : 'problemă'}
                   </Text>
                 )}
               </View>
@@ -95,15 +99,16 @@ export default function ProvidersScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  centerFill: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12, padding: 24, backgroundColor: colors.bg },
-  intro: { color: colors.muted, marginBottom: 4 },
-  card: { backgroundColor: colors.card, borderRadius: 18, padding: 16, gap: 14 },
+const makeStyles = (t: Theme) =>
+  StyleSheet.create({
+  centerFill: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12, padding: 24, backgroundColor: t.bg },
+  intro: { color: t.muted, marginBottom: 4 },
+  card: { backgroundColor: t.surface, borderRadius: 18, padding: 16, gap: 14 },
   top: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  bottom: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', paddingTop: 12, borderTopWidth: 1, borderColor: colors.border },
-  name: { fontSize: 17, fontWeight: '700', color: colors.text },
-  muted: { color: colors.muted, fontSize: 13, marginTop: 2 },
-  small: { color: colors.muted, fontSize: 12 },
-  total: { fontSize: 18, fontWeight: '800', color: colors.text, marginTop: 2 },
+  bottom: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', paddingTop: 12, borderTopWidth: 1, borderColor: t.border },
+  name: { fontSize: 17, fontWeight: '700', color: t.text },
+  muted: { color: t.muted, fontSize: 13, marginTop: 2 },
+  small: { color: t.muted, fontSize: 12 },
+  total: { fontSize: 18, fontWeight: '800', color: t.text, marginTop: 2 },
   trend: { fontSize: 16, fontWeight: '700', marginTop: 2 },
 });

@@ -1,44 +1,39 @@
+// Mode-independent helpers. Colours that change per generation live in src/mode.tsx (THEMES).
 import type { Category, Severity } from './api/types';
 
-export const colors = {
-  bg: '#F5F6FA',
-  card: '#FFFFFF',
-  text: '#16181D',
-  muted: '#6B7280',
-  border: '#E5E7EB',
-  primary: '#5B3DF5',
-  primaryText: '#FFFFFF',
-  highlight: '#FFF4CC',
-};
+export const severityIcon: Record<Severity, string> = { ok: '🟢', info: 'ℹ️', warning: '🟡', critical: '🔴' };
 
-export const severity: Record<Severity, { color: string; bg: string; icon: string; label: string }> = {
-  ok: { color: '#15803D', bg: '#DCFCE7', icon: '🟢', label: 'Normal' },
-  info: { color: '#1D4ED8', bg: '#DBEAFE', icon: 'ℹ️', label: 'Info' },
-  warning: { color: '#B45309', bg: '#FEF3C7', icon: '🟡', label: 'Attention' },
-  critical: { color: '#B91C1C', bg: '#FEE2E2', icon: '🔴', label: 'Anomaly' },
-};
-
-export const money = (v: string | number) => `${Number(v).toFixed(2)} RON`;
+/** 501.85 -> "501,85 lei" */
+export const money = (v: string | number) => `${Number(v).toFixed(2).replace('.', ',')} lei`;
 
 export const category: Record<Category, { color: string; icon: string; label: string }> = {
-  electricity: { color: '#F59E0B', icon: '⚡', label: 'Electricity' },
-  gas: { color: '#EF4444', icon: '🔥', label: 'Gas' },
-  water: { color: '#0EA5E9', icon: '💧', label: 'Water' },
-  telecom: { color: '#8B5CF6', icon: '📶', label: 'Internet & TV' },
-  other: { color: '#64748B', icon: '🧾', label: 'Other' },
+  electricity: { color: '#F59E0B', icon: '⚡', label: 'Curent' },
+  gas: { color: '#EF4444', icon: '🔥', label: 'Gaz' },
+  water: { color: '#0EA5E9', icon: '💧', label: 'Apă' },
+  telecom: { color: '#8B5CF6', icon: '📶', label: 'Internet și TV' },
+  other: { color: '#64748B', icon: '🧾', label: 'Altele' },
 };
 
-const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-/** "2026-10" -> "Oct 2026" (short: "Oct") */
+const SHORT = ['ian', 'feb', 'mar', 'apr', 'mai', 'iun', 'iul', 'aug', 'sep', 'oct', 'noi', 'dec'];
+const LONG = ['ianuarie', 'februarie', 'martie', 'aprilie', 'mai', 'iunie', 'iulie', 'august', 'septembrie', 'octombrie', 'noiembrie', 'decembrie'];
+
+/** "2026-10" -> "octombrie 2026" (short: "oct") */
 export const monthLabel = (month: string, short = false) => {
   const [y, m] = month.split('-').map(Number);
-  return short ? MONTHS[m - 1] : `${MONTHS[m - 1]} ${y}`;
+  return short ? SHORT[m - 1] : `${LONG[m - 1]} ${y}`;
 };
+export const monthName = (month: string) => LONG[Number(month.split('-')[1]) - 1];
 
-/** +12.3% / −4.0%, or '' when null */
+/** +12% / −4,0%, or '' when null */
 export const deltaLabel = (pct: number | null) =>
-  pct == null ? '' : `${pct > 0 ? '+' : pct < 0 ? '−' : ''}${Math.abs(pct).toFixed(pct !== 0 && Math.abs(pct) < 10 ? 1 : 0)}%`;
+  pct == null
+    ? ''
+    : `${pct > 0 ? '+' : pct < 0 ? '−' : ''}${Math.abs(pct)
+        .toFixed(pct !== 0 && Math.abs(pct) < 10 ? 1 : 0)
+        .replace('.', ',')}%`;
 
-/** Bills going up are bad (red), going down good (green). */
-export const deltaColor = (pct: number | null) =>
-  pct == null || Math.abs(pct) < 5 ? colors.muted : pct > 0 ? '#B91C1C' : '#15803D';
+/** Bills going up are bad (red), going down good (green); small changes stay muted. */
+export const deltaColor = (pct: number | null, t: { muted: string; sev: Record<Severity, { color: string }> }) =>
+  pct == null || Math.abs(pct) < 5 ? t.muted : pct > 0 ? t.sev.critical.color : t.sev.ok.color;
+
+export const tabular = { fontVariant: ['tabular-nums' as const] };

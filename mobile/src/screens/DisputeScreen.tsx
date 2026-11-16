@@ -4,9 +4,12 @@ import { api } from '../api/client';
 import type { DisputeLetter } from '../api/types';
 import { Button } from '../components/Button';
 import type { ScreenProps } from '../navigation';
-import { colors } from '../theme';
+import { useStyles, useTheme, type Theme } from '../mode';
+
 
 export default function DisputeScreen({ route }: ScreenProps<'Dispute'>) {
+  const t = useTheme();
+  const styles = useStyles(makeStyles);
   const { billId, anomalyId } = route.params;
   const [letter, setLetter] = useState<DisputeLetter | null>(null);
 
@@ -17,8 +20,8 @@ export default function DisputeScreen({ route }: ScreenProps<'Dispute'>) {
   if (!letter) {
     return (
       <View style={{ marginTop: 40, alignItems: 'center', gap: 8 }}>
-        <ActivityIndicator />
-        <Text>Drafting your complaint…</Text>
+        <ActivityIndicator color={t.accent} />
+        <Text style={{ color: t.text }}>Pregătim contestația…</Text>
       </View>
     );
   }
@@ -27,26 +30,27 @@ export default function DisputeScreen({ route }: ScreenProps<'Dispute'>) {
     Linking.openURL(`mailto:?subject=${encodeURIComponent(letter.subject)}&body=${encodeURIComponent(letter.body)}`);
 
   return (
-    <ScrollView contentContainerStyle={{ padding: 16, gap: 12 }} style={{ backgroundColor: colors.bg }}>
-      <Text style={styles.label}>To</Text>
+    <ScrollView contentContainerStyle={{ padding: 16, gap: 12 }} style={{ backgroundColor: t.bg }}>
+      <Text style={styles.label}>Către</Text>
       <Text style={styles.value}>{letter.to}</Text>
-      <Text style={styles.label}>Subject</Text>
+      <Text style={styles.label}>Subiect</Text>
       <Text style={styles.value}>{letter.subject}</Text>
-      <Text style={styles.label}>Message (editable)</Text>
+      <Text style={styles.label}>Mesaj (îl poți modifica)</Text>
       <TextInput
         style={styles.body}
         multiline
         value={letter.body}
         onChangeText={(body) => setLetter({ ...letter, body })}
       />
-      <Button title="Send by e-mail" onPress={email} />
-      <Button title="Share" variant="secondary" onPress={() => Share.share({ title: letter.subject, message: letter.body })} />
+      <Button title="Trimite pe e-mail" onPress={email} />
+      <Button title="Distribuie" variant="secondary" onPress={() => Share.share({ title: letter.subject, message: letter.body })} />
     </ScrollView>
   );
 }
 
-const styles = StyleSheet.create({
-  label: { color: colors.muted, fontSize: 12, textTransform: 'uppercase' },
-  value: { color: colors.text, fontWeight: '600' },
-  body: { backgroundColor: colors.card, borderRadius: 12, padding: 12, minHeight: 280, textAlignVertical: 'top', color: colors.text },
+const makeStyles = (t: Theme) =>
+  StyleSheet.create({
+  label: { color: t.muted, fontSize: 12, textTransform: 'uppercase' },
+  value: { color: t.text, fontWeight: '600' },
+  body: { backgroundColor: t.surface, borderRadius: 12, padding: 12, minHeight: 280, textAlignVertical: 'top', color: t.text },
 });

@@ -258,3 +258,15 @@ export interface ProviderHistory {
   bills: ProviderBill[]; // newest first
   discrepancies: Discrepancy[]; // newest first, then by severity
 }
+
+// POST /bills/{id}/reading/ (docs/API.md "Submit reading response")
+export interface Recalculation {
+  previous_total: number;
+  new_total: number;
+  difference: number;
+  previous_consumption: number;
+  new_consumption: number;
+  unit: string;
+}
+
+export type ReadingResponse = BillDetail & { recalculation: Recalculation };

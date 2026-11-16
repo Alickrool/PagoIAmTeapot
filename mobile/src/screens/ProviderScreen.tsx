@@ -6,13 +6,16 @@ import { Button } from '../components/Button';
 import { MonthBars } from '../components/charts/MonthBars';
 import { ProviderAvatar } from '../components/ProviderAvatar';
 import type { ScreenProps } from '../navigation';
-import { category, colors, deltaColor, deltaLabel, money, monthLabel, severity } from '../theme';
+import { useStyles, useTheme, type Theme } from '../mode';
+import { category, deltaColor, deltaLabel, money, monthLabel, severityIcon } from '../theme';
 
 type Metric = 'total' | 'consumption';
 
-const INDEX_LABEL: Record<IndexType, string> = { real: 'Real index', self: 'Self-read', estimated: 'Estimated', none: '' };
+const INDEX_LABEL: Record<IndexType, string> = { real: 'Index citit', self: 'Autocitire', estimated: 'Estimat', none: '' };
 
 export default function ProviderScreen({ route, navigation }: ScreenProps<'Provider'>) {
+  const t = useTheme();
+  const styles = useStyles(makeStyles);
   const { slug, provider } = route.params;
   const [data, setData] = useState<ProviderHistory | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -44,7 +47,7 @@ export default function ProviderScreen({ route, navigation }: ScreenProps<'Provi
         {error ? (
           <>
             <Text style={styles.muted}>{error}</Text>
-            <Button title="Try again" onPress={load} />
+            <Button title="Încearcă din nou" onPress={load} />
           </>
         ) : (
           <ActivityIndicator />
@@ -60,7 +63,7 @@ export default function ProviderScreen({ route, navigation }: ScreenProps<'Provi
   const unit = data.consumption_unit;
 
   return (
-    <ScrollView style={{ backgroundColor: colors.bg }} contentContainerStyle={{ padding: 16, gap: 14, paddingBottom: 32 }}>
+    <ScrollView style={{ backgroundColor: t.bg }} contentContainerStyle={{ padding: 16, gap: 14, paddingBottom: 32 }}>
       {/* Header + stats */}
       <View style={styles.card}>
         <View style={styles.headerRow}>
@@ -68,30 +71,30 @@ export default function ProviderScreen({ route, navigation }: ScreenProps<'Provi
           <View style={{ flex: 1 }}>
             <Text style={styles.title}>{data.provider}</Text>
             <Text style={styles.muted}>
-              {c.icon} {c.label} · {data.bills.length} bills
+              {c.icon} {c.label} · {data.bills.length} facturi
             </Text>
           </View>
         </View>
         <View style={styles.stats}>
-          <Stat label="Average" value={data.stats.average_total ? money(data.stats.average_total) : '–'} />
-          <Stat label="Lowest" value={money(data.stats.min_total)} />
-          <Stat label="Highest" value={money(data.stats.max_total)} />
+          <Stat label="Medie" value={data.stats.average_total ? money(data.stats.average_total) : '–'} />
+          <Stat label="Minim" value={money(data.stats.min_total)} />
+          <Stat label="Maxim" value={money(data.stats.max_total)} />
         </View>
         <View style={styles.stats}>
-          <Stat label="Last 12 months" value={money(data.stats.sum_12m)} />
-          {data.stats.average_consumption != null && <Stat label="Avg. consumption" value={`${data.stats.average_consumption} ${unit}`} />}
+          <Stat label="Ultimele 12 luni" value={money(data.stats.sum_12m)} />
+          {data.stats.average_consumption != null && <Stat label="Consum mediu" value={`${data.stats.average_consumption} ${unit}`} />}
         </View>
       </View>
 
       {/* Chart */}
       <View style={[styles.card, { gap: 12 }]}>
         <View style={styles.headerRow}>
-          <Text style={[styles.section, { flex: 1, marginTop: 0 }]}>Last 12 bills</Text>
+          <Text style={[styles.section, { flex: 1, marginTop: 0 }]}>Ultimele 12 facturi</Text>
           {hasConsumption && (
             <View style={styles.toggle}>
               {(['total', 'consumption'] as Metric[]).map((m) => (
                 <Pressable key={m} onPress={() => setMetric(m)} style={[styles.toggleBtn, metric === m && styles.toggleOn]}>
-                  <Text style={[styles.toggleText, metric === m && { color: colors.primaryText }]}>{m === 'total' ? 'RON' : unit}</Text>
+                  <Text style={[styles.toggleText, metric === m && { color: t.onAccent }]}>{m === 'total' ? 'RON' : unit}</Text>
                 </Pressable>
               ))}
             </View>
@@ -109,28 +112,28 @@ export default function ProviderScreen({ route, navigation }: ScreenProps<'Provi
           onSelect={(k) => setSelected(Number(k))}
         />
         <View style={styles.legend}>
-          <Legend color={colors.primary} label="Selected" />
-          <Legend color="#EF4444" label="Estimated index" />
-          <Legend color={severity.critical.color} label="Issue found" dot />
+          <Legend color={t.accent} label="Selectată" />
+          <Legend color={t.sev.critical.color} label="Index estimat" />
+          <Legend color={t.sev.critical.color} label="Problemă găsită" dot />
         </View>
         {selected != null && <SelectedBill bill={data.bills.find((b) => b.id === selected)!} unit={unit} onOpen={open} />}
       </View>
 
       {/* Discrepancies */}
       <Text style={styles.section}>
-        Discrepancies {data.discrepancies.length > 0 ? `· ${data.discrepancies.length}` : ''}
+        Discrepanțe {data.discrepancies.length > 0 ? `· ${data.discrepancies.length}` : ''}
       </Text>
       {data.discrepancies.length === 0 ? (
         <View style={[styles.card, { flexDirection: 'row', gap: 10, alignItems: 'center' }]}>
           <Text style={{ fontSize: 22 }}>🟢</Text>
-          <Text style={{ flex: 1, color: colors.text }}>Every bill is in line with the ones before it.</Text>
+          <Text style={{ flex: 1, color: t.text }}>Fiecare factură e în linie cu cele de dinainte.</Text>
         </View>
       ) : (
         data.discrepancies.map((d) => <DiscrepancyCard key={d.id} d={d} onPress={() => open(d.bill_id)} />)
       )}
 
       {/* Timeline */}
-      <Text style={styles.section}>All bills</Text>
+      <Text style={styles.section}>Toate facturile</Text>
       <View style={styles.list}>
         {data.bills.map((b) => (
           <BillRow key={b.id} bill={b} unit={unit} onPress={() => open(b.id)} />
@@ -141,6 +144,7 @@ export default function ProviderScreen({ route, navigation }: ScreenProps<'Provi
 }
 
 function SelectedBill({ bill, unit, onOpen }: { bill: ProviderBill; unit: string; onOpen: (id: number) => void }) {
+  const styles = useStyles(makeStyles);
   return (
     <Pressable onPress={() => onOpen(bill.id)} style={styles.selected}>
       <View style={{ flex: 1 }}>
@@ -156,13 +160,15 @@ function SelectedBill({ bill, unit, onOpen }: { bill: ProviderBill; unit: string
 }
 
 function DiscrepancyCard({ d, onPress }: { d: Discrepancy; onPress: () => void }) {
-  const s = severity[d.severity];
+  const t = useTheme();
+  const styles = useStyles(makeStyles);
+  const s = t.sev[d.severity];
   const numeric = d.previous_value != null && d.current_value != null;
   return (
     <Pressable onPress={onPress} style={({ pressed }) => [styles.disc, { backgroundColor: s.bg, borderColor: s.color }, pressed && { opacity: 0.7 }]}>
       <View style={styles.headerRow}>
         <Text style={[styles.discTitle, { color: s.color, flex: 1 }]}>
-          {s.icon} {d.title}
+          {severityIcon[d.severity]} {d.title}
         </Text>
         <Text style={styles.discMonth}>{monthLabel(d.period_end.slice(0, 7))}</Text>
       </View>
@@ -183,9 +189,11 @@ function DiscrepancyCard({ d, onPress }: { d: Discrepancy; onPress: () => void }
 }
 
 function BillRow({ bill, unit, onPress }: { bill: ProviderBill; unit: string; onPress: () => void }) {
+  const t = useTheme();
+  const styles = useStyles(makeStyles);
   return (
     <Pressable onPress={onPress} style={({ pressed }) => [styles.row, pressed && { opacity: 0.6 }]}>
-      <View style={[styles.statusBar, { backgroundColor: severity[bill.audit_status].color }]} />
+      <View style={[styles.statusBar, { backgroundColor: t.sev[bill.audit_status].color }]} />
       <View style={{ flex: 1, gap: 4 }}>
         <Text style={styles.rowTitle}>{monthLabel(bill.period_end.slice(0, 7))}</Text>
         <View style={styles.chips}>
@@ -199,7 +207,7 @@ function BillRow({ bill, unit, onPress }: { bill: ProviderBill; unit: string; on
             <Text style={[styles.chip, bill.index_type === 'estimated' && styles.chipBad]}>{INDEX_LABEL[bill.index_type]}</Text>
           )}
           {bill.anomalies.map((a) => (
-            <Text key={a.id} style={[styles.chip, { backgroundColor: severity[a.severity].bg, color: severity[a.severity].color }]}>
+            <Text key={a.id} style={[styles.chip, { backgroundColor: t.sev[a.severity].bg, color: t.sev[a.severity].color }]}>
               {a.title}
             </Text>
           ))}
@@ -208,7 +216,7 @@ function BillRow({ bill, unit, onPress }: { bill: ProviderBill; unit: string; on
       <View style={{ alignItems: 'flex-end' }}>
         <Text style={styles.rowTotal}>{money(bill.total)}</Text>
         {bill.delta_total_pct != null && (
-          <Text style={[styles.delta, { color: deltaColor(bill.delta_total_pct) }]}>{deltaLabel(bill.delta_total_pct)}</Text>
+          <Text style={[styles.delta, { color: deltaColor(bill.delta_total_pct, t) }]}>{deltaLabel(bill.delta_total_pct)}</Text>
         )}
         <Text style={styles.muted}>{bill.status}</Text>
       </View>
@@ -217,6 +225,7 @@ function BillRow({ bill, unit, onPress }: { bill: ProviderBill; unit: string; on
 }
 
 function Stat({ label, value }: { label: string; value: string }) {
+  const styles = useStyles(makeStyles);
   return (
     <View style={{ flex: 1 }}>
       <Text style={styles.small}>{label}</Text>
@@ -226,6 +235,7 @@ function Stat({ label, value }: { label: string; value: string }) {
 }
 
 function Legend({ color, label, dot }: { color: string; label: string; dot?: boolean }) {
+  const styles = useStyles(makeStyles);
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
       <View style={{ width: dot ? 6 : 10, height: dot ? 6 : 10, borderRadius: dot ? 3 : 2, backgroundColor: color }} />
@@ -234,35 +244,36 @@ function Legend({ color, label, dot }: { color: string; label: string; dot?: boo
   );
 }
 
-const styles = StyleSheet.create({
-  centerFill: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12, padding: 24, backgroundColor: colors.bg },
-  card: { backgroundColor: colors.card, borderRadius: 18, padding: 16, gap: 14 },
+const makeStyles = (t: Theme) =>
+  StyleSheet.create({
+  centerFill: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12, padding: 24, backgroundColor: t.bg },
+  card: { backgroundColor: t.surface, borderRadius: 18, padding: 16, gap: 14 },
   headerRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  title: { fontSize: 20, fontWeight: '800', color: colors.text },
-  muted: { color: colors.muted, fontSize: 12, marginTop: 2 },
-  small: { color: colors.muted, fontSize: 12 },
+  title: { fontSize: 20, fontWeight: '800', color: t.text },
+  muted: { color: t.muted, fontSize: 12, marginTop: 2 },
+  small: { color: t.muted, fontSize: 12 },
   stats: { flexDirection: 'row', gap: 8 },
-  statValue: { fontWeight: '700', color: colors.text, marginTop: 2 },
-  section: { fontWeight: '700', fontSize: 15, color: colors.text, marginTop: 4 },
-  toggle: { flexDirection: 'row', backgroundColor: colors.bg, borderRadius: 999, padding: 3 },
+  statValue: { fontWeight: '700', color: t.text, marginTop: 2 },
+  section: { fontWeight: '700', fontSize: 15, color: t.text, marginTop: 4 },
+  toggle: { flexDirection: 'row', backgroundColor: t.bg, borderRadius: 999, padding: 3 },
   toggleBtn: { paddingHorizontal: 12, paddingVertical: 5, borderRadius: 999 },
-  toggleOn: { backgroundColor: colors.primary },
-  toggleText: { fontSize: 12, fontWeight: '700', color: colors.muted },
+  toggleOn: { backgroundColor: t.accent },
+  toggleText: { fontSize: 12, fontWeight: '700', color: t.muted },
   legend: { flexDirection: 'row', gap: 14, flexWrap: 'wrap' },
   selected: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#EEEAFE', borderRadius: 12, padding: 12 },
   disc: { borderRadius: 14, padding: 14, gap: 6, borderLeftWidth: 4 },
   discTitle: { fontWeight: '700', fontSize: 15 },
-  discMonth: { fontSize: 12, color: colors.muted, fontWeight: '600' },
+  discMonth: { fontSize: 12, color: t.muted, fontWeight: '600' },
   discText: { color: '#1F2937', lineHeight: 20 },
   fromTo: { flexDirection: 'row', gap: 8, alignItems: 'center' },
-  fromToText: { color: colors.text, fontWeight: '600' },
-  list: { backgroundColor: colors.card, borderRadius: 18, overflow: 'hidden' },
-  row: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 14, paddingLeft: 18, borderBottomWidth: 1, borderColor: colors.border },
+  fromToText: { color: t.text, fontWeight: '600' },
+  list: { backgroundColor: t.surface, borderRadius: 18, overflow: 'hidden' },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 14, paddingLeft: 18, borderBottomWidth: 1, borderColor: t.border },
   statusBar: { position: 'absolute', left: 0, top: 10, bottom: 10, width: 4, borderRadius: 2 },
-  rowTitle: { fontWeight: '600', color: colors.text },
-  rowTotal: { fontWeight: '700', color: colors.text },
+  rowTitle: { fontWeight: '600', color: t.text },
+  rowTotal: { fontWeight: '700', color: t.text },
   delta: { fontSize: 12, fontWeight: '700' },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 4 },
-  chip: { fontSize: 11, color: colors.muted, backgroundColor: colors.bg, paddingHorizontal: 7, paddingVertical: 2, borderRadius: 999, overflow: 'hidden' },
-  chipBad: { backgroundColor: '#FEE2E2', color: '#B91C1C' },
+  chip: { fontSize: 11, color: t.muted, backgroundColor: t.bg, paddingHorizontal: 7, paddingVertical: 2, borderRadius: 999, overflow: 'hidden' },
+  chipBad: { backgroundColor: t.sev.critical.bg, color: t.sev.critical.color },
 });

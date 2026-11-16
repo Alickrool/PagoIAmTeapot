@@ -198,12 +198,23 @@ function DiscrepancyCard({ d, onPress }: { d: Discrepancy; onPress: () => void }
   );
 }
 
+/** Whole-row colour for a bill: anomaly = red box, attention = yellow box, ok = plain. */
+export function rowTone(status: ProviderBill['audit_status'], t: Theme): { bg: string; border: string } | null {
+  if (status === 'critical') return { bg: t.sev.critical.bg, border: t.sev.critical.color };
+  if (status === 'warning') return { bg: t.sev.warning.bg, border: t.sev.warning.color };
+  return null;
+}
+
 function BillRow({ bill, unit, flagged, onPress }: { bill: ProviderBill; unit: string; flagged: boolean; onPress: () => void }) {
   const t = useTheme();
   const styles = useStyles(makeStyles);
+  const tone = rowTone(bill.audit_status, t); // the whole box: red = anomaly, yellow = attention
   return (
-    <Pressable onPress={onPress} style={({ pressed }) => [styles.row, pressed && { opacity: 0.6 }]}>
-      <View style={[styles.statusBar, { backgroundColor: t.sev[bill.audit_status].color }]} />
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => [styles.row, tone && { backgroundColor: tone.bg, borderColor: tone.border }, pressed && { opacity: 0.6 }]}
+      accessibilityLabel={`${monthLabel(bill.period_end.slice(0, 7))}${bill.audit_status !== 'ok' ? `, ${bill.audit_status === 'critical' ? 'anomalie' : 'atenție'}` : ''}`}
+    >
       <View style={{ flex: 1, gap: 4 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
           <Text style={styles.rowTitle}>{monthLabel(bill.period_end.slice(0, 7))}</Text>
@@ -220,7 +231,7 @@ function BillRow({ bill, unit, flagged, onPress }: { bill: ProviderBill; unit: s
             <Text style={[styles.chip, bill.index_type === 'estimated' && styles.chipBad]}>{INDEX_LABEL[bill.index_type]}</Text>
           )}
           {bill.anomalies.map((a) => (
-            <Text key={a.id} style={[styles.chip, { backgroundColor: t.sev[a.severity].bg, color: t.sev[a.severity].color }]}>
+            <Text key={a.id} style={[styles.chip, { backgroundColor: tone ? t.surface : t.sev[a.severity].bg, color: t.sev[a.severity].color }]}>
               {a.title}
             </Text>
           ))}
@@ -280,9 +291,8 @@ const makeStyles = (t: Theme) =>
   discText: { color: t.text, lineHeight: 20 },
   fromTo: { flexDirection: 'row', gap: 8, alignItems: 'center' },
   fromToText: { color: t.text, fontWeight: '600' },
-  list: { backgroundColor: t.surface, borderRadius: 18, overflow: 'hidden' },
-  row: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 14, paddingLeft: 18, borderBottomWidth: 1, borderColor: t.border },
-  statusBar: { position: 'absolute', left: 0, top: 10, bottom: 10, width: 4, borderRadius: 2 },
+  list: { borderRadius: 18, overflow: 'hidden' },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 14, marginBottom: 8, borderRadius: t.inner + 6, borderWidth: 1.5, borderColor: t.border, backgroundColor: t.surface },
   rowTitle: { fontWeight: '600', color: t.text },
   rowTotal: { fontWeight: '700', color: t.text },
   delta: { fontSize: 12, fontWeight: '700' },

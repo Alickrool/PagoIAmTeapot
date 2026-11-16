@@ -7,7 +7,7 @@ Data: 2026-11-16 · branch `frontend-final` (conține tot `main`, inclusiv valid
 | Zonă | Rulate | Trecute | Picate | Note |
 |---|---:|---:|---:|---|
 | Backend (Django, `manage.py test bills`) | 66 | 65 | 1 | testul picat e vechi și pică la fel pe `main` curat |
-| Aplicație (Jest, `npm test`) | 93 | 93 | 0 | 7 fișiere, fără avertismente |
+| Aplicație (Jest, `npm test`) | 111 | 111 | 0 | 9 fișiere, fără avertismente |
 | Typecheck aplicație (`tsc --noEmit`) | – | ✅ | – | |
 | Lint aplicație (`expo lint`) | – | ✅ | – | 0 erori, 0 avertismente |
 | Contract front ↔ back | – | ✅ | – | câmpurile din `shared/fixtures` = câmpurile răspunsurilor reale |
@@ -40,7 +40,7 @@ cd mobile && npm test
 
 ## Teste pe fișiere
 
-### Aplicație (93)
+### Aplicație (111)
 
 | Fișier | Teste | Ce acoperă | Nou / vechi |
 |---|---:|---|---|
@@ -50,6 +50,8 @@ cd mobile && npm test
 | `derive-test.ts` | 22 | calculul de rezervă pentru Acasă și Furnizori pe datele demo: totaluri, comparații, ferestre de 12 luni, discrepanțe PPC / Engie / Apă, lună lipsă, furnizor necunoscut | vechi, netestat până acum |
 | `helpers-test.ts` | 18 | formatarea lei și a lunilor, procentele, culorile, întrebările pe fiecare factură, unirea lunilor (bug-ul cu istoricul), bugetul sugerat, culorile roții, consistența celor 3 moduri | vechi, netestat până acum |
 | `storage-test.tsx` | 5 | furnizori în așteptare (AsyncStorage), bugetul pe lună (salvare, reîncărcare, ștergere) | vechi, netestat până acum |
+| `providers-test.ts` | 14 | lista de furnizori din România (nume unice, aceleași nume ca în backend), căutarea fără diacritice și după alias, filtrul pe categorie, furnizorii adăugați manual (o singură dată, nume gol, date corupte), colorarea rândurilor din istoric | nou |
+| `addProvider-test.tsx` | 4 | formularul „Adaugă furnizor”: listă cu „Adăugat”, căutare, adăugare → „Adaugă factură” deschide Scanează, furnizor scris de mână | nou |
 | `contract-test.ts` | 5 | datele exportate de backend au toate câmpurile citite de aplicație, inclusiv `validation` | nou (sincronizare front ↔ back) |
 
 ### Backend (66)
@@ -60,6 +62,20 @@ cd mobile && npm test
 | `tests.ScanValidationTests` | 16 | 16 ✅ | scris de coleg (V1–V8) |
 | `tests_gaps.ApiGapTests` | 10 | 10 ✅ | **nou**: lista `?all=1`, 404, oferte, scrisoarea de contestație, plata manuală, mod de plată invalid, plata automată fără regulă / trecută / peste limită, confirmare pe o factură deja acceptată |
 | `tests_gaps.RevalidateCommandTests` | 4 | 4 ✅ | **nou**: `manage.py revalidate` (dry-run, sumă greșită → `needs_review`, factura confirmată rămâne acceptată, facturile demo nu se ating) |
+
+## Actualizare: roata, istoricul furnizorului, „Adaugă furnizor”
+
+- **Roata lunii:** schimbarea lunii nu mai reîncarcă pagina.
+  - Fiecare lună se cere o singură dată și se păstrează în memorie.
+  - Lunile vecine se încarcă dinainte.
+  - Spinner-ul de reîmprospătare apare doar la tragerea paginii în jos.
+  - Verificat în browser: înapoi pe septembrie și din nou pe octombrie → **nicio cerere nouă**, doar o cerere în fundal pentru august.
+- **Istoricul furnizorului:** fiecare factură e o cutie colorată în întregime, roșie pentru anomalie și galbenă pentru atenție (`rowTone`).
+- **„Adaugă furnizor”:** formular separat, cu lista furnizorilor din România.
+  - Are căutare și filtre pe categorie, plus posibilitatea de a scrie un furnizor de mână.
+  - După adăugare, dacă furnizorul nu are facturi, apare „Adaugă factură”, care deschide Scanează.
+  - În tabul Furnizori, acești furnizori apar cu „nicio factură încă” și butonul „Adaugă factură”.
+  - O factură scanată ulterior pentru un furnizor adăugat manual nu mai e pusă „în așteptare”.
 
 ## Picate
 
@@ -80,6 +96,13 @@ cd mobile && npm test
 - Backend: plata cu `mode` invalid → 400; confirmarea unei facturi deja acceptate nu strică nimic; `revalidate` nu atinge facturile demo.
 
 ## Sub review: comportamente de discutat sau de verificat de un om
+
+| # | Ce | De ce e sub review |
+|---|---|---|
+| R8 | Lista de furnizori din România (`src/providersRo.ts`) | Numele și categoriile trebuie verificate de un om (ANRE / ANCOM), la fel ca baza de cunoștințe. Pentru furnizorii pe care backend-ul îi recunoaște deja, numele sunt verificate automat de test. |
+| R9 | Furnizorii adăugați manual stau doar pe telefon | Pe alt telefon nu apar. Pentru conturi reale, lista ar trebui mutată în backend. |
+| R10 | Web: navigarea cu tastatura (Tab) poate deplasa orizontal conținutul tabului | Am văzut o dată o deplasare de ~130 px pe web, după click-uri automate care derulează elementul în vizor. Nu am reprodus-o cu un click normal; pe telefon nu apare. |
+
 
 | # | Ce | De ce e sub review |
 |---|---|---|

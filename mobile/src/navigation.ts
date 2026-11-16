@@ -14,6 +14,7 @@ export type RootStackParamList = {
   Offers: { billId: number };
   AutoPay: { billId: number; provider: string; suggestedMax: number };
   Provider: { slug: string; provider: string };
+  AddProvider: undefined;
 };
 
 export type ScreenProps<T extends keyof RootStackParamList> = NativeStackScreenProps<RootStackParamList, T>;

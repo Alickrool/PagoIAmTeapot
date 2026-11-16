@@ -3,6 +3,8 @@ import * as ImagePicker from 'expo-image-picker';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { api } from '../api/client';
+import { slugify } from '../api/derive';
+import { markPending } from '../providerList';
 import type { UploadFile } from '../api/types';
 import { Button } from '../components/Button';
 import { useStackNavigation } from '../navigation';
@@ -13,6 +15,15 @@ const MAX_FILES = 10; // docs/API_V2.md §1
 const STEP_MS = 2500;
 
 type Page = UploadFile & { key: string };
+
+/** Turn transport errors into something a person can act on; backend errors already come as readable text. */
+function scanErrorMessage(e: unknown): string {
+  const msg = e instanceof Error ? e.message : String(e);
+  if (e instanceof Error && e.name === 'AbortError') return 'Citirea a durat prea mult. Încearcă din nou, eventual cu mai puține pagini.';
+  if (/network request failed|failed to fetch|load failed|networkerror/i.test(msg))
+    return 'Nu am putut ajunge la server. Verifică internetul (telefonul și laptopul în aceeași rețea) și încearcă din nou.';
+  return msg;
+}
 let nextKey = 0;
 const toPage = (f: UploadFile): Page => ({ ...f, key: String(nextKey++) });
 const isPdf = (p: UploadFile) => p.mimeType === 'application/pdf' || p.name.toLowerCase().endsWith('.pdf');
@@ -76,9 +87,13 @@ export default function ScanScreen() {
     try {
       const bill = await api.scanBill(pages);
       setPages([]);
+      // A provider seen for the first time waits outside "my providers" until the user adds it (asked after paying).
+      const list = await api.providers().catch(() => []);
+      const entry = list.find((p) => p.provider.toLowerCase() === bill.provider.toLowerCase());
+      if (!entry || entry.bills_count <= 1) await markPending(entry?.slug ?? slugify(bill.provider));
       navigation.navigate('Bill', { id: bill.id });
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(scanErrorMessage(e));
     } finally {
       setStep(null);
     }
@@ -97,8 +112,9 @@ export default function ScanScreen() {
 
         {error && (
           <View style={styles.error}>
-            <Text style={styles.errorTitle}>Nu am putut citi factura</Text>
+            <Text style={styles.errorTitle}>A apărut o eroare la scanare</Text>
             <Text style={styles.errorText}>{error}</Text>
+            {pages.length > 0 && <Button title="Încearcă din nou" onPress={analyze} variant="secondary" />}
           </View>
         )}
 

@@ -4,13 +4,14 @@ import { ActivityIndicator, FlatList, Pressable, RefreshControl, StyleSheet, Tex
 import { api } from '../api/client';
 import type { ProviderSummary } from '../api/types';
 import { Button } from '../components/Button';
-import { Sparkline } from '../components/charts/Sparkline';
 import { ProviderAvatar } from '../components/ProviderAvatar';
 import { SeverityBadge } from '../components/SeverityBadge';
-import { useStackNavigation } from '../navigation';
 import { useCopy, useStyles, useTheme, type Theme } from '../mode';
-import { category, deltaColor, deltaLabel, money, monthLabel } from '../theme';
+import { useStackNavigation } from '../navigation';
+import { pendingProviders } from '../providerList';
+import { category, deltaColor, deltaLabel, money, monthLabel, tabular } from '../theme';
 
+/** One compact row per provider: category, bills, last bill, trend vs average, audit. The trend chart is on the provider screen. */
 export default function ProvidersScreen() {
   const t = useTheme();
   const styles = useStyles(makeStyles);
@@ -23,9 +24,8 @@ export default function ProvidersScreen() {
   const load = useCallback(() => {
     setLoading(true);
     setError(null);
-    api
-      .providers()
-      .then(setItems)
+    Promise.all([api.providers(), pendingProviders()])
+      .then(([list, pending]) => setItems(list.filter((p) => !pending.has(p.slug))))
       .catch((e) => setError(String(e?.message ?? e)))
       .finally(() => setLoading(false));
   }, []);
@@ -41,7 +41,7 @@ export default function ProvidersScreen() {
             <Button title="Încearcă din nou" onPress={load} />
           </>
         ) : (
-          <ActivityIndicator />
+          <ActivityIndicator color={t.accent} />
         )}
       </View>
     );
@@ -52,43 +52,33 @@ export default function ProvidersScreen() {
       style={{ backgroundColor: t.bg }}
       data={items}
       keyExtractor={(p) => p.slug}
-      contentContainerStyle={{ padding: 16, gap: 12 }}
-      refreshControl={<RefreshControl refreshing={loading} onRefresh={load} />}
+      contentContainerStyle={{ padding: 16, gap: 10 }}
+      refreshControl={<RefreshControl refreshing={loading} onRefresh={load} tintColor={t.accent} />}
       ListHeaderComponent={<Text style={styles.intro}>{copy.providersIntro}</Text>}
       renderItem={({ item: p }) => {
         const c = category[p.category] ?? category.other;
         return (
           <Pressable
             onPress={() => navigation.navigate('Provider', { slug: p.slug, provider: p.provider })}
-            style={({ pressed }) => [styles.card, pressed && { opacity: 0.7 }]}
+            style={({ pressed }) => [styles.row, pressed && { opacity: 0.7 }]}
+            accessibilityRole="button"
           >
-            <View style={styles.top}>
-              <ProviderAvatar provider={p.provider} category={p.category} />
-              <View style={{ flex: 1 }}>
-                <Text style={styles.name}>{p.provider}</Text>
-                <Text style={styles.muted}>
-                  {c.icon} {c.label} · {p.bills_count} facturi
+            <ProviderAvatar provider={p.provider} category={p.category} size={t.mode === 'senior' ? 48 : 40} />
+            <View style={{ flex: 1, gap: 4, minWidth: 0 }}>
+              <View style={styles.line}>
+                <Text style={[styles.name, { flex: 1 }]} numberOfLines={1}>
+                  {p.provider}
                 </Text>
+                <Text style={[styles.total, tabular]}>{money(p.last_total)}</Text>
               </View>
-              <Sparkline values={p.totals.map(Number)} color={c.color} />
-            </View>
-            <View style={styles.bottom}>
-              <View>
-                <Text style={styles.small}>Ultima · {monthLabel(p.last_period_end.slice(0, 7))}</Text>
-                <Text style={styles.total}>{money(p.last_total)}</Text>
-              </View>
-              <View>
-                <Text style={styles.small}>față de medie</Text>
-                <Text style={[styles.trend, { color: deltaColor(p.trend_pct, t) }]}>
-                  {p.trend_pct == null ? '–' : deltaLabel(p.trend_pct)}
+              <View style={styles.line}>
+                <Text style={[styles.meta, tabular, { flex: 1 }]} numberOfLines={1}>
+                  {c.label} · {p.bills_count} facturi · {monthLabel(p.last_period_end.slice(0, 7))}
                 </Text>
-              </View>
-              <View style={{ alignItems: 'flex-end', gap: 4 }}>
-                <SeverityBadge severity={p.audit_status} />
-                {p.anomalies_count > 0 && (
-                  <Text style={styles.small}>
-                    {p.anomalies_count} {p.anomalies_count > 1 ? 'probleme' : 'problemă'}
-                  </Text>
+                {p.audit_status !== 'ok' ? (
+                  <SeverityBadge severity={p.audit_status} />
+                ) : (
+                  p.trend_pct != null && <Text style={[styles.trend, tabular, { color: deltaColor(p.trend_pct, t) }]}>{deltaLabel(p.trend_pct)} față de medie</Text>
                 )}
               </View>
             </View>
@@ -101,14 +91,13 @@ export default function ProvidersScreen() {
 
 const makeStyles = (t: Theme) =>
   StyleSheet.create({
-  centerFill: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12, padding: 24, backgroundColor: t.bg },
-  intro: { color: t.muted, marginBottom: 4 },
-  card: { backgroundColor: t.surface, borderRadius: 18, padding: 16, gap: 14 },
-  top: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  bottom: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', paddingTop: 12, borderTopWidth: 1, borderColor: t.border },
-  name: { fontSize: 17, fontWeight: '700', color: t.text },
-  muted: { color: t.muted, fontSize: 13, marginTop: 2 },
-  small: { color: t.muted, fontSize: 12 },
-  total: { fontSize: 18, fontWeight: '800', color: t.text, marginTop: 2 },
-  trend: { fontSize: 16, fontWeight: '700', marginTop: 2 },
-});
+    centerFill: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12, padding: 24, backgroundColor: t.bg },
+    intro: { color: t.muted, fontSize: t.fs(14), marginBottom: 4 },
+    row: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: t.surface, borderRadius: t.radius - 6, paddingVertical: 12, paddingHorizontal: 14, minHeight: t.touch + 12 },
+    line: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+    name: { fontSize: t.fs(16), fontWeight: '800', color: t.text },
+    meta: { color: t.muted, fontSize: t.fs(12) },
+    total: { fontSize: t.fs(16), fontWeight: '800', color: t.text },
+    trend: { fontSize: t.fs(11), fontWeight: '700' },
+    muted: { color: t.muted, fontSize: t.fs(14), textAlign: 'center' },
+  });

@@ -11,6 +11,9 @@ import {
   type ScrollViewInstance,
 } from 'react-native';
 import { api } from '../api/client';
+import { slugify } from '../api/derive';
+import { acceptProvider, pendingProviders } from '../providerList';
+import { questionsFor } from '../questions';
 import type { Anomaly, AnomalyAction, AskResponse, BillDetail, LineItem, Recalculation } from '../api/types';
 import { AnomalyCard } from '../components/AnomalyCard';
 import { Button } from '../components/Button';
@@ -39,6 +42,7 @@ export default function BillScreen({ route, navigation }: ScreenProps<'Bill'>) {
   const [recalc, setRecalc] = useState<Recalculation | null>(null);
   const [confirmPay, setConfirmPay] = useState(false);
   const [paying, setPaying] = useState(false);
+  const [askAddProvider, setAskAddProvider] = useState(false);
 
   useEffect(() => {
     api
@@ -52,6 +56,8 @@ export default function BillScreen({ route, navigation }: ScreenProps<'Bill'>) {
 
   // Line codes referenced by any anomaly get highlighted ("tap me").
   const flagged = useMemo(() => new Set(bill?.audit.anomalies.flatMap((a) => a.line_item_codes) ?? []), [bill]);
+
+  const questions = bill ? questionsFor(bill, t.mode) : [];
 
   if (!bill) {
     return loadError ? (
@@ -89,7 +95,7 @@ export default function BillScreen({ route, navigation }: ScreenProps<'Bill'>) {
       case 'autopay_rule':
         return navigation.navigate('AutoPay', { billId: bill.id, provider: bill.provider, suggestedMax: Math.ceil(Number(bill.total) * 1.1) });
       case 'ask':
-        return ask({ question: copy.chips[copy.chips.length - 1] });
+        return ask({ question: questions[0] });
       case 'submit_reading':
         return setReadingOpen(true);
     }
@@ -101,6 +107,8 @@ export default function BillScreen({ route, navigation }: ScreenProps<'Bill'>) {
     try {
       const r = await api.pay(bill.id, 'manual');
       setBill({ ...bill, status: r.status });
+      // First bill from this provider (came in through a scan)? Offer to add it to "my providers".
+      if (r.status === 'paid' && (await pendingProviders()).has(slugify(bill.provider))) setAskAddProvider(true);
     } finally {
       setPaying(false);
     }
@@ -187,7 +195,7 @@ export default function BillScreen({ route, navigation }: ScreenProps<'Bill'>) {
 
       <View style={styles.askBar}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingHorizontal: 12 }}>
-          {copy.chips.map((c) => (
+          {questions.map((c) => (
             <Pressable key={c} onPress={() => ask({ question: c })} style={({ pressed }) => [styles.chip, pressed && { opacity: 0.6 }]} disabled={asking}>
               <Text style={styles.chipText}>{c}</Text>
             </Pressable>
@@ -220,6 +228,19 @@ export default function BillScreen({ route, navigation }: ScreenProps<'Bill'>) {
           }}
         />
       )}
+      <ConfirmDialog
+        visible={askAddProvider}
+        primary="confirm"
+        title={`Adaugi ${bill.provider} la furnizorii tăi?`}
+        body={`Așa vezi facturile ${bill.provider} în tabul Furnizori și le comparăm lună de lună.`}
+        confirm="Adaugă furnizorul"
+        cancel="Nu acum"
+        onConfirm={() => {
+          acceptProvider(slugify(bill.provider));
+          setAskAddProvider(false);
+        }}
+        onCancel={() => setAskAddProvider(false)}
+      />
       <ConfirmDialog
         visible={confirmPay}
         danger

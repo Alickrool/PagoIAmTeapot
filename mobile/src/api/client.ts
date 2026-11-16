@@ -116,10 +116,15 @@ export const api = {
       return delay(ppc, 6000);
     }
     const form = new FormData();
-    // One file -> legacy field `file` (works on today's backend too); several -> repeated `files`.
-    const field = files.length === 1 ? 'file' : 'files';
-    for (const f of files) await appendFile(form, field, f);
-    return request('/bills/scan/', { method: 'POST', body: form });
+    for (const f of files) await appendFile(form, 'files', f); // pages of ONE bill, in order (API_V2 §1)
+    // Gemini usually answers in 10–20 s; give up after 2 minutes instead of spinning forever.
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 120_000);
+    try {
+      return await request<BillDetail>('/bills/scan/', { method: 'POST', body: form, signal: controller.signal });
+    } finally {
+      clearTimeout(timer);
+    }
   },
 
   /** Monthly overview (donut + compare + history). docs/API_V2.md §2 */

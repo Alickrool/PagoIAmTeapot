@@ -176,9 +176,15 @@ footer { font-size: 12.5px; color: var(--muted); border-top: 1px solid var(--lin
         <li class="stop"><span class="dot"></span>
           <div class="meta"><span class="pill m1" title="Membrul 1">M1</span><span>2026-11-16 21:08</span></div>
           <div class="head">Aplicația a pornit pe rețeaua nouă, iar PDF-ul facturii se deschide</div></li>
-        <li class="stop last"><span class="dot"></span>
-          <div class="meta"><span class="pill m2" title="Membrul 2">M2</span><span>2026-11-16 21:49</span><span class="pill here">Ești aici</span></div>
+        <li class="stop"><span class="dot"></span>
+          <div class="meta"><span class="pill m2" title="Membrul 2">M2</span><span>2026-11-16 21:49</span></div>
           <div class="head">Backend-ul verifică acum fiecare factură scanată: luna, sumele, duplicatele și fișierele periculoase</div></li>
+        <li class="stop"><span class="dot"></span>
+          <div class="meta"><span class="pill m1" title="Membrul 1">M1</span><span>2026-11-16 22:12</span></div>
+          <div class="head">Testul de integritate a trecut: aplicația și backend-ul vorbesc aceeași limbă</div></li>
+        <li class="stop last"><span class="dot"></span>
+          <div class="meta"><span class="pill m2" title="Membrul 2">M2</span><span>2026-11-16 23:37</span><span class="pill here">Ești aici</span></div>
+          <div class="head">Verificarea la scanare a trecut testul live cu Gemini; pregătim demo-ul de mâine</div></li>
       </ol>
     </div>
   </section>
@@ -270,8 +276,8 @@ footer { font-size: 12.5px; color: var(--muted); border-top: 1px solid var(--lin
   <section class="block" aria-label="Pasul următor">
     <h2>Pasul următor</h2>
     <div class="card nexts">
-      <div class="next"><span class="pill m1" title="Membrul 1">M1</span><span class="t">Discutăm în echipă planul de verificare a datelor și de securitate la scanare (lună, furnizor din România, nume, duplicate, fișiere suspecte), apoi îl implementăm pe backend.</span></div>
-      <div class="next"><span class="pill m2" title="Membrul 2">M2</span><span class="t">Terminăm verificarea live cu Gemini și o urcăm pe GitHub; apoi colegul arată avertismentele în aplicație.</span></div>
+      <div class="next"><span class="pill m1" title="Membrul 1">M1</span><span class="t">Testăm pe telefon verificările noi de la scanare (luna, sumele, duplicatele) și le arătăm în aplicație.</span></div>
+      <div class="next"><span class="pill m2" title="Membrul 2">M2</span><span class="t">Marți dimineață: testăm telefonul pe Wi-Fi-ul de la birou, rotim cheia Gemini, încărcăm datele demo și punem facturile demo în cache, ca scanarea pe scenă să fie instantanee.</span></div>
     </div>
   </section>
 
@@ -345,13 +351,25 @@ footer { font-size: 12.5px; color: var(--muted); border-top: 1px solid var(--lin
       "member": 2,
       "time": "2026-11-16 21:49",
       "headline": "Backend-ul verifică acum fiecare factură scanată: luna, sumele, duplicatele și fișierele periculoase"
+    },
+    {
+      "n": 12,
+      "member": 1,
+      "time": "2026-11-16 22:12",
+      "headline": "Testul de integritate a trecut: aplicația și backend-ul vorbesc aceeași limbă"
+    },
+    {
+      "n": 13,
+      "member": 2,
+      "time": "2026-11-16 23:37",
+      "headline": "Verificarea la scanare a trecut testul live cu Gemini; pregătim demo-ul de mâine"
     }
   ],
   "members": {
     "1": {
       "building": "Aplicația mobilă Pago Bill Audit (Expo) în 3 interfețe, Gen Z, Millennials și Senior: vezi facturile lunii într-o roată, scanezi factura din poze sau PDF, Gemini o citește și prinde greșelile. Ca un detectiv care vorbește pe limba fiecărui client.",
-      "works": "Scanarea pornește pe cameră, cu comutare la imagine sau PDF. Tab-urile se schimbă cu swipe, iar roata lunii se glisează între luni și se desenează animat. Bugetul lunii se setează dintr-un buton. Fiecare factură are întrebări pe tipul ei (apă, gaz, curent) și buton „Vezi factura (PDF)”, care deschide acum factura, pentru că backend-ul o servește. Furnizorii noi din facturi scanate se adaugă cu un tap. Iconițele sunt simple, fără emoji. Branch-ul frontend-final e unit în main.",
-      "blocking": "Cheia Gemini trebuie rotită înainte de demo. Pe Wi-Fi-ul nou, telefonul încă nu a fost testat. Verificarea datelor din factură (lună, furnizor din România, nume, sume) e doar în plan, nu e încă în cod.",
+      "works": "Scanarea pornește pe cameră, cu comutare la imagine sau PDF. Tab-urile se schimbă cu swipe, iar roata lunii se glisează între luni și se desenează animat. Bugetul lunii se setează dintr-un buton. Fiecare factură are întrebări pe tipul ei (apă, gaz, curent) și buton „Vezi factura (PDF)”, care deschide acum factura, pentru că backend-ul o servește. Furnizorii noi din facturi scanate se adaugă cu un tap. Iconițele sunt simple, fără emoji. Branch-ul frontend-final e unit în main. Testul de integritate a trecut: backend-ul și aplicația rulează pe același cod și aceeași adresă, iar toate endpoint-urile au forma așteptată de aplicație.",
+      "blocking": "Cheia Gemini trebuie rotită înainte de demo. Un test vechi de backend (coordonatele rândurilor pe PDF-ul demo) pică pe laptopul acesta.",
       "features": [
         {
           "name": "Claude Code",
@@ -382,12 +400,12 @@ footer { font-size: 12.5px; color: var(--muted); border-top: 1px solid var(--lin
           "for": "actualizează pagina Pulse la fiecare 2 ore"
         }
       ],
-      "next": "Discutăm în echipă planul de verificare a datelor și de securitate la scanare (lună, furnizor din România, nume, duplicate, fișiere suspecte), apoi îl implementăm pe backend."
+      "next": "Testăm pe telefon verificările noi de la scanare (luna, sumele, duplicatele) și le arătăm în aplicație."
     },
     "2": {
       "building": "Pago Bill Audit: înainte să apeși «Plătește», AI-ul citește factura, ți-o explică pe înțeles și prinde greșelile (index estimat, scumpiri ascunse, opțiuni plătite uitate). Ca un contabil de buzunar care se uită pe factură în locul tău.",
-      "works": "Planul de verificare la scanare e făcut pe backend, cu 52 de teste trecute. Ce citește AI-ul e doar o propunere: regulile din cod verifică luna și anul, sumele și TVA-ul, iar factura din altă lună intră în luna ei. Aceeași factură pozată a doua oară e oprită (409). Fișierele periculoase sunt respinse (PDF cu parolă sau cu cod, poze uriașe), iar pozele sunt salvate fără date GPS. Textul din factură care încearcă să dea ordine AI-ului e semnalat, cifrele rămân cele tipărite. Pe o factură reală Digi citită ca „2020” apare acum avertismentul de factură veche.",
-      "blocking": "Nimic blocant pe backend. Aplicația încă nu arată avertismentele și butonul „E corect”; cheia Gemini trebuie rotită înainte de demo.",
+      "works": "Verificarea la scanare e gata pe backend și urcată pe GitHub: 52 de teste trecute și un test live cu Gemini, 33 din 33 de pași corecți. Ce citește AI-ul e doar o propunere: regulile din cod verifică luna și anul, sumele și TVA-ul, iar factura din altă lună intră în luna ei. Aceeași factură trimisă a doua oară, chiar ca PDF după poze, e oprită (409). Fișierele periculoase sunt respinse, pozele se salvează fără date GPS, iar o factură cu text care dă ordine AI-ului e semnalată și își păstrează suma tipărită. Butonul „E corect” confirmă factura.",
+      "blocking": "Nimic blocant pe backend. Când modelul Gemini e ocupat (503), trece pe modelul de rezervă și scanarea durează 25–30 de secunde. Cheia Gemini trebuie rotită înainte de demo, iar rețeaua de la birou o testăm marți dimineață.",
       "features": [
         {
           "name": "Claude Code",
@@ -418,7 +436,7 @@ footer { font-size: 12.5px; color: var(--muted); border-top: 1px solid var(--lin
           "for": "actualizează pagina Pulse la fiecare 2 ore"
         }
       ],
-      "next": "Terminăm verificarea live cu Gemini și o urcăm pe GitHub; apoi colegul arată avertismentele în aplicație."
+      "next": "Marți dimineață: testăm telefonul pe Wi-Fi-ul de la birou, rotim cheia Gemini, încărcăm datele demo și punem facturile demo în cache, ca scanarea pe scenă să fie instantanee."
     }
   }
 }</script>

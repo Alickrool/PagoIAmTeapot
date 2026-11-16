@@ -6,20 +6,80 @@
       "member": 2,
       "time": "2026-11-16 12:44",
       "headline": "Backend-ul citește facturi cu Gemini și le verifică automat"
+    },
+    {
+      "n": 2,
+      "member": 1,
+      "time": "2026-11-16 13:21",
+      "headline": "Aplicația are 3 interfețe pe generații și citește facturi reale cu Gemini"
     }
   ],
   "members": {
+    "1": {
+      "building": "Aplicația mobilă Pago Bill Audit (Expo) în 3 interfețe, Gen Z, Millennials și Senior: vezi facturile lunii într-o roată, scanezi factura din poze sau PDF, Gemini o citește și prinde greșelile. Ca un detectiv care vorbește pe limba fiecărui client.",
+      "works": "3 interfețe (Gen Z întunecată și cu slang, Millennials cu roata bugetului, Senior cu text mare și ajutor de la familie), schimbate dintr-un buton din colțul de sus. Trimiterea indexului real reface factura PPC de la 517,06 la 268,84 lei. O factură 🔴 cere confirmare înainte de plată. Întrebările sugerate primesc răspuns de la Gemini. Facturi reale scanate cu Gemini, din mai multe poze sau PDF-uri. Totul în română.",
+      "blocking": "Telefonul nu vedea laptopul pe Wi-Fi, a mers doar prin hotspot. Răspunsurile Gemini și textele anomaliilor vin încă în engleză. Scanarea din mai multe fișiere a fost făcută în paralel și pe backend, deci trebuie unite.",
+      "features": [
+        {
+          "name": "Claude Code",
+          "for": "a făcut cele 3 interfețe și ecranele noi, a reparat salvarea facturilor scanate și a făcut commit și push"
+        },
+        {
+          "name": "Browserul integrat",
+          "for": "a testat fiecare interfață la mărime de telefon"
+        },
+        {
+          "name": "Artifact (canvas de design)",
+          "for": "mockup-ul pe generații, cu 20 de reguli de design și tonul fiecărei vârste"
+        },
+        {
+          "name": "Întrebare cu variante",
+          "for": "a ales între ecrane direct în aplicație și un design separat"
+        },
+        {
+          "name": "Panoul Terminal",
+          "for": "a pornit login-ul Expo pe laptop"
+        },
+        {
+          "name": "Subagent",
+          "for": "desenează această pagină Pulse"
+        },
+        {
+          "name": "Sarcini programate",
+          "for": "actualizează pagina Pulse la fiecare 2 ore"
+        }
+      ],
+      "next": "Push pe branch-ul nou, ca să continue colegul, și test pe telefon cu facturi reale."
+    },
     "2": {
       "building": "Pago Bill Audit: înainte să apeși «Plătește», AI-ul citește factura, ți-o explică pe înțeles și prinde greșelile (index estimat, scumpiri ascunse, opțiuni plătite uitate). Ca un contabil de buzunar care se uită pe factură în locul tău.",
       "works": "Backend Django gata: audit pe reguli cu 🟢🟡🔴; citire factură din PDF sau poză cu Gemini, cu sume exacte pe facturile demo; întrebări pe orice rând al facturii, cu surse; trimiterea indexului real recalculează factura; scrisoare de contestație; Auto-Pay cu prag de siguranță; bază de cunoștințe verificată (TVA 21%, plafonul la gaze 0,31 lei/kWh, tarife ANRE 2026); aplicația colegului e unită în main.",
       "blocking": "Endpoint-urile noi pentru ecranele Overview și Providers nu există încă pe backend (aplicația le calculează pe telefon între timp); un răspuns AI durează cam 7 secunde.",
       "features": [
-        { "name": "Claude Code", "for": "a scris backend-ul Django, regulile de audit, testele și comiturile" },
-        { "name": "Căutare pe web", "for": "a verificat faptele despre TVA, plafonări și tarifele ANRE" },
-        { "name": "Browserul integrat", "for": "a citit anunțul hackathonului ca să verifice dacă ideea se potrivește" },
-        { "name": "Skill-ul claude-api", "for": "a luat documentația SDK la începutul proiectului" },
-        { "name": "Subagent", "for": "desenează această pagină Pulse" },
-        { "name": "Sarcini programate", "for": "actualizează pagina Pulse la fiecare 2 ore" }
+        {
+          "name": "Claude Code",
+          "for": "a scris backend-ul Django, regulile de audit, testele și comiturile"
+        },
+        {
+          "name": "Căutare pe web",
+          "for": "a verificat faptele despre TVA, plafonări și tarifele ANRE"
+        },
+        {
+          "name": "Browserul integrat",
+          "for": "a citit anunțul hackathonului ca să verifice dacă ideea se potrivește"
+        },
+        {
+          "name": "Skill-ul claude-api",
+          "for": "a luat documentația SDK la începutul proiectului"
+        },
+        {
+          "name": "Subagent",
+          "for": "desenează această pagină Pulse"
+        },
+        {
+          "name": "Sarcini programate",
+          "for": "actualizează pagina Pulse la fiecare 2 ore"
+        }
       ],
       "next": "Scanare din mai multe fișiere, apoi ecranele noi (prezentarea lunară și istoricul pe furnizori, cu regulile de discrepanțe) pentru verificarea comună de la ora 20:00."
     }

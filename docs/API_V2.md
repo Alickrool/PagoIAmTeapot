@@ -66,6 +66,10 @@ files: annex.pdf  (application/pdf)
 | 413 | `file_too_large` | a file > 10 MB or total > 25 MB |
 | 422 | `not_a_bill` | model could not find a utility/telecom bill in the pages |
 | 422 | `unreadable` | blurry / cut / too dark – ask for a better photo |
+| 503 | `ai_busy` | every Gemini model is overloaded or rate-limited – try again in a minute |
+| 502 | `ai_error` | any other Gemini error |
+
+`/bills/{id}/ask/` and `/bills/{id}/dispute/` return the same `ai_busy` / `ai_error` bodies. All `detail` texts are Romanian.
 
 ---
 

@@ -11,6 +11,7 @@ from statistics import mean
 
 from bills.models import Bill, IndexType, LineItem
 from bills.services import market
+from bills.services.ro import lei, months_ago, num, pct, signed_lei
 
 SEVERITY_ORDER = {"ok": 0, "info": 1, "warning": 2, "critical": 3}
 
@@ -43,20 +44,20 @@ def check_estimated_index(bill: Bill, history: list[Bill]) -> dict | None:
     avg = round(mean(real), 1) if real else None
     critical = avg is not None and bill.consumption > avg * 1.3
     unit = bill.consumption_unit
-    msg = f"You were billed on an estimated index ({bill.consumption:g} {unit}"
-    msg += f" vs your usual {avg:g} {unit})." if avg else ")."
-    msg += " Don't pay yet: submit your real meter reading and the bill will be recalculated." if critical else \
-        " Submit a real reading to avoid a regularization later."
+    msg = f"Ai fost facturat pe un index estimat ({num(bill.consumption)} {unit}"
+    msg += f", față de media ta de {num(avg)} {unit})." if avg else ")."
+    msg += (" Nu plăti încă: trimite indexul real și factura va fi recalculată." if critical
+            else " Trimite indexul real ca să eviți o regularizare mai târziu.")
     return {
         "id": "estimated_index",
         "severity": "critical" if critical else "warning",
-        "title": "Estimated index",
+        "title": "Index estimat",
         "message": msg,
         "line_item_codes": ["energy"],
         "evidence": {"billed_consumption": bill.consumption, "average_real_consumption": avg, "unit": unit},
         "actions": [
-            {"type": "submit_reading", "label": "Submit real reading"},
-            {"type": "dispute", "label": "Contest this bill"},
+            {"type": "submit_reading", "label": "Trimite indexul real"},
+            {"type": "dispute", "label": "Contestă factura"},
         ],
     }
 
@@ -86,30 +87,30 @@ def check_price_spike(bill: Bill, history: list[Bill]) -> dict | None:
         evidence.update(consumption_change_pct=cons_pct, consumption_effect=consumption_effect, price_effect=price_effect)
         if cons_pct * 2 > total_pct:
             return None  # the increase is mostly explained by consumption: not an anomaly
-        parts.append(f"consumption rose only {cons_pct:g}% (+{consumption_effect:g} RON)")
+        parts.append(f"consumul a crescut doar cu {num(cons_pct)}% ({signed_lei(consumption_effect)})" if cons_pct >= 0 else f"consumul chiar a scăzut cu {num(-cons_pct)}% ({signed_lei(consumption_effect)})")
         cur_e, prev_e = _item(bill, "energy"), _item(prev, "energy")
         if cur_e and prev_e and cur_e.unit_price and prev_e.unit_price and cur_e.unit_price != prev_e.unit_price:
             evidence.update(previous_energy_price=float(prev_e.unit_price), current_energy_price=float(cur_e.unit_price))
             parts.append(
-                f"the supply price changed from {float(prev_e.unit_price):g} to {float(cur_e.unit_price):g} "
-                f"RON/{bill.consumption_unit} (+{price_effect:g} RON)"
+                f"prețul energiei s-a schimbat de la {num(prev_e.unit_price)} la {num(cur_e.unit_price)} "
+                f"lei/{bill.consumption_unit} ({signed_lei(price_effect)})"
             )
         else:
-            parts.append(f"higher prices/tariffs (+{price_effect:g} RON)")
+            parts.append(f"prețuri și tarife mai mari ({signed_lei(price_effect)})")
     if vat_delta > 0:
         evidence["vat_delta"] = vat_delta
-        parts.append(f"VAT on top of the increase adds +{vat_delta:g} RON")
+        parts.append(f"TVA-ul aplicat peste creștere adaugă {signed_lei(vat_delta)}")
     return {
         "id": "price_spike",
         "severity": "warning",
-        "title": f"Bill up {total_pct:g}%",
-        "message": f"Your {bill.provider} bill went from {float(prev.total):g} to {float(bill.total):g} RON "
-                   f"(+{total_pct:g}%), but " + "; ".join(parts) + ".",
+        "title": f"Factura a crescut cu {num(total_pct)}%",
+        "message": f"Factura {bill.provider} a crescut de la {lei(prev.total)} la {lei(bill.total)} "
+                   f"({pct(total_pct)}), dar " + "; ".join(parts) + ".",
         "line_item_codes": ["energy", "vat"],
         "evidence": evidence,
         "actions": [
-            {"type": "ask", "label": "Why did it go up?"},
-            {"type": "autopay_rule", "label": "Set a safety limit"},
+            {"type": "ask", "label": "De ce a crescut?"},
+            {"type": "autopay_rule", "label": "Pune o limită de siguranță"},
         ],
     }
 
@@ -129,12 +130,12 @@ def check_new_extras(bill: Bill, history: list[Bill]) -> list[dict]:
         found.append({
             "id": f"extra_service:{li.code}",
             "severity": "warning",
-            "title": "Paid add-on",
-            "message": f"You pay {monthly:g} RON/month (VAT incl.) for \"{li.label_en or li.label}\", added "
-                       f"{months_with} months ago ({paid:g} RON so far). Do you still use it?",
+            "title": "Opțiune plătită",
+            "message": f"Plătești {lei(monthly)}/lună (cu TVA) pentru „{li.label}”, adăugată "
+                       f"{months_ago(months_with)} ({lei(paid)} până acum). O mai folosești?",
             "line_item_codes": [li.code],
             "evidence": {"monthly_amount": monthly, "months_active": months_with, "total_paid": paid},
-            "actions": [{"type": "cancel_service", "label": "Cancel this option"}],
+            "actions": [{"type": "cancel_service", "label": "Renunță la opțiune"}],
         })
     return found
 
@@ -145,19 +146,19 @@ def check_above_market(bill: Bill, history: list[Bill]) -> dict | None:
     if not ref or not price or price <= ref * 1.1:
         return None
     offers = market.offers_for(bill.category, bill.consumption, float(bill.total), bill.provider)
-    msg = f"You pay {price:g} RON/{bill.consumption_unit} all-in, the market reference is ~{ref:g}."
+    msg = f"Plătești {num(price, 3)} lei/{bill.consumption_unit} cu toate taxele, iar referința pieței e de ~{num(ref, 2)} lei."
     if offers:
         n = len(offers)
-        msg += (f" {n} supplier{'s' if n > 1 else ''} in Pago would have charged up to "
-                f"{offers[0]['savings']:g} RON less for this bill.")
+        msg += (f" {'Un furnizor' if n == 1 else f'{n} furnizori'} din Pago ar fi cerut până la "
+                f"{lei(offers[0]['savings'])} mai puțin pentru această factură.")
     return {
         "id": "above_market",
         "severity": "warning",
-        "title": "Price above market",
+        "title": "Preț peste piață",
         "message": msg,
         "line_item_codes": ["energy"],
         "evidence": {"all_in_price": price, "market_reference": ref, "offers": offers},
-        "actions": [{"type": "switch_supplier", "label": "Compare offers"}],
+        "actions": [{"type": "switch_supplier", "label": "Compară ofertele"}],
     }
 
 
@@ -169,11 +170,11 @@ def check_penalties(bill: Bill, history: list[Bill]) -> dict | None:
     return {
         "id": "penalty",
         "severity": "warning",
-        "title": "Late payment penalty",
-        "message": f"This bill includes {amount:g} RON in penalties. Auto-pay can prevent this next time.",
+        "title": "Penalități de întârziere",
+        "message": f"Factura include penalități de {lei(amount)}. Plata automată le poate evita data viitoare.",
         "line_item_codes": [li.code for li in items],
         "evidence": {"amount": amount},
-        "actions": [{"type": "autopay_rule", "label": "Turn on Smart Auto-Pay"}],
+        "actions": [{"type": "autopay_rule", "label": "Pornește plata automată"}],
     }
 
 
@@ -187,9 +188,9 @@ def check_county(bill: Bill, history: list[Bill]) -> dict | None:
     return {
         "id": "above_county_average",
         "severity": "info",
-        "title": "Above local average",
-        "message": f"Your consumption ({bill.consumption:g} {bill.consumption_unit}) is "
-                   f"{_pct(bill.consumption, avg):g}% above the {bill.county} average ({avg:g}).",
+        "title": "Peste media locală",
+        "message": f"Consumul tău ({num(bill.consumption)} {bill.consumption_unit}) e cu "
+                   f"{num(_pct(bill.consumption, avg))}% peste media din {bill.county} ({num(avg)} {bill.consumption_unit}).",
         "line_item_codes": [],
         "evidence": {"consumption": bill.consumption, "county_average": avg},
         "actions": [],

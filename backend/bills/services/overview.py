@@ -12,6 +12,7 @@ from decimal import ROUND_HALF_UP, Decimal
 from statistics import mean
 
 from bills.models import Bill
+from bills.services import ro
 from bills.services.audit import audit_bill
 
 RANK = {"ok": 0, "warning": 1, "critical": 2}
@@ -185,10 +186,6 @@ def _unit_price(p: Point) -> float | None:
     return float(p.total) / p.bill.consumption if p.bill.consumption else None
 
 
-def _fmt(x) -> str:
-    return f"{float(x):g}"
-
-
 def discrepancies(ps: list[Point]) -> list[dict]:
     """Compare every bill with the previous bill of the same provider (rules in docs/API_V2.md §4)."""
     out = []
@@ -207,9 +204,9 @@ def discrepancies(ps: list[Point]) -> list[dict]:
 
         if b.index_type == "estimated":
             high = avg_cons is not None and b.consumption is not None and b.consumption >= avg_cons * 1.3
-            add("estimated_index", "critical" if high else "warning", "Estimated index",
-                f"Billed on an estimated index: {_fmt(b.consumption)} {unit} vs your average "
-                f"{round(avg_cons, 1):g} {unit}." if high else "Billed on an estimated index, not a real meter reading.",
+            add("estimated_index", "critical" if high else "warning", "Index estimat",
+                f"Facturat pe index estimat: {ro.num(b.consumption)} {unit}, media ta e "
+                f"{ro.num(round(avg_cons, 1))} {unit}." if high else "Facturat pe index estimat, nu pe citirea reală a contorului.",
                 round(avg_cons, 1) if avg_cons is not None else None, b.consumption, unit)
         if not prev:
             continue
@@ -217,40 +214,41 @@ def discrepancies(ps: list[Point]) -> list[dict]:
 
         gap = _months_between(prev.month, cur.month)
         if gap > 1:
-            add("missing_month", "info", "Missing bill",
-                f"No bill between {prev.month} and {cur.month} ({gap - 1} month{'s' if gap > 2 else ''}).")
+            add("missing_month", "info", "Lipsește o factură",
+                f"Nicio factură între {prev.month} și {cur.month} ({gap - 1} {'luni' if gap > 2 else 'lună'}).")
 
         if b.index_old is not None and pb.index_new is not None and abs(b.index_old - pb.index_new) > 0.5:
             diff = b.index_old - pb.index_new
-            add("index_gap", "critical", "Meter index doesn't continue",
-                f"This bill starts at index {_fmt(b.index_old)}, the previous one ended at {_fmt(pb.index_new)} "
-                f"({'+' if diff > 0 else ''}{_fmt(round(diff, 2))}): consumption was "
-                f"{'skipped' if diff > 0 else 'billed twice'}.", pb.index_new, b.index_old, "index")
+            add("index_gap", "critical", "Indexul nu continuă",
+                f"Factura începe de la indexul {ro.num(b.index_old)}, iar cea dinainte s-a oprit la "
+                f"{ro.num(pb.index_new)} ({'+' if diff > 0 else '−'}{ro.num(round(abs(diff), 2))}): consumul a fost "
+                f"{'sărit' if diff > 0 else 'facturat de două ori'}.", pb.index_new, b.index_old, "index")
 
         dc = pct(b.consumption, pb.consumption)
         if dc is not None and abs(dc) >= 30:
             up = dc > 0
             add("consumption_jump",
                 "critical" if up and (dc >= 60 or b.index_type == "estimated") else "warning" if up else "info",
-                ("Consumption doubled" if dc >= 90 else "Consumption jumped") if up else "Consumption dropped",
-                f"{_fmt(b.consumption)} {unit} this month vs {_fmt(pb.consumption)} {unit} last bill "
-                f"({'+' if up else ''}{dc:g}%)." + (" The index was estimated." if b.index_type == "estimated" else ""),
+                ("Consumul s-a dublat" if dc >= 90 else "Consumul a sărit") if up else "Consumul a scăzut",
+                f"{ro.num(b.consumption)} {unit} acum, față de {ro.num(pb.consumption)} {unit} pe factura trecută "
+                f"({ro.pct(dc)})." + (" Indexul a fost estimat." if b.index_type == "estimated" else ""),
                 pb.consumption, b.consumption, unit)
 
         dt = pct(b.total, pb.total)
         if dt is not None and abs(dt) >= 25:
             up = dt > 0
-            price_driven = f" Consumption only {'+' if dc >= 0 else ''}{dc:g}%." if up and dc is not None and dc < dt / 2 else ""
+            price_driven = f" Consumul doar {ro.pct(dc)}." if up and dc is not None and dc < dt / 2 else ""
             add("total_jump", "info" if not up else "critical" if dt >= 50 else "warning",
-                "Bill went up" if up else "Bill went down",
-                f"{money(b.total)} RON vs {money(pb.total)} RON last bill ({'+' if up else ''}{dt:g}%).{price_driven}",
-                float(pb.total), float(b.total), "RON")
+                "Factura a crescut" if up else "Factura a scăzut",
+                f"{ro.lei(b.total)}, față de {ro.lei(pb.total)} pe factura trecută ({ro.pct(dt)}).{price_driven}",
+                float(pb.total), float(b.total), "lei")
 
         dp = pct(_unit_price(cur), _unit_price(prev))
         if dp is not None and abs(dp) >= 10:
-            add("price_change", "warning", "Price per unit went up" if dp > 0 else "Price per unit went down",
-                f"{_unit_price(cur):.3f} RON/{unit} vs {_unit_price(prev):.3f} RON/{unit} ({'+' if dp > 0 else ''}{dp:g}%).",
-                round(_unit_price(prev), 3), round(_unit_price(cur), 3), f"RON/{unit}")
+            add("price_change", "warning", "Prețul pe unitate a crescut" if dp > 0 else "Prețul pe unitate a scăzut",
+                f"{ro.num(_unit_price(cur), 3)} lei/{unit}, față de {ro.num(_unit_price(prev), 3)} lei/{unit} "
+                f"({ro.pct(dp)}).",
+                round(_unit_price(prev), 3), round(_unit_price(cur), 3), f"lei/{unit}")
 
         seen = {li.code for p in ps[max(0, i - 3):i] for li in p.bill.line_items.all()}
         vat_factor = 1 + float(b.vat_rate or 0) / 100
@@ -258,9 +256,10 @@ def discrepancies(ps: list[Point]) -> list[dict]:
             if li.code not in seen:
                 # what the user really pays for it, VAT included (same as the audit card)
                 gross = float(li.amount) * (1 if li.kind == "tax" else vat_factor)
-                add("new_line_item", "warning", "New charge on the bill",
-                    f"\"{li.label_en or li.label}\" ({money(gross)} RON with VAT) was not on your previous "
-                    f"{min(i, 3)} bill{'s' if min(i, 3) > 1 else ''}.", None, round(gross, 2), "RON")
+                n = min(i, 3)
+                add("new_line_item", "warning", "Sumă nouă pe factură",
+                    f"„{li.label}” ({ro.lei(gross)} cu TVA) nu apărea pe "
+                    f"{'factura anterioară' if n == 1 else f'ultimele {n} facturi'}.", None, round(gross, 2), "lei")
                 out[-1]["id"] = f"new_line_item:{b.id}:{li.code}"  # several new lines on one bill stay unique
 
     sev = {"critical": 0, "warning": 1, "info": 2}

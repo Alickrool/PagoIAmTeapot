@@ -54,5 +54,9 @@ npx expo start                    # scan the QR code with Expo Go
 
 - All seeded bills, offers, and county averages are **fictional demo data**.
 - `backend/bills/knowledge/romania_utilities.md` was fact-checked on 16 Nov 2026; every fact carries its source.
-- LLM: Gemini, model `GEMINI_MODEL` (default `gemini-4-hydrogen`; `gemini-2.5-*` is no longer available to new keys). All calls are in `backend/bills/services/ai.py`.
+- LLM: Gemini, model `GEMINI_MODEL` (default `gemini-3.5-flash-lite`: fast, exact on the demo bills). When it is overloaded (503)
+  or rate-limited (429) the backend retries `GEMINI_FALLBACK_MODELS` in order; if all fail the API answers 503 `ai_busy`.
+  All calls are in `backend/bills/services/ai.py`.
+- User-facing texts produced by the backend (audit, discrepancies, AI answers, errors) are Romanian, like the app.
+  Code, comments and docs stay English.
 - Gemini free tier: Google's terms forbid sending sensitive personal data to unpaid services, so test with the demo PDFs and redact your own bills.

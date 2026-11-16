@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import io
 import json
+import logging
 from datetime import date
 from functools import lru_cache
 from typing import Literal, TypeVar, Union
@@ -14,6 +15,7 @@ from typing import Literal, TypeVar, Union
 from django.conf import settings
 from pydantic import BaseModel, Field
 
+log = logging.getLogger(__name__)
 T = TypeVar("T", bound=BaseModel)
 Part = Union[str, tuple[bytes, str]]  # text, or (file bytes, mime type)
 # Gemini rejects requests above ~20 MB of inline data; bigger uploads go through the Files API.
@@ -67,19 +69,47 @@ def _generate(parts: list[Part], schema: type[T], *, system: str | None = None, 
         return types.Part.from_bytes(data=data, mime_type=mime)
 
     contents = [to_part(p) for p in parts]
-    response = gemini_client().models.generate_content(
-        model=settings.GEMINI_MODEL,
-        contents=contents,
-        config=types.GenerateContentConfig(
-            system_instruction=system,
-            response_mime_type="application/json",
-            response_json_schema=_inline_refs(schema.model_json_schema()),
-            max_output_tokens=max_tokens,
-        ),
+    config = types.GenerateContentConfig(
+        system_instruction=system,
+        response_mime_type="application/json",
+        response_json_schema=_inline_refs(schema.model_json_schema()),
+        max_output_tokens=max_tokens,
     )
+    response = _call_with_fallback(contents, config)
     if not response.text:  # blocked by safety filters or empty
         return None
     return schema.model_validate_json(response.text)
+
+
+class AIUnavailable(Exception):
+    """Every configured model is overloaded / rate-limited right now. Views answer 503 {code: "ai_busy"}."""
+
+
+def _models() -> list[str]:
+    seen, out = set(), []
+    for m in [settings.GEMINI_MODEL, *settings.GEMINI_FALLBACK_MODELS]:
+        if m and m not in seen:
+            seen.add(m)
+            out.append(m)
+    return out
+
+
+def _call_with_fallback(contents, config):
+    """Try the main model, then each fallback, when Gemini says 'busy' (5xx) or 'too many requests' (429).
+    Other errors (bad key, bad request) are raised at once: another model wouldn't fix them."""
+    from google.genai import errors
+
+    last = None
+    for model in _models():
+        try:
+            return gemini_client().models.generate_content(model=model, contents=contents, config=config)
+        except errors.APIError as e:
+            if e.code == 429 or (e.code or 0) >= 500:
+                log.warning("Gemini %s unavailable (%s), trying the next model", model, e.code)
+                last = e
+                continue
+            raise
+    raise AIUnavailable(str(last))
 
 
 # ---------- 1. extraction ----------
@@ -169,15 +199,17 @@ ASK_SYSTEM = """You are the bill assistant inside Pago, a Romanian bill-payment 
 The user is looking at one bill and asks about it, sometimes after tapping a specific line.
 
 How to answer:
-- answer: English, 2-4 short sentences, plain language, no markdown.
+- answer: ROMANIAN (the app is in Romanian), 2-4 short sentences, plain everyday language, no markdown.
+  Write amounts the Romanian way: "352,53 lei", "0,88 lei/kWh", "+42,2%".
 - Always tie the answer to the user's actual numbers (amounts, % changes, prices per kWh).
 - Explain real-world causes (law changes, ANRE tariffs, price caps ending) ONLY using the knowledge base below.
   If the knowledge base does not cover it, say what the bill shows and that you are not sure about the cause.
 - Never invent legislation, dates, or tariffs. Don't show the bracketed source tags in the answer text.
-- sources: short labels for what the answer relies on, e.g. "Your bill", "Your last 12 bills",
-  "Law 141/2025 (VAT 21%)", "ANRE order 69/2025". Use the law/order numbers from the knowledge base, never site
+- sources: short Romanian labels for what the answer relies on, e.g. "Factura ta", "Ultimele 12 facturi",
+  "Legea 141/2025 (TVA 21%)", "Ordin ANRE 69/2025". Use the law/order numbers from the knowledge base, never site
   names. Only items you actually used. 1-3 items.
-- suggested_actions: 0-2 actions the user can take right now, only if they really help with this question.
+- suggested_actions: 0-2 actions the user can take right now, only if they really help with this question;
+  label in Romanian, e.g. "Compară ofertele", "Trimite indexul real", "Contestă factura".
 
 <knowledge_base>
 {kb}
@@ -186,7 +218,7 @@ How to answer:
 
 class SuggestedAction(BaseModel):
     type: Literal["submit_reading", "dispute", "switch_supplier", "cancel_service", "autopay_rule"]
-    label: str = Field(description="Button text, max 4 words")
+    label: str = Field(description="Button text in Romanian, max 4 words")
 
 
 class AskAnswer(BaseModel):
@@ -201,7 +233,7 @@ def answer_question(bill_context: dict, question: str, line_item: dict | None) -
         f"<bill>\n{json.dumps(bill_context, ensure_ascii=False, default=str)}\n</bill>{focus}\n\nQuestion: {question}"
     )
     result = _generate([user], AskAnswer, system=ASK_SYSTEM.format(kb=knowledge_base()))
-    return result or AskAnswer(answer="Sorry, I can't answer that one.", sources=[], suggested_actions=[])
+    return result or AskAnswer(answer="Îmi pare rău, nu pot răspunde la asta.", sources=[], suggested_actions=[])
 
 
 # ---------- 3. dispute letter ----------

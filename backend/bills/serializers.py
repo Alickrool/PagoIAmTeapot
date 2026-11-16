@@ -73,7 +73,7 @@ class AskSerializer(serializers.Serializer):
 
     def validate(self, data):
         if not data.get("question") and not data.get("line_item_id"):
-            raise serializers.ValidationError("Send a question, a line_item_id, or both.")
+            raise serializers.ValidationError("Trimite o întrebare, un line_item_id sau ambele.")
         return data
 
 

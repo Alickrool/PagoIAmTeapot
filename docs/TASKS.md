@@ -15,8 +15,7 @@ submit-reading call and types match the backend.
 **Test mode (Mon 14:05):** start the backend with `python manage.py dev`: every start deletes all bills of the
 current month (`CURRENT_MONTH`, default 2026-10; seeded and scanned), older months stay, extraction cache stays.
 **For the demo** the October scenarios are needed again: `python manage.py seed_demo` then `python manage.py dev --keep`.
-**Biggest open gap:** the app UI is Romanian, but texts produced by the backend are English (audit cards,
-discrepancies, Gemini answers, AutoPay reasons, errors) → B14.
+**Backend texts are Romanian now** (B14), and Gemini overloads fall back to other models (B16).
 **All API v2 endpoints are live** (scan v2, `/dashboard/`, `/providers/`, `/providers/{slug}/`). The app switches
 from its on-phone fallback (`mobile/src/api/derive.ts`) automatically; `derive.ts` stays as the offline fallback.
 
@@ -52,7 +51,8 @@ from its on-phone fallback (`mobile/src/api/derive.ts`) automatically; `derive.t
 | B1 | P0 | `ai_check` passes on the demo PDF (text path) and a PNG photo (vision): all lines and totals exact, gemini-4-hydrogen ~10-14 s. Left: run on your real bills (redact name/address), then `prewarm_cache ../samples/*` | demo bills ✅, real bills open |
 | B3 | P0 | ~10 demo questions, tune `ASK_SYSTEM`. First answer (Engie VAT) is correct and well-sourced but takes ~7 s: try a faster model for Q&A only (`gemini-3.5-flash-lite` answered a ping in 0.8 s) | started |
 | B4 | P1 | Compare demo amounts with one of your real bills | open |
-| B14 | **P0** | **Romanian texts from the backend**, to match the Romanian UI: audit card titles/messages and action labels, discrepancy titles/messages, Gemini answers (`ASK_SYSTEM`), AutoPay reasons, reading/scan error `detail`s, offers disclaimer. Code, comments and docs stay English. Needs the team's OK (the original rule was "everything in English") | waiting for decision |
+| B14 | ✅ | Romanian backend texts: audit cards + action labels, discrepancies, Gemini answers/sources/buttons, AutoPay reasons, all error `detail`s, offers disclaimer; amounts as "352,53 lei"; fixtures re-exported | Done |
+| B16 | ✅ | Model `gemini-3.5-flash-lite` (extraction 4–10 s, Q&A 1–6 s, exact on the demo bills) with automatic fallback to `gemini-3.6-flash`, `gemini-4-hydrogen` on 503/429; clean 503 `ai_busy` / 502 `ai_error` instead of a 500 page | Done |
 | B15 | – | Null text fields from Gemini stored as "" (fix from the frontend side during the merge) + regression test | ✅ |
 | B8 | P2 | Streaming `/ask` | open |
 

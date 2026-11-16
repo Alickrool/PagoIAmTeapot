@@ -11,6 +11,7 @@ from decimal import ROUND_HALF_UP, Decimal
 from django.db import transaction
 
 from bills.models import Bill, IndexType, LineItem
+from bills.services.ro import num
 
 # Gas meters count m3, gas is billed in kWh. Real factor varies by month/region (PCS); ~10.5 is typical.
 GAS_KWH_PER_M3 = 10.5
@@ -28,14 +29,14 @@ def _money(x: float | Decimal) -> Decimal:
 @transaction.atomic
 def submit_reading(bill: Bill, index_new: float) -> dict:
     if bill.index_old is None or not bill.consumption:
-        raise ReadingError("This bill has no meter index.")
+        raise ReadingError("Această factură nu are index de contor.")
     if index_new <= bill.index_old:
-        raise ReadingError(f"The new index must be greater than the previous one ({bill.index_old:g}).")
+        raise ReadingError(f"Indexul nou trebuie să fie mai mare decât cel vechi ({num(bill.index_old)}).")
 
     delta = index_new - bill.index_old
     new_consumption = round(delta * GAS_KWH_PER_M3, 1) if bill.category == "gas" else round(delta, 2)
     if new_consumption > bill.consumption * MAX_RATIO:
-        raise ReadingError("That reading looks too high. Please double-check the meter.")
+        raise ReadingError("Indexul pare prea mare. Verifică din nou contorul.")
 
     old = {"total": float(bill.total), "consumption": bill.consumption, "index_type": bill.index_type}
     items = list(bill.line_items.all())

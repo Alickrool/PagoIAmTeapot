@@ -198,6 +198,65 @@ class DemoScenarioTests(TestCase):
         self.assertEqual((d["bills_count"], d["total"]), (4, "1001.83"))
         self.assertEqual(next(s for s in d["slices"] if s["slug"] == "ppc")["bill_id"], new_id)
 
+    # ---- Romanian texts + Gemini fallback ----
+
+    def test_audit_texts_are_romanian(self):
+        engie = self._current("Engie")
+        spike = next(a for a in engie["audit"]["anomalies"] if a["id"] == "price_spike")
+        self.assertEqual(spike["title"], "Factura a crescut cu 42,2%")
+        self.assertIn("de la 247,95 lei la 352,53 lei (+42,2%)", spike["message"])
+        self.assertIn("de la 0,55 la 0,88 lei/kWh", spike["message"])
+        digi = self._current("Digi")
+        extra = next(a for a in digi["audit"]["anomalies"] if a["id"].startswith("extra_service"))
+        self.assertIn("15,00 lei/lună (cu TVA)", extra["message"])
+        self.assertEqual(extra["actions"][0]["label"], "Renunță la opțiune")
+
+    def test_gemini_falls_back_to_next_model_when_busy(self):
+        from types import SimpleNamespace
+        from unittest import mock as um
+
+        from django.test import override_settings
+        from google.genai import errors
+
+        from bills.services import ai
+        from bills.services.mock import extraction
+
+        tried = []
+
+        def generate(model, contents, config):
+            tried.append(model)
+            if model == "busy-model":
+                raise errors.ServerError(503, {"error": {"code": 503, "message": "high demand", "status": "UNAVAILABLE"}})
+            return SimpleNamespace(text=extraction().model_dump_json())
+
+        fake = SimpleNamespace(models=SimpleNamespace(generate_content=generate))
+        with override_settings(GEMINI_MODEL="busy-model", GEMINI_FALLBACK_MODELS=["ok-model"]), \
+                um.patch.object(ai, "gemini_client", return_value=fake):
+            ai.extract_bill(b"%PDF", "application/pdf")
+        self.assertEqual(tried, ["busy-model", "ok-model"])
+
+    def test_all_models_busy_gives_clean_503(self):
+        from types import SimpleNamespace
+        from unittest import mock as um
+
+        from django.test import override_settings
+        from google.genai import errors
+
+        from bills.services import ai
+
+        def generate(model, contents, config):
+            raise errors.ClientError(429, {"error": {"code": 429, "message": "quota", "status": "RESOURCE_EXHAUSTED"}})
+
+        fake = SimpleNamespace(models=SimpleNamespace(generate_content=generate))
+        with override_settings(AI_MOCK=False, GEMINI_FALLBACK_MODELS=["other"]), \
+                um.patch.object(ai, "gemini_client", return_value=fake):
+            r = self._post_files(("busy.jpg", b"\xff\xd8 busy", "image/jpeg"))
+            self.assertEqual((r.status_code, r.json()["code"]), (503, "ai_busy"))
+            self.assertIn("aglomerat", r.json()["detail"])
+            bill = self._current("Engie")
+            r = self.c.post(f"/api/bills/{bill['id']}/ask/", {"question": "TVA?"}, format="json")
+            self.assertEqual((r.status_code, r.json()["code"]), (503, "ai_busy"))
+
     # ---- test sessions (manage.py dev) ----
 
     def test_reset_month_keeps_older_months(self):
@@ -228,7 +287,7 @@ class DemoScenarioTests(TestCase):
         self.assertTrue({("consumption_jump", "critical"), ("estimated_index", "critical")} <= ppc)
         digi = self._discrepancies("digi")
         self.assertIn("new_line_item", [d["type"] for d in digi])
-        self.assertIn("15.00 RON with VAT", next(d for d in digi if d["type"] == "new_line_item")["message"])
+        self.assertIn("15,00 lei cu TVA", next(d for d in digi if d["type"] == "new_line_item")["message"])
         self.assertIn("total_jump", [d["type"] for d in self._discrepancies("engie")])
         self.assertEqual(self._discrepancies("apa-brasov"), [])
 
@@ -237,7 +296,7 @@ class DemoScenarioTests(TestCase):
         self.assertEqual(d["bills"][0]["period_end"], "2026-10-31")  # newest first
         self.assertEqual(d["bills"][0]["index_type"], "estimated")
         self.assertEqual(d["bills"][0]["anomalies"][0], {"id": "estimated_index", "severity": "critical",
-                                                         "title": "Estimated index"})
+                                                         "title": "Index estimat"})
         self.assertIsNone(d["bills"][-1]["delta_total_pct"])
         sev = {"critical": 0, "warning": 1, "info": 2}
         keys = [(d_["period_end"], -sev[d_["severity"]]) for d_ in d["discrepancies"]]
@@ -253,7 +312,7 @@ class DemoScenarioTests(TestCase):
         gaps = [d for d in self._discrepancies("engie") if d["type"] == "index_gap"]
         self.assertEqual(len(gaps), 1)
         self.assertEqual((gaps[0]["bill_id"], gaps[0]["severity"]), (bill.id, "critical"))
-        self.assertIn("skipped", gaps[0]["message"])
+        self.assertIn("sărit", gaps[0]["message"])
 
     # ---- scan v2 (docs/API_V2.md §1) ----
 
@@ -371,7 +430,7 @@ class DemoScenarioTests(TestCase):
 
         fake = SimpleNamespace(models=SimpleNamespace(generate_content=lambda **kw: SimpleNamespace(text=None)))
         with override_settings(), um.patch.object(ai, "gemini_client", return_value=fake):
-            self.assertIn("can't answer", ai.answer_question({}, "q", None).answer)
+            self.assertIn("nu pot răspunde", ai.answer_question({}, "q", None).answer)
 
     def test_autopay_blocks_estimated(self):
         bill = self._current("PPC")

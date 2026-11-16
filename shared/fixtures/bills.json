@@ -1,6 +1,6 @@
 [
   {
-    "id": 483,
+    "id": 48,
     "provider": "Apa Brasov",
     "category": "water",
     "period_start": "2026-10-01",
@@ -12,7 +12,7 @@
     "audit_status": "ok"
   },
   {
-    "id": 471,
+    "id": 36,
     "provider": "Digi",
     "category": "telecom",
     "period_start": "2026-10-01",
@@ -24,7 +24,7 @@
     "audit_status": "warning"
   },
   {
-    "id": 459,
+    "id": 24,
     "provider": "PPC",
     "category": "electricity",
     "period_start": "2026-10-01",
@@ -36,7 +36,7 @@
     "audit_status": "critical"
   },
   {
-    "id": 447,
+    "id": 12,
     "provider": "Engie",
     "category": "electricity",
     "period_start": "2026-10-01",

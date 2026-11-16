@@ -8,6 +8,7 @@ import mimetypes
 from dataclasses import dataclass
 
 from django.conf import settings
+from google.genai import errors as genai_errors
 from django.core.files.base import ContentFile
 from django.db import transaction
 
@@ -46,17 +47,17 @@ def media_type(content_type: str | None, name: str) -> str:
 
 def validate(files: list[Upload]) -> None:
     if not files:
-        raise ScanError("no_files", "Send the bill as multipart field 'files' (repeated) or 'file'.")
+        raise ScanError("no_files", "Trimite factura în câmpul „files” (repetat) sau „file”.")
     if len(files) > settings.SCAN_MAX_FILES:
-        raise ScanError("too_many_files", f"A bill can have at most {settings.SCAN_MAX_FILES} files, got {len(files)}.")
+        raise ScanError("too_many_files", f"O factură poate avea cel mult {settings.SCAN_MAX_FILES} fișiere, ai trimis {len(files)}.")
     for f in files:
         if f.mime not in ALLOWED_TYPES:
-            raise ScanError("unsupported_type", f"{f.name or 'A file'} is not a photo (JPG/PNG/WEBP/HEIC) or a PDF.")
+            raise ScanError("unsupported_type", f"{f.name or 'Un fișier'} nu e o poză (JPG/PNG/WEBP/HEIC) sau un PDF.")
         if len(f.data) > settings.SCAN_MAX_FILE_BYTES:
-            raise ScanError("file_too_large", f"{f.name or 'A file'} is larger than "
+            raise ScanError("file_too_large", f"{f.name or 'Un fișier'} depășește "
                                               f"{settings.SCAN_MAX_FILE_BYTES // 2**20} MB.", 413)
     if sum(len(f.data) for f in files) > settings.SCAN_MAX_TOTAL_BYTES:
-        raise ScanError("file_too_large", f"All files together are larger than "
+        raise ScanError("file_too_large", f"Toate fișierele împreună depășesc "
                                           f"{settings.SCAN_MAX_TOTAL_BYTES // 2**20} MB.", 413)
 
 
@@ -120,8 +121,13 @@ def scan(files: list[Upload]) -> tuple[Bill, bool]:
         return existing, False
     try:
         extracted, method = extract_cached(files)
-    except ValueError as e:  # model gave up / returned nothing usable
-        raise ScanError("unreadable", f"Could not read this bill ({e}). Try a sharper, well-lit photo.", 422)
+    except ValueError:  # model gave up / returned nothing usable
+        raise ScanError("unreadable", "Nu am putut citi factura. Încearcă o poză mai clară, bine luminată.", 422)
+    except ai.AIUnavailable:  # every model overloaded / rate-limited
+        raise ScanError("ai_busy", "Serviciul AI e foarte aglomerat acum. Încearcă din nou peste un minut.", 503)
+    except genai_errors.APIError:  # any other Gemini error: show a clean message, not a 500 page
+        log.exception("Gemini error while scanning")
+        raise ScanError("ai_error", "Serviciul AI a răspuns cu o eroare. Încearcă din nou.", 502)
     log.info("Extracted %s via %s", [f.name for f in files], method)
 
     boxes = pdf_text.find_line_bboxes(

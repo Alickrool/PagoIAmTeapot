@@ -5,6 +5,7 @@ from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
 from rest_framework.response import Response
+from google.genai import errors as genai_errors
 from rest_framework.views import APIView
 
 from bills.models import AutoPayRule, Bill
@@ -12,8 +13,16 @@ from bills.serializers import (AskSerializer, AutoPayRuleSerializer, BillDetailS
                                DisputeSerializer, LineItemSerializer, PaySerializer, ReadingSerializer)
 from bills.services import ai, market, mock, overview
 from bills.services.reading import ReadingError, submit_reading
+from bills.services.ro import lei
 from bills.services import scan as scan_service
 from bills.services.audit import audit_bill
+
+
+def _ai_error_response(e: Exception) -> Response:
+    """Gemini overloaded -> 503 ai_busy; any other Gemini error -> 502 ai_error. Never a 500 debug page."""
+    if isinstance(e, ai.AIUnavailable):
+        return Response({"code": "ai_busy", "detail": "Serviciul AI e foarte aglomerat acum. Încearcă din nou peste un minut."}, status=503)
+    return Response({"code": "ai_error", "detail": "Serviciul AI a răspuns cu o eroare. Încearcă din nou."}, status=502)
 
 def _bill_context(bill: Bill, request) -> dict:
     """Compact bill JSON handed to the LLM."""
@@ -61,11 +70,14 @@ class BillViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, viewsets.Gen
         if s.validated_data.get("line_item_id"):
             li = bill.line_items.filter(id=s.validated_data["line_item_id"]).first()
             if not li:
-                return Response({"detail": "Unknown line item."}, status=404)
+                return Response({"detail": "Rândul nu există pe această factură."}, status=404)
             line_item = LineItemSerializer(li).data
-        question = s.validated_data.get("question") or "What is this charge and why is it this amount?"
+        question = s.validated_data.get("question") or "Ce reprezintă această sumă și de ce are valoarea asta?"
         ctx = _bill_context(bill, request)
-        result = mock.answer(ctx, question, line_item) if settings.AI_MOCK else ai.answer_question(ctx, question, line_item)
+        try:
+            result = mock.answer(ctx, question, line_item) if settings.AI_MOCK else ai.answer_question(ctx, question, line_item)
+        except (ai.AIUnavailable, genai_errors.APIError) as e:
+            return _ai_error_response(e)
         return Response({"question": question, "line_item": line_item, **result.model_dump()})
 
     @action(detail=True, methods=["post"])
@@ -78,7 +90,10 @@ class BillViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, viewsets.Gen
         if s.validated_data.get("anomaly_id"):
             anomaly = next((a for a in audit_bill(bill)["anomalies"] if a["id"] == s.validated_data["anomaly_id"]), None)
         ctx = _bill_context(bill, request)
-        letter = mock.dispute(ctx, anomaly) if settings.AI_MOCK else ai.write_dispute(ctx, anomaly)
+        try:
+            letter = mock.dispute(ctx, anomaly) if settings.AI_MOCK else ai.write_dispute(ctx, anomaly)
+        except (ai.AIUnavailable, genai_errors.APIError) as e:
+            return _ai_error_response(e)
         return Response(letter.model_dump())
 
     @action(detail=True, methods=["post"])
@@ -102,7 +117,7 @@ class BillViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, viewsets.Gen
             "current_all_in_price": bill.all_in_unit_price,
             "unit": bill.consumption_unit,
             "offers": market.offers_for(bill.category, bill.consumption, float(bill.total), bill.provider),
-            "disclaimer": "Demo prices, illustrative only.",
+            "disclaimer": "Prețuri demo, doar cu titlu ilustrativ.",
         })
 
     @action(detail=True, methods=["post"])
@@ -115,14 +130,14 @@ class BillViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, viewsets.Gen
         if s.validated_data["mode"] == "auto":
             rule = AutoPayRule.objects.filter(provider__iexact=bill.provider, active=True).order_by("-id").first()
             if not rule:
-                return Response({"detail": "No active auto-pay rule for this provider."}, status=400)
+                return Response({"detail": "Nu există o regulă de plată automată activă pentru acest furnizor."}, status=400)
             audit = audit_bill(bill)
             if bill.total > rule.max_amount:
-                reasons.append(f"Total {bill.total} RON is above your limit of {rule.max_amount} RON.")
+                reasons.append(f"Totalul de {lei(bill.total)} depășește limita ta de {lei(rule.max_amount)}.")
             if rule.block_if_estimated and bill.index_type == "estimated":
-                reasons.append("The bill uses an estimated index.")
+                reasons.append("Factura folosește un index estimat.")
             if rule.block_if_anomaly and audit["status"] == "critical":
-                reasons.append("The audit found a critical anomaly.")
+                reasons.append("Auditul a găsit o anomalie gravă.")
         bill.status = Bill.Status.BLOCKED if reasons else Bill.Status.PAID
         bill.save(update_fields=["status"])
         return Response({"status": bill.status, "reasons": reasons}, status=status.HTTP_200_OK)
@@ -139,11 +154,11 @@ class DashboardView(APIView):
     def get(self, request):
         month = request.query_params.get("month")
         if month and not re.fullmatch(r"\d{4}-(0[1-9]|1[0-2])", month):
-            return Response({"code": "bad_month", "detail": "month must look like 2026-10."}, status=400)
+            return Response({"code": "bad_month", "detail": "Luna trebuie să arate ca 2026-10."}, status=400)
         try:
             return Response(overview.dashboard(month))
         except overview.NoBills:
-            return Response({"code": "no_bills", "detail": "No bills yet. Scan your first bill."}, status=404)
+            return Response({"code": "no_bills", "detail": "Nu ai încă facturi. Scanează prima factură."}, status=404)
 
 
 class ProvidersView(APIView):
@@ -160,4 +175,4 @@ class ProviderDetailView(APIView):
         try:
             return Response(overview.provider_history(slug))
         except overview.UnknownProvider:
-            return Response({"code": "unknown_provider", "detail": f"No provider '{slug}'."}, status=404)
+            return Response({"code": "unknown_provider", "detail": f"Nu există furnizorul „{slug}”."}, status=404)

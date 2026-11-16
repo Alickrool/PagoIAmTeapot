@@ -30,7 +30,9 @@ CORS_ALLOW_ALL_ORIGINS = True
 
 # --- AI ---
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
-GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-4-hydrogen")
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-3.5-flash-lite")
+# Tried in order when the main model answers 503 (overloaded) or 429 (rate limit).
+GEMINI_FALLBACK_MODELS = [m.strip() for m in os.getenv("GEMINI_FALLBACK_MODELS", "gemini-3.6-flash,gemini-4-hydrogen").split(",") if m.strip()]
 # When true (or when there is no GEMINI_API_KEY) AI endpoints return canned fixtures,
 # so the frontend can work before the AI pipeline is ready.
 AI_MOCK = os.getenv("AI_MOCK", "0") == "1" or not GEMINI_API_KEY
@@ -110,7 +112,7 @@ WSGI_APPLICATION = 'config.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'NAME': os.getenv("DJANGO_DB", BASE_DIR / 'db.sqlite3'),  # DJANGO_DB=other.sqlite3 for throwaway DBs
     }
 }
 

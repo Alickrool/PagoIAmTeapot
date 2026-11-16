@@ -9,7 +9,8 @@ money as **strings**, dates `YYYY-MM-DD`). Types on the app side: `mobile/src/ap
 | 2 | `GET /api/dashboard/?month=YYYY-MM` | Overview tab (donut + month compare + history) | ✅ **live** |
 | 3 | `GET /api/providers/` | Providers tab | ✅ **live** |
 | 4 | `GET /api/providers/{slug}/` | Provider history screen | ✅ **live** |
-| 5 | `GET /api/bills/{id}/pdf/` | Bill screen: "Vezi factura (PDF)" | **new** – backend todo |
+| 5 | `GET /api/bills/{id}/pdf/` | Bill screen: "Vezi factura (PDF)" | ✅ **live** |
+| 6 | Scan validation: `validation` in `BillDetail`, `POST /api/bills/{id}/confirm/` | Scan result + bill screen | 🚧 **contract agreed**, backend in progress (V-tasks in [TASKS.md](TASKS.md)) |
 
 The app already works without 2–4: until they exist (404) it computes the same JSON on the phone from
 `GET /bills/` + `GET /bills/{id}/` (`mobile/src/api/derive.ts`). That file is a **reference implementation** of the
@@ -69,8 +70,18 @@ files: annex.pdf  (application/pdf)
 | 422 | `unreadable` | blurry / cut / too dark – ask for a better photo |
 | 503 | `ai_busy` | every Gemini model is overloaded or rate-limited – try again in a minute |
 | 502 | `ai_error` | any other Gemini error |
+| 400 | `image_too_large` | a photo over 50 megapixels or 8000 px on a side (§6) |
+| 400 | `encrypted_pdf` | a PDF that needs a password to open (§6) |
+| 400 | `suspicious_file` | a PDF with JavaScript, launch actions, embedded files or XFA forms (§6) |
+| 400 | `too_many_pages` | more than 10 pages across all files (§6) |
+| 400 | `unreadable_file` | a corrupt file that can't be opened (§6) |
+| 422 | `invalid_extraction` | the model returned something impossible (over 60 lines, total out of range) (§6) |
+| 422 | `invalid_period` | period start after period end (§6) |
+| 409 | `duplicate_bill` | the same bill was already scanned from other photos; body also has `existing_bill_id` (§6) |
+| 429 | `too_many_requests` | too many scans / questions from this device; `detail` says when to retry |
 
 `/bills/{id}/ask/` and `/bills/{id}/dispute/` return the same `ai_busy` / `ai_error` bodies. All `detail` texts are Romanian.
+Every scanned bill now carries a `validation` block (§6).
 
 ---
 
@@ -278,6 +289,80 @@ disponibil." If `file_url` already ends in `.pdf`, the app opens that directly.
 - `GET /api/bills/?source=upload`: every scanned bill, newest scan first (`BillSummary` now also has `source` and
   `created_at`). `?source=seed` = only demo bills.
 - Deleting a bill (also the `manage.py dev` test reset) deletes its files from disk.
+
+## 6. Scan validation 🚧 contract agreed, backend in progress
+
+Hackathon scope of [SCAN_VALIDATION_PLAN.md](SCAN_VALIDATION_PLAN.md) (see the V-tasks in [TASKS.md](TASKS.md)).
+What the model extracts is a proposal: deterministic rules in the backend check it before the bill is saved.
+
+Three outcomes:
+
+- **rejected**: nothing is saved, the scan answers with an error from the §1 table (dangerous or broken file,
+  impossible period, duplicate bill).
+- **needs_review**: the bill is saved and audited as usual, but at least one check is a `warning`. The app shows the
+  warnings with "E corect" (→ `POST /confirm/`); correcting fields comes later.
+- **accepted**: no warnings (there may be `info` checks, e.g. the bill is for another month).
+
+**`BillDetail.validation`** (every bill; seeded demo bills are `accepted` with no checks):
+
+```json
+"validation": {
+  "status": "needs_review",
+  "assigned_month": "2026-09",
+  "is_current_month": false,
+  "confirmed_by_user": false,
+  "checks": [
+    { "id": "not_current_month", "severity": "info", "field": "period_end",
+      "message": "Factura e pentru septembrie 2026, am pus-o în luna ei." },
+    { "id": "vat_amount", "severity": "warning", "field": "line_items.vat",
+      "message": "TVA-ul citit (61,18 lei) nu se potrivește cu 21% din restul facturii (58,02 lei). Verifică poza." }
+  ]
+}
+```
+
+- `status`: `accepted | needs_review` (a rejected scan is never saved). After `confirm` it is `accepted` and
+  `confirmed_by_user` is `true`; the checks stay so the screen can still show them.
+- `assigned_month` = `period_end[:7]`, the same month rule as everywhere else. `is_current_month` compares it with the
+  backend's current month (`CURRENT_MONTH` in the demo, 2026-10).
+- `severity`: `info` (show as a note), `warning` (= needs_review: the user confirms). `message` is Romanian, with the
+  real numbers; show it as-is.
+- `BillSummary` (`GET /bills/`) gets `validation_status` so lists can mark bills that need a look.
+
+**Check ids** (stable, the app may key icons on them):
+
+| id | severity | when |
+|---|---|---|
+| `not_current_month` | info | the bill is for another month; it is saved in its own month |
+| `future_period` | warning | period ends more than 5 days after today |
+| `old_bill` | warning | period ended more than 24 months ago |
+| `year_plausible` | warning | year before 2015 or after next year (a misread year) |
+| `period_length` | info / warning | 41–95 days = multi-month bill (info); under 7 or over 366 days (warning) |
+| `issue_after_period` | info | issued more than 3 days before the period ends |
+| `due_after_issue` | info | due before it was issued, or more than 60 days after |
+| `lines_sum` | warning | the lines don't add up to the total (± max(1 leu, 1%)) |
+| `vat_rate_allowed` | warning | VAT rate not a Romanian rate (0, 5, 9, 11, 19, 21) |
+| `vat_amount` | warning | the VAT line is not the VAT rate of the other lines (± max(1 leu, 2%)) |
+| `total_range` | warning | total over 20 000 lei |
+| `total_positive` | info | total zero or negative: credit note / regularization |
+| `currency_ron` | warning | currency is not RON |
+| `prompt_injection_suspected` | warning | the document contains text that tries to give the AI instructions |
+
+**`POST /api/bills/{id}/confirm/`** (no body) → `200` + `BillDetail` with `validation.status = "accepted"`,
+`confirmed_by_user = true`.
+
+**`409 duplicate_bill`**: `{ "code": "duplicate_bill", "detail": "Ai scanat deja factura asta.", "existing_bill_id": 581 }`.
+Same provider + same period (± 2 days) + same customer code or same total, or the same bill number, among scanned
+bills (seeded demo bills are not compared, so the demo scan still works). The app opens `existing_bill_id`.
+Re-sending the very same files still answers `200` with the old bill, as before.
+
+**File safety** (before any AI call): the real type comes from the file's first bytes (a JPEG named `.pdf` is read as
+a JPEG; an `.exe` named `.jpg` is `unsupported_type`); photos are re-saved without EXIF/GPS metadata; stored files get
+random names. **Prompt injection**: the document is data, never instructions (fixed system rule, cleaned text,
+limits on every field); suspicious text gives the `prompt_injection_suspected` warning, the numbers are still read
+from the document.
+
+**Rate limits**: `POST /scan/` and `POST /ask/` are limited per device (defaults 30 and 120 per hour, `.env`
+`SCAN_RATE` / `ASK_RATE`) → `429 too_many_requests`.
 
 ## Checklist for the backend
 

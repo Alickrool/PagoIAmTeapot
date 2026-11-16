@@ -57,6 +57,49 @@ from its on-phone fallback (`mobile/src/api/derive.ts`) automatically; `derive.t
 | B17 | ✅ | Uploaded bills can be fetched and opened again: every page stored (`BillFile`, old scans migrated), `GET /bills/{id}/pdf/` per API_V2 §5 (original PDF / photos combined on A4 incl. HEIC / rendered demo bill, HEAD, 404 `no_pdf`), originals at `/bills/{id}/files/{n}/`, `files[]` + `pdf_url` in the bill, `?source=upload` list; files deleted with the bill | Done |
 | B8 | P2 | Streaming `/ask` | open |
 
+## Scan validation (Mon evening, hackathon scope)
+
+Full plan: [SCAN_VALIDATION_PLAN.md](SCAN_VALIDATION_PLAN.md). For the hackathon we build only what shows in the demo
+or is cheap; the contract is in [API_V2.md §6](API_V2.md). Idea for the pitch: **what the AI reads is a proposal,
+rules in code decide**, and the bill is data, never instructions.
+
+Decisions (the plan's §11 proposals, taken as-is for now):
+
+- Reject only dangerous or broken files, impossible periods and duplicates; everything else is `needs_review`
+  (saved, the user confirms).
+- A bill belongs to the month of `period_end`; multi-month / regularization bills go whole into that month.
+- Duplicates are searched only among scanned bills, never the seeded demo ones (else the demo scan would get 409).
+- Hashes and the extraction cache use the original bytes, so pre-warmed caches keep working after photos are cleaned.
+- Questions 4–10 of the plan's §11 (places of consumption, other people's bills, provider registry, ANAF, retention,
+  auth): after the hackathon.
+
+### Backend – Person B
+
+| # | Task | Status |
+|---|---|---|
+| V1 | `services/validation/` + `Bill.validation_status` / `validation` / `confirmed_by_user` / `bill_number` (migration); `validation` in `BillDetail`, `validation_status` in `BillSummary` | open |
+| V2 | Period + month (§6.1): `assigned_month`, `is_current_month`, `future_period`, `old_bill`, `year_plausible`, `period_length`, `issue_after_period`, `due_after_issue`, reject `invalid_period` | open |
+| V3 | Amounts (§6.4): `lines_sum`, `vat_rate_allowed`, `vat_amount`, `total_range`, `total_positive`, `currency_ron` | open |
+| V4 | Duplicates (§6.6): `409 duplicate_bill` + `existing_bill_id` (provider + period + customer code / total, or bill number) | open |
+| V5 | File safety (§4 F1–F9): type from magic bytes, pixel limit, photos re-saved without EXIF, password PDFs, PDFs with JavaScript/launch/embedded files, max 10 pages, parse timeout, random file names, `nosniff` | open |
+| V6 | Prompt injection (§5 P1–P5, P8): fixed system rule, `<bill_text>` cleaned, field limits and cleaning, `suspicious_text` + regex → `prompt_injection_suspected`; no customer code / address in Q&A | open |
+| V7 | `POST /bills/{id}/confirm/`; DRF rate limits on scan/ask (`429 too_many_requests`) | open |
+| V8 | Tests for the §9 cases (mocked extraction, no Gemini), live e2e check, docs | open |
+
+### Frontend – Person A (after the contract above; backend fields arrive with V1)
+
+| # | Task | Status |
+|---|---|---|
+| AV1 | `types.ts`: `BillDetail.validation`, `BillSummary.validation_status`, new error codes, `existing_bill_id` | open |
+| AV2 | Scan result: toast "Am pus factura în septembrie 2026" when `is_current_month` is false (use the `not_current_month` message) | open |
+| AV3 | Bill screen: `warning` checks in one card with "E corect" → `POST /bills/{id}/confirm/`; `info` checks as small notes | open |
+| AV4 | `409 duplicate_bill` → "Ai scanat deja factura asta" + open `existing_bill_id`; `429` → show `detail` | open |
+| AV5 | Lists (home, provider history): a small mark on bills with `validation_status = needs_review` | open |
+
+Out of scope for the hackathon (pitch it as the next step): provider registry with verified CUIs, customer name
+check, login and per-user bills, ANAF online check, `PATCH` to correct fields, file retention, scan log.
+**Before the demo:** rotate the Gemini key (it was pasted in a chat) and put the new one in `backend/.env`.
+
 ## Timeline
 
 | When | Frontend | Backend |

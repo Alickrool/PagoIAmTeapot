@@ -1,4 +1,10 @@
-"""All Claude calls live here: bill extraction, contextual Q&A, dispute letters."""
+"""All LLM calls live here: bill extraction, contextual Q&A, dispute letters.
+
+Two providers behind one function (`_generate`), picked with AI_PROVIDER in backend/.env:
+- "anthropic": Claude via the Anthropic SDK (structured outputs)
+- "gemini":    Gemini via the google-genai SDK (JSON schema output)
+Prompts and output schemas are shared, so switching provider changes nothing else.
+"""
 
 from __future__ import annotations
 
@@ -6,18 +12,29 @@ import base64
 import json
 from datetime import date
 from functools import lru_cache
-from typing import Literal
+from typing import Literal, TypeVar, Union
 
-import anthropic
 from django.conf import settings
 from pydantic import BaseModel, Field
 
-# ---------- shared ----------
+T = TypeVar("T", bound=BaseModel)
+Part = Union[str, tuple[bytes, str]]  # text, or (file bytes, mime type)
+
+# ---------- providers ----------
 
 
 @lru_cache
-def client() -> anthropic.Anthropic:
+def client():
+    import anthropic
+
     return anthropic.Anthropic()
+
+
+@lru_cache
+def gemini_client():
+    from google import genai
+
+    return genai.Client(api_key=settings.GEMINI_API_KEY)
 
 
 @lru_cache
@@ -29,6 +46,66 @@ def _file_block(data: bytes, media_type: str) -> dict:
     b64 = base64.standard_b64encode(data).decode("utf-8")
     kind = "document" if media_type == "application/pdf" else "image"
     return {"type": kind, "source": {"type": "base64", "media_type": media_type, "data": b64}}
+
+
+def _anthropic(parts: list[Part], schema: type[T], system: str | None, effort: str, max_tokens: int) -> T | None:
+    content = [{"type": "text", "text": p} if isinstance(p, str) else _file_block(*p) for p in parts]
+    kwargs = {"system": system, "cache_control": {"type": "ephemeral"}} if system else {}
+    response = client().beta.messages.parse(
+        model=settings.ANTHROPIC_MODEL,
+        max_tokens=max_tokens,
+        betas=["server-side-fallback-2026-07-01"],
+        fallbacks="default",
+        output_config={"effort": effort},
+        messages=[{"role": "user", "content": content}],
+        output_format=schema,
+        **kwargs,
+    )
+    if response.stop_reason == "refusal":
+        return None
+    return response.parsed_output
+
+
+def _inline_refs(schema: dict) -> dict:
+    """Pydantic emits $defs/$ref for nested models; inline them so any JSON-schema subset accepts it."""
+    defs = schema.get("$defs", {})
+
+    def walk(node):
+        if isinstance(node, dict):
+            if "$ref" in node:
+                return walk(defs[node["$ref"].split("/")[-1]])
+            return {k: walk(v) for k, v in node.items() if k != "$defs"}
+        if isinstance(node, list):
+            return [walk(v) for v in node]
+        return node
+
+    return walk(schema)
+
+
+def _gemini(parts: list[Part], schema: type[T], system: str | None, effort: str, max_tokens: int) -> T | None:
+    from google.genai import types
+
+    contents = [p if isinstance(p, str) else types.Part.from_bytes(data=p[0], mime_type=p[1]) for p in parts]
+    response = gemini_client().models.generate_content(
+        model=settings.GEMINI_MODEL,
+        contents=contents,
+        config=types.GenerateContentConfig(
+            system_instruction=system,
+            response_mime_type="application/json",
+            response_json_schema=_inline_refs(schema.model_json_schema()),
+            max_output_tokens=max_tokens,
+        ),
+    )
+    if not response.text:  # blocked by safety filters or empty
+        return None
+    return schema.model_validate_json(response.text)
+
+
+def _generate(parts: list[Part], schema: type[T], *, system: str | None = None, effort: str = "low",
+              max_tokens: int = 4000) -> T | None:
+    """One structured LLM call. Returns None when the model refuses / is blocked."""
+    impl = _gemini if settings.AI_PROVIDER == "gemini" else _anthropic
+    return impl(parts, schema, system, effort, max_tokens)
 
 
 # ---------- 1. extraction ----------
@@ -80,22 +157,16 @@ Rules:
 """
 
 
-def _parse_bill(content: list[dict]) -> ExtractedBill:
-    response = client().messages.parse(
-        model=settings.ANTHROPIC_MODEL,
-        max_tokens=16000,
-        output_config={"effort": "medium"},
-        messages=[{"role": "user", "content": content}],
-        output_format=ExtractedBill,
-    )
-    if response.stop_reason == "refusal" or response.parsed_output is None:
+def _parse_bill(parts: list[Part]) -> ExtractedBill:
+    bill = _generate(parts, ExtractedBill, effort="medium", max_tokens=16000)
+    if bill is None:
         raise ValueError("Could not read this bill")
-    return response.parsed_output
+    return bill
 
 
 def extract_bill(data: bytes, media_type: str) -> ExtractedBill:
-    """Vision path: photo or PDF sent as an image/document block."""
-    return _parse_bill([_file_block(data, media_type), {"type": "text", "text": EXTRACTION_PROMPT}])
+    """Vision path: photo or PDF sent as an image/document."""
+    return _parse_bill([(data, media_type), EXTRACTION_PROMPT])
 
 
 def extract_bill_from_text(text: str) -> ExtractedBill:
@@ -148,20 +219,8 @@ def answer_question(bill_context: dict, question: str, line_item: dict | None) -
     user = (
         f"<bill>\n{json.dumps(bill_context, ensure_ascii=False, default=str)}\n</bill>{focus}\n\nQuestion: {question}"
     )
-    response = client().beta.messages.parse(
-        model=settings.ANTHROPIC_MODEL,
-        max_tokens=4000,
-        betas=["server-side-fallback-2026-07-01"],
-        fallbacks="default",
-        output_config={"effort": "low"},
-        cache_control={"type": "ephemeral"},
-        system=ASK_SYSTEM.format(kb=knowledge_base()),
-        messages=[{"role": "user", "content": user}],
-        output_format=AskAnswer,
-    )
-    if response.stop_reason == "refusal" or response.parsed_output is None:
-        return AskAnswer(answer="Sorry, I can't answer that one.", sources=[], suggested_actions=[])
-    return response.parsed_output
+    result = _generate([user], AskAnswer, system=ASK_SYSTEM.format(kb=knowledge_base()), effort="low")
+    return result or AskAnswer(answer="Sorry, I can't answer that one.", sources=[], suggested_actions=[])
 
 
 # ---------- 3. dispute letter ----------
@@ -183,16 +242,11 @@ Leave [Nume Prenume] and [Telefon] as placeholders. Do not invent legal articles
 
 
 def write_dispute(bill_context: dict, anomaly: dict | None) -> DisputeLetter:
-    response = client().messages.parse(
-        model=settings.ANTHROPIC_MODEL,
-        max_tokens=4000,
-        output_config={"effort": "low"},
-        messages=[{"role": "user", "content": DISPUTE_PROMPT.format(
-            bill=json.dumps(bill_context, ensure_ascii=False, default=str),
-            anomaly=json.dumps(anomaly, ensure_ascii=False) if anomaly else "general clarification request",
-        )}],
-        output_format=DisputeLetter,
+    prompt = DISPUTE_PROMPT.format(
+        bill=json.dumps(bill_context, ensure_ascii=False, default=str),
+        anomaly=json.dumps(anomaly, ensure_ascii=False) if anomaly else "general clarification request",
     )
-    if response.parsed_output is None:
+    letter = _generate([prompt], DisputeLetter, effort="low")
+    if letter is None:
         raise ValueError("Could not draft the letter")
-    return response.parsed_output
+    return letter

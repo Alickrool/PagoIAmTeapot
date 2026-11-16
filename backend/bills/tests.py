@@ -148,6 +148,45 @@ class DemoScenarioTests(TestCase):
         b = next(b for b in boxes if b)
         self.assertTrue(0 <= b["x"] < 1 and 0 <= b["y"] < 1 and 0 < b["w"] <= 1 and b["page"] == 1)
 
+    def test_gemini_provider_path(self):
+        import json
+        from types import SimpleNamespace
+        from unittest import mock as um
+
+        from django.test import override_settings
+
+        from bills.services import ai
+        from bills.services.mock import extraction
+
+        sample = extraction()
+        calls = []
+
+        def fake_generate(model, contents, config):
+            calls.append((model, contents, config))
+            return SimpleNamespace(text=sample.model_dump_json())
+
+        fake = SimpleNamespace(models=SimpleNamespace(generate_content=fake_generate))
+        with override_settings(AI_PROVIDER="gemini", GEMINI_MODEL="gemini-test"), \
+                um.patch.object(ai, "gemini_client", return_value=fake):
+            bill = ai.extract_bill(b"%PDF fake", "application/pdf")
+        self.assertEqual(bill.total, sample.total)
+        model, contents, config = calls[0]
+        self.assertEqual(model, "gemini-test")
+        self.assertEqual(contents[0].inline_data.mime_type, "application/pdf")
+        self.assertNotIn("$ref", json.dumps(config.response_json_schema))  # nested models inlined
+
+    def test_gemini_blocked_answer(self):
+        from types import SimpleNamespace
+        from unittest import mock as um
+
+        from django.test import override_settings
+
+        from bills.services import ai
+
+        fake = SimpleNamespace(models=SimpleNamespace(generate_content=lambda **kw: SimpleNamespace(text=None)))
+        with override_settings(AI_PROVIDER="gemini"), um.patch.object(ai, "gemini_client", return_value=fake):
+            self.assertIn("can't answer", ai.answer_question({}, "q", None).answer)
+
     def test_autopay_blocks_estimated(self):
         bill = self._current("PPC")
         self.c.post("/api/autopay-rules/", {"provider": "PPC", "max_amount": "600"}, format="json")

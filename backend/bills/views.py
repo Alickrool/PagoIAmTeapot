@@ -45,7 +45,8 @@ class BillViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, viewsets.Gen
         upload = request.FILES.get("file")
         if not upload:
             return Response({"detail": "Send the bill as multipart field 'file'."}, status=400)
-        if upload.content_type not in ALLOWED_TYPES:
+        allowed = ALLOWED_TYPES | ({"image/heic", "image/heif"} if settings.AI_PROVIDER == "gemini" else set())
+        if upload.content_type not in allowed:
             return Response({"detail": f"Unsupported type {upload.content_type}."}, status=400)
         try:
             bill, created = scan_service.scan(upload.read(), upload.content_type, upload.name)

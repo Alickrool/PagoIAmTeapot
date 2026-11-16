@@ -10,7 +10,7 @@ from django.core.management.base import BaseCommand, CommandError
 
 from bills.services.scan import extract_cached
 
-TYPES = {".pdf": "application/pdf", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".png": "image/png", ".webp": "image/webp"}
+TYPES = {".pdf": "application/pdf", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".png": "image/png", ".webp": "image/webp", ".heic": "image/heic"}
 
 
 class Command(BaseCommand):

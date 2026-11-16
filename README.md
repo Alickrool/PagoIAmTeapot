@@ -4,7 +4,7 @@ Pago AI Hackathon, Brașov, 16–17 Nov 2026 – *"Make it different"*.
 
 Before you press **Pay**, an AI auditor reads the bill, explains it, and catches what's wrong:
 
-1. **Zero-input scan** – photo/PDF of any utility or telecom bill → structured data (Claude vision).
+1. **Zero-input scan** – photo/PDF of any utility or telecom bill → structured data (Gemini or Claude, switchable).
 2. **Automatic audit** – 🟢 Normal / 🟡 Attention / 🔴 Anomaly badges: estimated index, price-driven increases,
    paid add-ons you forgot about, above-market price, penalties. Rule-based, so every number is exact.
 3. **Tap-to-ask** – tap any line ("Contribuție cogenerare", "TVA") or ask a question; the answer uses your numbers
@@ -30,7 +30,8 @@ cd backend
 python -m venv .venv
 .venv\Scripts\activate            # macOS/Linux: source .venv/bin/activate
 pip install -r requirements.txt
-copy .env.example .env            # then put your ANTHROPIC_API_KEY in it (empty = mock AI)
+copy .env.example .env            # put GEMINI_API_KEY (or ANTHROPIC_API_KEY) in it; empty = mock AI
+python manage.py ai_check         # live test of the key: one extraction + one question
 python manage.py migrate
 python manage.py seed_demo        # resets the DB with the demo scenarios
 python manage.py make_sample_pdfs # fictional PDF invoices of the demo bills -> samples/
@@ -52,4 +53,5 @@ npx expo start                    # scan the QR code with Expo Go
 
 - All seeded bills, offers, and county averages are **fictional demo data**.
 - Lines marked `[VERIFY]` in `backend/bills/knowledge/romania_utilities.md` must be checked before the demo.
-- Model: `claude-opus-5-5` (change with `ANTHROPIC_MODEL`).
+- LLM: `AI_PROVIDER=gemini` (`GEMINI_MODEL`, default `gemini-3.8-flash`) or `anthropic` (`ANTHROPIC_MODEL`, default `claude-opus-5-5`). Prompts and schemas are shared (`backend/bills/services/ai.py`).
+- Gemini free tier: Google's terms forbid sending sensitive personal data to unpaid services, so test with the demo PDFs and redact your own bills.

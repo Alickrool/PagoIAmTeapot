@@ -41,8 +41,8 @@ switches to them automatically. No app change needed.
 | B12 | **P0** | Scan v2: repeated `files` field (keep `file`), max 10 files / 10 MB each / 25 MB total, errors as `{code, detail}`, cache key = hash of the file hashes in order. All files = text PDFs → one text request; otherwise all pages as image/document blocks in **one** Claude message. bbox `page` numbers continue across files | open |
 | B13 | P1 | HEIC (iPhone gallery): convert to JPEG on the server (`pillow-heif`), Claude doesn't accept HEIC. `not_a_bill` / `unreadable` (422): add `is_bill` + `readable` to the extraction schema | open |
 | B7 | P0 | LAN hosting from both phones (`runserver 0.0.0.0:8000`, firewall), plan B `AI_MOCK=1` | open |
-| B1 | P0 | API key → `prewarm_cache ../samples/*`, compare totals/lines with the paper bills, tune `EXTRACTION_PROMPT` | waiting for key |
-| B3 | P0 | API key → ~10 demo questions, tune `ASK_SYSTEM` | waiting for key |
+| B1 | P0 | Gemini key in `backend/.env` → `python manage.py ai_check` (demo PDF), then `prewarm_cache ../samples/*`, compare totals/lines with the paper bills, tune `EXTRACTION_PROMPT`. If extraction is weak, try another `GEMINI_MODEL` | open (Gemini) |
+| B3 | P0 | ~10 demo questions, tune `ASK_SYSTEM`; watch free-tier rate limits (cache helps) | open (Gemini) |
 | B4 | P1 | Compare demo amounts with one of your real bills | open |
 | B8 | P2 | Streaming `/ask` | open |
 
@@ -53,7 +53,7 @@ switches to them automatically. No app change needed.
 | Mon until 18:00 | A6, A3, A4 | B12, B10, B11 |
 | Mon 18:00–20:00 | A2 polish, A10 as endpoints land | B13, B7 |
 | **Mon 20:00** | **Integration checkpoint:** from the phone on the real backend: Overview + Providers from real endpoints, scan a 2-page bill, submit reading on PPC | |
-| Mon evening | A8 | API key → B1, B3 |
+| Mon evening | A8 | B1, B3 with the Gemini key |
 | Tue 08:00–10:00 | Polish | Pre-warm cache with every demo file, B4 |
 | **Tue 10:00** | **Feature freeze.** Only bug fixes from here | |
 | Tue 11:00–12:30 | Rehearse the 3-minute demo together twice, the second run fully from cache | |

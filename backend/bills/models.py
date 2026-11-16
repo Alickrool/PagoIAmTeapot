@@ -18,6 +18,11 @@ class IndexType(models.TextChoices):
     NONE = "none"            # not metered (telecom, subscriptions)
 
 
+class ValidationStatus(models.TextChoices):
+    ACCEPTED = "accepted"          # no warnings, or confirmed by the user
+    NEEDS_REVIEW = "needs_review"  # saved, but the user should confirm the warnings
+
+
 class Bill(models.Model):
     class Status(models.TextChoices):
         UNPAID = "unpaid"
@@ -56,6 +61,13 @@ class Bill(models.Model):
     pdf_cache = models.FileField(upload_to="bills/pdf/", null=True, blank=True)  # combined pages, built on demand
     file_hash = models.CharField(max_length=64, blank=True, db_index=True)
     raw_extraction = models.JSONField(null=True, blank=True)
+    bill_number = models.CharField(max_length=64, blank=True)  # series + number as printed, for duplicate checks
+
+    # Scan validation (docs/API_V2.md §6). Seeded bills are accepted with no checks.
+    validation_status = models.CharField(max_length=16, choices=ValidationStatus.choices,
+                                         default=ValidationStatus.ACCEPTED, db_index=True)
+    validation = models.JSONField(default=dict, blank=True)  # {"checks": [{id, severity, field, message}]}
+    confirmed_by_user = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

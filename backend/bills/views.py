@@ -10,7 +10,8 @@ from rest_framework.response import Response
 from google.genai import errors as genai_errors
 from rest_framework.views import APIView
 
-from bills.models import AutoPayRule, Bill, BillFile
+from bills.models import AutoPayRule, Bill, BillFile, ValidationStatus
+from bills.throttles import AskThrottle, ScanThrottle
 from bills.serializers import (AskSerializer, AutoPayRuleSerializer, BillDetailSerializer, BillListSerializer,
                                DisputeSerializer, LineItemSerializer, PaySerializer, ReadingSerializer)
 from bills.services import ai, billpdf, market, mock, overview
@@ -26,10 +27,15 @@ def _ai_error_response(e: Exception) -> Response:
         return Response({"code": "ai_busy", "detail": "Serviciul AI e foarte aglomerat acum. Încearcă din nou peste un minut."}, status=503)
     return Response({"code": "ai_error", "detail": "Serviciul AI a răspuns cu o eroare. Încearcă din nou."}, status=502)
 
-def _bill_context(bill: Bill, request) -> dict:
-    """Compact bill JSON handed to the LLM."""
+def _bill_context(bill: Bill, request, personal: bool = True) -> dict:
+    """Compact bill JSON handed to the LLM. Q&A gets no personal data (personal=False): no customer code, meter,
+    address or bill number; the dispute letter needs them to identify the customer."""
     data = BillDetailSerializer(bill, context={"request": request}).data
-    data.pop("file_url", None)
+    for key in ("file_url", "files", "pdf_url", "validation"):
+        data.pop(key, None)
+    if not personal:
+        for key in ("customer_code", "meter_series", "place_of_consumption", "bill_number"):
+            data.pop(key, None)
     return data
 
 
@@ -54,7 +60,7 @@ class BillViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, viewsets.Gen
     def get_serializer_class(self):
         return BillListSerializer if self.action == "list" else BillDetailSerializer
 
-    @action(detail=False, methods=["post"])
+    @action(detail=False, methods=["post"], throttle_classes=[ScanThrottle])
     def scan(self, request):
         """1-10 photos/PDFs = the pages of ONE bill (field `files`, repeated; legacy `file`) -> audited bill.
         Errors: {code, detail} (docs/API_V2.md §1)."""
@@ -63,10 +69,10 @@ class BillViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, viewsets.Gen
         try:
             bill, created = scan_service.scan(files)
         except scan_service.ScanError as e:
-            return Response({"code": e.code, "detail": e.detail}, status=e.status)
+            return Response({"code": e.code, "detail": e.detail, **e.extra}, status=e.status)
         return Response(BillDetailSerializer(bill, context={"request": request}).data, status=201 if created else 200)
 
-    @action(detail=True, methods=["post"])
+    @action(detail=True, methods=["post"], throttle_classes=[AskThrottle])
     def ask(self, request, pk=None):
         """Tap-to-ask / free-text question about this bill."""
         bill = self.get_object()
@@ -79,7 +85,7 @@ class BillViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, viewsets.Gen
                 return Response({"detail": "Rândul nu există pe această factură."}, status=404)
             line_item = LineItemSerializer(li).data
         question = s.validated_data.get("question") or "Ce reprezintă această sumă și de ce are valoarea asta?"
-        ctx = _bill_context(bill, request)
+        ctx = _bill_context(bill, request, personal=False)
         try:
             result = mock.answer(ctx, question, line_item) if settings.AI_MOCK else ai.answer_question(ctx, question, line_item)
         except (ai.AIUnavailable, genai_errors.APIError) as e:
@@ -149,6 +155,16 @@ class BillViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, viewsets.Gen
         return Response({"status": bill.status, "reasons": reasons}, status=status.HTTP_200_OK)
 
 
+    @action(detail=True, methods=["post"])
+    def confirm(self, request, pk=None):
+        """The user checked the validation warnings and says the bill is right (docs/API_V2.md §6)."""
+        bill = self.get_object()
+        bill.validation_status = ValidationStatus.ACCEPTED
+        bill.confirmed_by_user = True
+        bill.save(update_fields=["validation_status", "confirmed_by_user"])
+        return Response(BillDetailSerializer(bill, context={"request": request}).data)
+
+
 class AutoPayRuleViewSet(viewsets.ModelViewSet):
     queryset = AutoPayRule.objects.order_by("-id")
     serializer_class = AutoPayRuleSerializer
@@ -193,8 +209,10 @@ def _not_found(code: str, detail: str) -> JsonResponse:
 
 
 def _inline(resp: HttpResponse, name: str) -> HttpResponse:
-    resp["Content-Disposition"] = f'inline; filename="{name}"'
+    safe = re.sub(r'[^\w .()-]+', "_", name).strip() or "factura"
+    resp["Content-Disposition"] = f'inline; filename="{safe}"'
     resp["Cache-Control"] = "private, max-age=300"
+    resp["X-Content-Type-Options"] = "nosniff"
     return resp
 
 

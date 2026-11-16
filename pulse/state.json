@@ -60,13 +60,25 @@
       "member": 1,
       "time": "2026-11-16 21:08",
       "headline": "Aplicația a pornit pe rețeaua nouă, iar PDF-ul facturii se deschide"
+    },
+    {
+      "n": 11,
+      "member": 2,
+      "time": "2026-11-16 21:49",
+      "headline": "Backend-ul verifică acum fiecare factură scanată: luna, sumele, duplicatele și fișierele periculoase"
+    },
+    {
+      "n": 12,
+      "member": 1,
+      "time": "2026-11-16 22:12",
+      "headline": "Testul de integritate a trecut: aplicația și backend-ul vorbesc aceeași limbă"
     }
   ],
   "members": {
     "1": {
       "building": "Aplicația mobilă Pago Bill Audit (Expo) în 3 interfețe, Gen Z, Millennials și Senior: vezi facturile lunii într-o roată, scanezi factura din poze sau PDF, Gemini o citește și prinde greșelile. Ca un detectiv care vorbește pe limba fiecărui client.",
-      "works": "Scanarea pornește pe cameră, cu comutare la imagine sau PDF. Tab-urile se schimbă cu swipe, iar roata lunii se glisează între luni și se desenează animat. Bugetul lunii se setează dintr-un buton. Fiecare factură are întrebări pe tipul ei (apă, gaz, curent) și buton „Vezi factura (PDF)”, care deschide acum factura, pentru că backend-ul o servește. Furnizorii noi din facturi scanate se adaugă cu un tap. Iconițele sunt simple, fără emoji. Branch-ul frontend-final e unit în main.",
-      "blocking": "Cheia Gemini trebuie rotită înainte de demo. Pe Wi-Fi-ul nou, telefonul încă nu a fost testat. Verificarea datelor din factură (lună, furnizor din România, nume, sume) e doar în plan, nu e încă în cod.",
+      "works": "Scanarea pornește pe cameră, cu comutare la imagine sau PDF. Tab-urile se schimbă cu swipe, iar roata lunii se glisează între luni și se desenează animat. Bugetul lunii se setează dintr-un buton. Fiecare factură are întrebări pe tipul ei (apă, gaz, curent) și buton „Vezi factura (PDF)”, care deschide acum factura, pentru că backend-ul o servește. Furnizorii noi din facturi scanate se adaugă cu un tap. Iconițele sunt simple, fără emoji. Branch-ul frontend-final e unit în main. Testul de integritate a trecut: backend-ul și aplicația rulează pe același cod și aceeași adresă, iar toate endpoint-urile au forma așteptată de aplicație.",
+      "blocking": "Cheia Gemini trebuie rotită înainte de demo. Un test vechi de backend (coordonatele rândurilor pe PDF-ul demo) pică pe laptopul acesta.",
       "features": [
         {
           "name": "Claude Code",
@@ -97,16 +109,16 @@
           "for": "actualizează pagina Pulse la fiecare 2 ore"
         }
       ],
-      "next": "Discutăm în echipă planul de verificare a datelor și de securitate la scanare (lună, furnizor din România, nume, duplicate, fișiere suspecte), apoi îl implementăm pe backend."
+      "next": "Testăm pe telefon verificările noi de la scanare (luna, sumele, duplicatele) și le arătăm în aplicație."
     },
     "2": {
       "building": "Pago Bill Audit: înainte să apeși «Plătește», AI-ul citește factura, ți-o explică pe înțeles și prinde greșelile (index estimat, scumpiri ascunse, opțiuni plătite uitate). Ca un contabil de buzunar care se uită pe factură în locul tău.",
-      "works": "Tot ce scrie backend-ul e în română (carduri de audit, discrepanțe, răspunsuri Gemini, erori). Modelul mai rapid răspunde în 1–6 secunde și trece singur pe alt model când e aglomerat. O poză care nu e factură sau e prea neclară e respinsă. Facturile scanate se pot redeschide: originalul, sau toate paginile lipite într-un PDF. Verificarea completă pe un server real cu Gemini: 28 din 28. Baza de date e curată: scanarea greșită de test a fost ștearsă, rămân doar facturile reale.",
-      "blocking": "Nimic blocant în cod. Planul de verificare la scanare (lună, furnizor din România, nume, duplicate, fișiere suspecte) e scris de coleg, dar încă nu l-am discutat împreună, așa că nu am început.",
+      "works": "Planul de verificare la scanare e făcut pe backend, cu 52 de teste trecute. Ce citește AI-ul e doar o propunere: regulile din cod verifică luna și anul, sumele și TVA-ul, iar factura din altă lună intră în luna ei. Aceeași factură pozată a doua oară e oprită (409). Fișierele periculoase sunt respinse (PDF cu parolă sau cu cod, poze uriașe), iar pozele sunt salvate fără date GPS. Textul din factură care încearcă să dea ordine AI-ului e semnalat, cifrele rămân cele tipărite. Pe o factură reală Digi citită ca „2020” apare acum avertismentul de factură veche.",
+      "blocking": "Nimic blocant pe backend. Aplicația încă nu arată avertismentele și butonul „E corect”; cheia Gemini trebuie rotită înainte de demo.",
       "features": [
         {
           "name": "Claude Code",
-          "for": "a scris backend-ul Django, traducerea în română, PDF-ul facturii, testele și comiturile"
+          "for": "a scris backend-ul Django, traducerea în română, PDF-ul facturii, verificarea datelor la scanare, testele și comiturile"
         },
         {
           "name": "Căutare pe web",
@@ -133,7 +145,7 @@
           "for": "actualizează pagina Pulse la fiecare 2 ore"
         }
       ],
-      "next": "Discutăm planul de verificare la scanare cu colegul, apoi îl implementăm pe backend și îl testăm pe telefon cu facturi reale."
+      "next": "Terminăm verificarea live cu Gemini și o urcăm pe GitHub; apoi colegul arată avertismentele în aplicație."
     }
   }
 }

@@ -38,8 +38,12 @@ python manage.py make_sample_pdfs # fictional PDF invoices of the demo bills -> 
 python manage.py prewarm_cache ../samples/*   # optional: cache Gemini extraction of demo bills
 python manage.py dev              # TEST session: empties the current month (CURRENT_MONTH, default 2026-10), then serves on 0.0.0.0:8000
 python manage.py dev --keep       # same server, no reset (use for the demo, after seed_demo)
-python manage.py test bills       # demo scenarios must stay green
+python manage.py revalidate       # re-run the scan validation rules on already scanned bills (no Gemini)
+python manage.py test bills       # demo scenarios + scan validation must stay green (always mock AI)
 ```
+
+Every scan is validated before it is saved (docs/API_V2.md §6): file safety, period/month, amounts and VAT,
+duplicates, prompt-injection checks. Scans and questions are rate-limited per device (`SCAN_RATE`, `ASK_RATE`).
 
 ## Run the app
 

@@ -1,4 +1,9 @@
 {
+  "is_bill": true,
+  "readable": true,
+  "suspicious_text": false,
+  "bill_number": null,
+  "currency": null,
   "provider": "PPC",
   "category": "electricity",
   "customer_code": "PPC-1002338471",
@@ -83,7 +88,7 @@
       "kind": "regulated_fee",
       "quantity": 350.0,
       "unit": "kWh",
-      "unit_price": 0.0001,
+      "unit_price": 0.000144,
       "amount": 0.05
     },
     {

@@ -58,7 +58,12 @@ REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [],
     "DEFAULT_PERMISSION_CLASSES": ["rest_framework.permissions.AllowAny"],
     "UNAUTHENTICATED_USER": None,
+    "EXCEPTION_HANDLER": "bills.throttles.exception_handler",
 }
+
+# Rate limits per device (docs/API_V2.md §6); empty = off.
+SCAN_RATE = os.getenv("SCAN_RATE", "30/hour")
+ASK_RATE = os.getenv("ASK_RATE", "120/hour")
 
 
 # Application definition

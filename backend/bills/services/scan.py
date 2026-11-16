@@ -5,6 +5,8 @@ from __future__ import annotations
 import hashlib
 import logging
 import mimetypes
+import re
+import uuid
 from dataclasses import dataclass
 
 from django.conf import settings
@@ -13,7 +15,9 @@ from django.core.files.base import ContentFile
 from django.db import transaction
 
 from bills.models import Bill, BillFile, ExtractionCache, LineItem
-from bills.services import ai, mock, pdf_text, providers
+from bills.services import ai, mock, pdf_text, providers, validation
+from bills.services.validation import duplicates, injection
+from bills.services.validation import files as vfiles
 
 log = logging.getLogger(__name__)
 PDF = "application/pdf"
@@ -29,12 +33,8 @@ class Upload:
     name: str = ""
 
 
-class ScanError(Exception):
-    """Rejected upload. Rendered by the view as {code, detail} with this HTTP status (docs/API_V2.md §1)."""
-
-    def __init__(self, code: str, detail: str, status: int = 400):
-        super().__init__(detail)
-        self.code, self.detail, self.status = code, detail, status
+# Rejected upload. Rendered by the view as {code, detail, **extra} with its HTTP status (docs/API_V2.md §1, §6).
+ScanError = validation.Rejected
 
 
 def media_type(content_type: str | None, name: str) -> str:
@@ -46,13 +46,12 @@ def media_type(content_type: str | None, name: str) -> str:
 
 
 def validate(files: list[Upload]) -> None:
+    """Counts and sizes. The type is decided later from the file's own bytes (validation.files)."""
     if not files:
         raise ScanError("no_files", "Trimite factura în câmpul „files” (repetat) sau „file”.")
     if len(files) > settings.SCAN_MAX_FILES:
         raise ScanError("too_many_files", f"O factură poate avea cel mult {settings.SCAN_MAX_FILES} fișiere, ai trimis {len(files)}.")
     for f in files:
-        if f.mime not in ALLOWED_TYPES:
-            raise ScanError("unsupported_type", f"{f.name or 'Un fișier'} nu e o poză (JPG/PNG/WEBP/HEIC) sau un PDF.")
         if len(f.data) > settings.SCAN_MAX_FILE_BYTES:
             raise ScanError("file_too_large", f"{f.name or 'Un fișier'} depășește "
                                               f"{settings.SCAN_MAX_FILE_BYTES // 2**20} MB.", 413)
@@ -91,9 +90,10 @@ def _extract(files: list[Upload]) -> tuple[ai.ExtractedBill, str]:
     return ai.extract_bill_files(pairs), ExtractionCache.Method.VISION
 
 
-def extract_cached(files: list[Upload]) -> tuple[ai.ExtractedBill, str]:
-    """Returns (extraction, method). Real extractions are cached by bill_hash; mock ones never are."""
-    h = bill_hash(files)
+def extract_cached(files: list[Upload], key: str | None = None) -> tuple[ai.ExtractedBill, str]:
+    """Returns (extraction, method). Real extractions are cached by `key` (default: bill_hash of the files; the scan
+    passes the hash of the ORIGINAL uploads, so pre-warmed caches match after photos are cleaned). Mock ones never are."""
+    h = key or bill_hash(files)
     cached = ExtractionCache.objects.filter(file_hash=h).first()
     if cached:
         return ai.ExtractedBill.model_validate(cached.data), "cache"
@@ -112,15 +112,38 @@ def _blank_nulls(model, values: dict) -> dict:
     return {k: ("" if v is None and k in text_fields else v) for k, v in values.items()}
 
 
+def _display_name(name: str, i: int) -> str:
+    """The user's file name for display only (stored files get random names)."""
+    name = re.sub(r"[^\w .()\-]+", "_", (name or "").replace("\\", "/").rsplit("/", 1)[-1]).strip(" ._")
+    return name[:100] or f"pagina-{i + 1}"
+
+
+def _safe_files(files: list[Upload]) -> list[Upload]:
+    """File safety (docs/API_V2.md §6): real type, cleaned photos, safe PDFs, page limit. Before any AI call."""
+    out, pages = [], 0
+    for i, f in enumerate(files):
+        data, mime, n = vfiles.inspect(f.data, f.name)
+        pages += n
+        out.append(Upload(data, mime, _display_name(f.name, i)))
+    vfiles.check_pages(pages)
+    return out
+
+
+def _document_text(files: list[Upload]) -> str:
+    return "\n".join(pdf_text.plain_text(f.data) for f in files if f.mime == PDF)
+
+
 def scan(files: list[Upload]) -> tuple[Bill, bool]:
-    """Returns (bill, created). Re-sending the same files in the same order returns the bill created the first time."""
+    """Returns (bill, created). Re-sending the same files in the same order returns the bill created the first time.
+    Raises ScanError (validation.Rejected) when the scan is refused; then nothing is saved."""
     validate(files)
-    h = bill_hash(files)
+    h = bill_hash(files)  # of the original bytes
     existing = Bill.objects.filter(file_hash=h).first()
     if existing:
         return existing, False
+    files = _safe_files(files)
     try:
-        extracted, method = extract_cached(files)
+        extracted, method = extract_cached(files, key=h)
     except ValueError:  # model gave up / returned nothing usable
         raise ScanError("unreadable", "Nu am putut citi factura. Încearcă o poză mai clară, bine luminată.", 422)
     except ai.AIUnavailable:  # every model overloaded / rate-limited
@@ -128,11 +151,17 @@ def scan(files: list[Upload]) -> tuple[Bill, bool]:
     except genai_errors.APIError:  # any other Gemini error: show a clean message, not a 500 page
         log.exception("Gemini error while scanning")
         raise ScanError("ai_error", "Serviciul AI a răspuns cu o eroare. Încearcă din nou.", 502)
-    log.info("Extracted %s via %s", [f.name for f in files], method)
+    log.info("Extracted %d file(s) via %s", len(files), method)  # no file names: they can contain people's names
     if not extracted.is_bill:
         raise ScanError("not_a_bill", "Nu pare o factură de utilități sau telecom. Fotografiază factura, nu alt document.", 422)
     if not extracted.readable:
         raise ScanError("unreadable", "Nu am putut citi factura. Încearcă o poză mai clară, bine luminată.", 422)
+
+    # What the model read is a proposal: the rules decide (docs/API_V2.md §6).
+    extracted = injection.sanitize(extracted)
+    result = validation.validate_bill(extracted, _document_text(files))
+    if dup := duplicates.find(extracted):
+        raise ScanError("duplicate_bill", "Ai scanat deja factura asta.", 409, {"existing_bill_id": dup.id})
 
     boxes = pdf_text.find_line_bboxes(
         [(f.data, f.mime) for f in files],
@@ -140,13 +169,15 @@ def scan(files: list[Upload]) -> tuple[Bill, bool]:
     )
 
     with transaction.atomic():
-        fields = _blank_nulls(Bill, extracted.model_dump(exclude={"line_items", "is_bill", "readable"}))
+        fields = _blank_nulls(Bill, extracted.model_dump(exclude={"line_items", "is_bill", "readable",
+                                                                  "suspicious_text"}))
         fields["provider"] = providers.normalize(fields["provider"])
-        bill = Bill(**fields, source=Bill.Source.UPLOAD, file_hash=h, raw_extraction=extracted.model_dump(mode="json"))
+        bill = Bill(**fields, source=Bill.Source.UPLOAD, file_hash=h, raw_extraction=extracted.model_dump(mode="json"),
+                    validation_status=result.status, validation=result.as_json())
         bill.save()
         for i, f in enumerate(files):  # every page, in upload order
-            page = BillFile(bill=bill, order=i, name=f.name or f"page-{i + 1}", mime=f.mime)
-            page.file.save(f.name or f"bill-page-{i + 1}", ContentFile(f.data), save=True)
+            page = BillFile(bill=bill, order=i, name=f.name, mime=f.mime)
+            page.file.save(uuid.uuid4().hex + vfiles.EXT.get(f.mime, ""), ContentFile(f.data), save=True)
             if i == 0:
                 bill.file.name = page.file.name  # file_url = first page (same stored file, not a copy)
         bill.save(update_fields=["file"])

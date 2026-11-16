@@ -24,3 +24,29 @@ def pct(x) -> str:
 
 def months_ago(n: int) -> str:
     return "acum o lună" if n == 1 else f"acum {n} luni"
+
+
+MONTHS = ["ianuarie", "februarie", "martie", "aprilie", "mai", "iunie", "iulie", "august", "septembrie", "octombrie",
+          "noiembrie", "decembrie"]
+
+
+def month_label(month: str) -> str:
+    """"2026-09" -> "septembrie 2026" """
+    year, m = month.split("-")
+    return f"{MONTHS[int(m) - 1]} {year}"
+
+
+def date_ro(d) -> str:
+    """date(2026, 11, 16) -> "16.11.2026" """
+    return f"{d:%d.%m.%Y}"
+
+
+def plural(n: int, one: str, many: str) -> str:
+    """Romanian counting: 1 zi, 5 zile, 20 de zile, 101 zile."""
+    if n == 1:
+        return f"1 {one}"
+    return f"{n} {many}" if n < 20 or 0 < n % 100 < 20 else f"{n} de {many}"
+
+
+def minutes(n: int) -> str:
+    return plural(n, "minut", "minute")

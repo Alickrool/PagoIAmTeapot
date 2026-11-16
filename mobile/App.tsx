@@ -4,6 +4,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { StatusBar } from 'expo-status-bar';
 import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Icon, type IconName } from './src/components/Icon';
 import { ModeSwitcher } from './src/components/ModeSwitcher';
 import { ModeProvider, useCopy, useMode, useTheme } from './src/mode';
 import type { RootStackParamList, TabParamList } from './src/navigation';
@@ -20,7 +21,7 @@ import ScanScreen from './src/screens/ScanScreen';
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const Tab = createMaterialTopTabNavigator<TabParamList>();
 
-const ICONS: Record<keyof TabParamList, string> = { Overview: '🍩', Scan: '📷', Providers: '🏢' };
+const ICONS: Record<keyof TabParamList, IconName> = { Overview: 'home', Scan: 'scan', Providers: 'providers' };
 
 /** Large bottom tab bar (the pager above it also switches tabs by swiping left/right). */
 function BigTabBar({ state, navigation }: MaterialTopTabBarProps) {
@@ -54,7 +55,7 @@ function BigTabBar({ state, navigation }: MaterialTopTabBarProps) {
               opacity: pressed ? 0.7 : 1,
             })}
           >
-            <Text style={{ fontSize: t.mode === 'senior' ? 28 : 24 }}>{ICONS[name]}</Text>
+            <Icon name={ICONS[name]} size={t.mode === 'senior' ? 30 : 26} color={focused ? t.onAccent : t.text} />
             <Text style={{ fontSize: t.fs(13), fontWeight: '800', color: focused ? t.onAccent : t.text }}>{labels[name]}</Text>
           </Pressable>
         );

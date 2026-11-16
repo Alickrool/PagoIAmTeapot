@@ -8,8 +8,8 @@ import { ProviderAvatar } from '../components/ProviderAvatar';
 import { SeverityBadge } from '../components/SeverityBadge';
 import { useCopy, useStyles, useTheme, type Theme } from '../mode';
 import { useStackNavigation } from '../navigation';
-import { pendingProviders } from '../providerList';
-import { category, deltaColor, deltaLabel, money, monthLabel, tabular } from '../theme';
+import { acceptProvider, pendingProviders } from '../providerList';
+import { category, deltaColor, deltaLabel, monthLabel, tabular } from '../theme';
 
 /** One compact row per provider: category, bills, last bill, trend vs average, audit. The trend chart is on the provider screen. */
 export default function ProvidersScreen() {
@@ -18,6 +18,7 @@ export default function ProvidersScreen() {
   const copy = useCopy();
   const navigation = useStackNavigation();
   const [items, setItems] = useState<ProviderSummary[] | null>(null);
+  const [fresh, setFresh] = useState<ProviderSummary[]>([]); // seen in a scanned bill, not added yet
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -25,7 +26,10 @@ export default function ProvidersScreen() {
     setLoading(true);
     setError(null);
     Promise.all([api.providers(), pendingProviders()])
-      .then(([list, pending]) => setItems(list.filter((p) => !pending.has(p.slug))))
+      .then(([list, pending]) => {
+        setItems(list.filter((p) => !pending.has(p.slug)));
+        setFresh(list.filter((p) => pending.has(p.slug)));
+      })
       .catch((e) => setError(String(e?.message ?? e)))
       .finally(() => setLoading(false));
   }, []);
@@ -54,7 +58,35 @@ export default function ProvidersScreen() {
       keyExtractor={(p) => p.slug}
       contentContainerStyle={{ padding: 16, gap: 10 }}
       refreshControl={<RefreshControl refreshing={loading} onRefresh={load} tintColor={t.accent} />}
-      ListHeaderComponent={<Text style={styles.intro}>{copy.providersIntro}</Text>}
+      ListHeaderComponent={
+        <View style={{ gap: 10, marginBottom: 4 }}>
+          <Text style={styles.intro}>{copy.providersIntro}</Text>
+          {fresh.length > 0 && (
+            <View style={styles.fresh}>
+              <Text style={styles.freshTitle}>Furnizori noi din facturile scanate</Text>
+              {fresh.map((p) => (
+                <View key={p.slug} style={styles.freshRow}>
+                  <ProviderAvatar provider={p.provider} category={p.category} size={36} />
+                  <Text style={[styles.name, { flex: 1 }]} numberOfLines={1}>
+                    {p.provider}
+                  </Text>
+                  <Button
+                    title="Adaugă"
+                    variant="secondary"
+                    onPress={async () => {
+                      await acceptProvider(p.slug);
+                      load();
+                    }}
+                  />
+                </View>
+              ))}
+            </View>
+          )}
+        </View>
+      }
+      ListFooterComponent={
+        <Button title="＋ Adaugă furnizor" variant="ghost" onPress={() => navigation.navigate('Tabs', { screen: 'Scan' })} style={{ marginTop: 4 }} />
+      }
       renderItem={({ item: p }) => {
         const c = category[p.category] ?? category.other;
         return (
@@ -69,7 +101,6 @@ export default function ProvidersScreen() {
                 <Text style={[styles.name, { flex: 1 }]} numberOfLines={1}>
                   {p.provider}
                 </Text>
-                <Text style={[styles.total, tabular]}>{money(p.last_total)}</Text>
               </View>
               <View style={styles.line}>
                 <Text style={[styles.meta, tabular, { flex: 1 }]} numberOfLines={1}>
@@ -95,6 +126,9 @@ const makeStyles = (t: Theme) =>
     intro: { color: t.muted, fontSize: t.fs(14), marginBottom: 4 },
     row: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: t.surface, borderRadius: t.radius - 6, paddingVertical: 12, paddingHorizontal: 14, minHeight: t.touch + 12 },
     line: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+    fresh: { backgroundColor: t.surface, borderRadius: t.radius - 6, padding: 14, gap: 10, borderWidth: 1.5, borderColor: t.accent },
+    freshTitle: { fontSize: t.fs(14), fontWeight: '800', color: t.accent },
+    freshRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
     name: { fontSize: t.fs(16), fontWeight: '800', color: t.text },
     meta: { color: t.muted, fontSize: t.fs(12) },
     total: { fontSize: t.fs(16), fontWeight: '800', color: t.text },

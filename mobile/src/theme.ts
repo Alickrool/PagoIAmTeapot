@@ -1,17 +1,15 @@
 // Mode-independent helpers. Colours that change per generation live in src/mode.tsx (THEMES).
 import type { Category, Severity } from './api/types';
 
-export const severityIcon: Record<Severity, string> = { ok: '🟢', info: 'ℹ️', warning: '🟡', critical: '🔴' };
-
 /** 501.85 -> "501,85 lei" */
 export const money = (v: string | number) => `${Number(v).toFixed(2).replace('.', ',')} lei`;
 
-export const category: Record<Category, { color: string; icon: string; label: string }> = {
-  electricity: { color: '#F59E0B', icon: '⚡', label: 'Curent' },
-  gas: { color: '#EF4444', icon: '🔥', label: 'Gaz' },
-  water: { color: '#0EA5E9', icon: '💧', label: 'Apă' },
-  telecom: { color: '#8B5CF6', icon: '📶', label: 'Internet și TV' },
-  other: { color: '#64748B', icon: '🧾', label: 'Altele' },
+export const category: Record<Category, { color: string; label: string }> = {
+  electricity: { color: '#F59E0B', label: 'Curent' },
+  gas: { color: '#EF4444', label: 'Gaz' },
+  water: { color: '#0EA5E9', label: 'Apă' },
+  telecom: { color: '#8B5CF6', label: 'Internet și TV' },
+  other: { color: '#64748B', label: 'Altele' },
 };
 
 const SHORT = ['ian', 'feb', 'mar', 'apr', 'mai', 'iun', 'iul', 'aug', 'sep', 'oct', 'noi', 'dec'];

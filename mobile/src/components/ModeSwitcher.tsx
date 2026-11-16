@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { COPY, THEMES, useMode, useTheme, type Mode } from '../mode';
+import { Icon } from './Icon';
 
 const ORDER: Mode[] = ['genz', 'millennial', 'senior'];
 
@@ -54,7 +55,7 @@ export function ModeSwitcher() {
                     <Text style={{ color: mt.text, fontSize: mt.fs(16), fontWeight: '800' }}>{c.modeName}</Text>
                     <Text style={{ color: mt.muted, fontSize: mt.fs(13) }}>{c.modeDesc}</Text>
                   </View>
-                  {selected && <Text style={{ color: mt.accent, fontSize: 20, fontWeight: '900' }}>✓</Text>}
+                  {selected && <Icon name="check" color={mt.accent} size={22} strokeWidth={2.5} />}
                 </Pressable>
               );
             })}

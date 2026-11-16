@@ -3,6 +3,7 @@
 Base URL: `http://<laptop-ip>:8000/api`. JSON everywhere, no auth (single demo user).
 Source of truth for shapes: `backend/bills/serializers.py` ↔ `mobile/src/api/types.ts`.
 Real example responses: `shared/fixtures/*.json` (regenerate with `python manage.py export_fixtures`).
+New endpoints for the Scan / Overview / Providers screens: [API_V2.md](API_V2.md).
 
 **Rule:** whoever changes a response shape updates this file, `types.ts`, and re-exports fixtures in the same commit.
 

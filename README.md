@@ -12,7 +12,7 @@ Before you press **Pay**, an AI auditor reads the bill, explains it, and catches
 4. **One-tap actions** – contest the bill (ready-to-send letter), cancel an add-on, compare cheaper suppliers,
    Smart Auto-Pay with safety limits.
 
-Task split and demo script: [docs/TASKS.md](docs/TASKS.md). API: [docs/API.md](docs/API.md).
+Task split and demo script: [docs/TASKS.md](docs/TASKS.md). API: [docs/API.md](docs/API.md), new screens: [docs/API_V2.md](docs/API_V2.md).
 
 ## Structure
 

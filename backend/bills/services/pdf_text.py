@@ -28,6 +28,15 @@ def extract_text(data: bytes) -> str | None:
     return text if len(re.sub(r"\s", "", text)) >= MIN_TEXT_CHARS else None
 
 
+def plain_text(data: bytes) -> str:
+    """All the text of a PDF, however little (for the prompt-injection check); "" if unreadable."""
+    try:
+        with pdfplumber.open(io.BytesIO(data)) as pdf:
+            return "\n".join(p.extract_text() or "" for p in pdf.pages)
+    except Exception:
+        return ""
+
+
 def _amount_variants(amount) -> set[str]:
     a = f"{float(amount):,.2f}"  # 1,234.56
     return {a.replace(",", ""), a.replace(",", "X").replace(".", ",").replace("X", "."), a.replace(",", "X").replace(".", ",").replace("X", "")}

@@ -10,7 +10,7 @@ money as **strings**, dates `YYYY-MM-DD`). Types on the app side: `mobile/src/ap
 | 3 | `GET /api/providers/` | Providers tab | ✅ **live** |
 | 4 | `GET /api/providers/{slug}/` | Provider history screen | ✅ **live** |
 | 5 | `GET /api/bills/{id}/pdf/` | Bill screen: "Vezi factura (PDF)" | ✅ **live** |
-| 6 | Scan validation: `validation` in `BillDetail`, `POST /api/bills/{id}/confirm/` | Scan result + bill screen | 🚧 **contract agreed**, backend in progress (V-tasks in [TASKS.md](TASKS.md)) |
+| 6 | Scan validation: `validation` in `BillDetail`, `POST /api/bills/{id}/confirm/` | Scan result + bill screen | ✅ **live** (app side: AV-tasks in [TASKS.md](TASKS.md)) |
 
 The app already works without 2–4: until they exist (404) it computes the same JSON on the phone from
 `GET /bills/` + `GET /bills/{id}/` (`mobile/src/api/derive.ts`). That file is a **reference implementation** of the
@@ -290,7 +290,7 @@ disponibil." If `file_url` already ends in `.pdf`, the app opens that directly.
   `created_at`). `?source=seed` = only demo bills.
 - Deleting a bill (also the `manage.py dev` test reset) deletes its files from disk.
 
-## 6. Scan validation 🚧 contract agreed, backend in progress
+## 6. Scan validation ✅ live
 
 Hackathon scope of [SCAN_VALIDATION_PLAN.md](SCAN_VALIDATION_PLAN.md) (see the V-tasks in [TASKS.md](TASKS.md)).
 What the model extracts is a proposal: deterministic rules in the backend check it before the bill is saved.
@@ -336,7 +336,7 @@ Three outcomes:
 | `future_period` | warning | period ends more than 5 days after today |
 | `old_bill` | warning | period ended more than 24 months ago |
 | `year_plausible` | warning | year before 2015 or after next year (a misread year) |
-| `period_length` | info / warning | 41–95 days = multi-month bill (info); under 7 or over 366 days (warning) |
+| `period_length` | info / warning | 41–366 days = multi-month bill, saved whole in the month of `period_end` (info); under 7 or over 366 days (warning) |
 | `issue_after_period` | info | issued more than 3 days before the period ends |
 | `due_after_issue` | info | due before it was issued, or more than 60 days after |
 | `lines_sum` | warning | the lines don't add up to the total (± max(1 leu, 1%)) |
@@ -363,6 +363,9 @@ from the document.
 
 **Rate limits**: `POST /scan/` and `POST /ask/` are limited per device (defaults 30 and 120 per hour, `.env`
 `SCAN_RATE` / `ASK_RATE`) → `429 too_many_requests`.
+
+**Bills scanned before validation existed**: `python manage.py revalidate` runs the rules again on their stored
+extraction (no Gemini). An impossible period on an old scan becomes a warning there, never a deletion.
 
 ## Checklist for the backend
 

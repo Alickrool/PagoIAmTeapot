@@ -4,6 +4,8 @@ from rest_framework import serializers
 from bills.models import AutoPayRule, Bill, LineItem
 from bills.services import market
 from bills.services.audit import audit_bill, history_for
+from bills.services.validation import current_month
+from bills.services.validation.period import assigned_month, not_current_month
 
 
 class LineItemSerializer(serializers.ModelSerializer):
@@ -18,7 +20,7 @@ class BillListSerializer(serializers.ModelSerializer):
     class Meta:
         model = Bill
         fields = ["id", "provider", "category", "period_start", "period_end", "due_date", "total", "currency",
-                  "status", "audit_status", "source", "created_at"]
+                  "status", "audit_status", "source", "created_at", "validation_status"]
 
     def get_audit_status(self, bill):
         return audit_bill(bill)["status"]
@@ -39,19 +41,29 @@ class BillDetailSerializer(serializers.ModelSerializer):
     file_url = serializers.SerializerMethodField()
     files = serializers.SerializerMethodField()
     pdf_url = serializers.SerializerMethodField()
+    validation = serializers.SerializerMethodField()
 
     class Meta:
         model = Bill
         fields = ["id", "provider", "category", "customer_code", "meter_series", "place_of_consumption", "county",
                   "period_start", "period_end", "issue_date", "due_date", "total", "currency", "vat_rate",
                   "consumption", "consumption_unit", "index_old", "index_new", "index_type", "all_in_unit_price",
-                  "county_average", "status", "source", "file_url", "files", "pdf_url", "line_items", "audit", "history"]
+                  "county_average", "status", "source", "file_url", "files", "pdf_url", "line_items", "audit", "history",
+                  "bill_number", "validation"]
 
     def get_audit(self, bill):
         return audit_bill(bill)
 
     def get_history(self, bill):
         return HistoryPointSerializer(reversed(history_for(bill)), many=True).data  # oldest first, for charts
+
+    def get_validation(self, bill):
+        """docs/API_V2.md §6. `not_current_month` is computed now, the other checks were stored at scan time."""
+        month = assigned_month(bill.period_end)
+        stored = (bill.validation or {}).get("checks", [])
+        note = not_current_month(bill.period_end) if bill.source == Bill.Source.UPLOAD else None
+        return {"status": bill.validation_status, "assigned_month": month, "is_current_month": month == current_month(),
+                "confirmed_by_user": bill.confirmed_by_user, "checks": ([note.as_dict()] if note else []) + stored}
 
     def get_county_average(self, bill):
         ref = market.COUNTY_AVERAGES.get(bill.category)

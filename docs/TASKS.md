@@ -48,7 +48,7 @@ from its on-phone fallback (`mobile/src/api/derive.ts`) automatically; `derive.t
 | B12 | ✅ | Scan v2 live: `files` (1–10) + legacy `file`, limits, `{code, detail}` errors, multi-page in one Gemini request (text if all PDFs have text), bbox pages across files, cache by file order. Verified live with a bill split into 2 photos | Done |
 | B13 | ✅ | Extraction schema has `is_bill` + `readable`: a non-bill photo → 422 `not_a_bill`, a blurry bill → 422 `unreadable`, nothing saved. Verified live (shopping list, blurred bill, normal bill) | Done |
 | B7 | P0 | Demo network: the phone could not reach the laptop on Wi-Fi (client isolation), a phone hotspot works. Before the demo: test on the Pago office Wi-Fi; if it fails, hotspot + `runserver 0.0.0.0:8000`; plan B `AI_MOCK=1` / app mock mode | hotspot ✅, office Wi-Fi open |
-| B1 | P0 | `ai_check` passes on the demo PDF (text path) and a PNG photo (vision): all lines and totals exact, gemini-4-hydrogen ~10-14 s. Left: run on your real bills (redact name/address), then `prewarm_cache ../samples/*` | demo bills ✅, real bills open |
+| B1 | P0 | `ai_check` passes on the demo PDF (text path) and a PNG photo (vision): all lines and totals exact, gemini-4-hydrogen ~10-14 s. Left: run on your real bills (redact name/address), then `prewarm_cache ../samples/*` | demo bills ✅; the real Digi scan read as June 2020 is now flagged `old_bill` (`revalidate`); check it against the paper bill |
 | B3 | ✅ | 10 demo questions run live and reviewed: VAT now explained on the right base (bill math passed to the model), clean source labels (law/order or topic, never websites), Romanian number format, advice never contradicts the audit card; `unit_price` stores 6 decimals (CfD 0,000144). Answers 1–6 s | Done |
 | B4 | P1 | Compare demo amounts with one of your real bills | open |
 | B14 | ✅ | Romanian backend texts: audit cards + action labels, discrepancies, Gemini answers/sources/buttons, AutoPay reasons, all error `detail`s, offers disclaimer; amounts as "352,53 lei"; fixtures re-exported | Done |
@@ -77,14 +77,14 @@ Decisions (the plan's §11 proposals, taken as-is for now):
 
 | # | Task | Status |
 |---|---|---|
-| V1 | `services/validation/` + `Bill.validation_status` / `validation` / `confirmed_by_user` / `bill_number` (migration); `validation` in `BillDetail`, `validation_status` in `BillSummary` | open |
-| V2 | Period + month (§6.1): `assigned_month`, `is_current_month`, `future_period`, `old_bill`, `year_plausible`, `period_length`, `issue_after_period`, `due_after_issue`, reject `invalid_period` | open |
-| V3 | Amounts (§6.4): `lines_sum`, `vat_rate_allowed`, `vat_amount`, `total_range`, `total_positive`, `currency_ron` | open |
-| V4 | Duplicates (§6.6): `409 duplicate_bill` + `existing_bill_id` (provider + period + customer code / total, or bill number) | open |
-| V5 | File safety (§4 F1–F9): type from magic bytes, pixel limit, photos re-saved without EXIF, password PDFs, PDFs with JavaScript/launch/embedded files, max 10 pages, parse timeout, random file names, `nosniff` | open |
-| V6 | Prompt injection (§5 P1–P5, P8): fixed system rule, `<bill_text>` cleaned, field limits and cleaning, `suspicious_text` + regex → `prompt_injection_suspected`; no customer code / address in Q&A | open |
-| V7 | `POST /bills/{id}/confirm/`; DRF rate limits on scan/ask (`429 too_many_requests`) | open |
-| V8 | Tests for the §9 cases (mocked extraction, no Gemini), live e2e check, docs | open |
+| V1 | `services/validation/` + `Bill.validation_status` / `validation` / `confirmed_by_user` / `bill_number` (migration); `validation` in `BillDetail`, `validation_status` in `BillSummary` | ✅ fixtures re-exported |
+| V2 | Period + month (§6.1): `assigned_month`, `is_current_month`, `future_period`, `old_bill`, `year_plausible`, `period_length`, `issue_after_period`, `due_after_issue`, reject `invalid_period` | ✅ |
+| V3 | Amounts (§6.4): `lines_sum`, `vat_rate_allowed`, `vat_amount`, `total_range`, `total_positive`, `currency_ron` | ✅ |
+| V4 | Duplicates (§6.6): `409 duplicate_bill` + `existing_bill_id` (provider + period + customer code / total, or bill number) | ✅ seeded bills never count |
+| V5 | File safety (§4 F1–F9): type from magic bytes, pixel limit, photos re-saved without EXIF, password PDFs, PDFs with JavaScript/launch/embedded files, max 10 pages, parse timeout, random file names, `nosniff` | ✅ real provider PDFs and phone photos pass; PDFs locked only against editing are accepted |
+| V6 | Prompt injection (§5 P1–P5, P8): fixed system rule, `<bill_text>` cleaned, field limits and cleaning, `suspicious_text` + regex → `prompt_injection_suspected`; no customer code / address in Q&A | ✅ |
+| V7 | `POST /bills/{id}/confirm/`; DRF rate limits on scan/ask (`429 too_many_requests`) | ✅ `.env` `SCAN_RATE` / `ASK_RATE` |
+| V8 | Tests for the §9 cases (mocked extraction, no Gemini), live e2e check, docs | ✅ 52 tests (tests now always use mock AI); `manage.py revalidate` for older scans |
 
 ### Frontend – Person A (after the contract above; backend fields arrive with V1)
 

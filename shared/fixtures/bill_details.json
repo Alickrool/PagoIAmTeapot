@@ -24,6 +24,8 @@
     "status": "unpaid",
     "source": "seed",
     "file_url": null,
+    "files": [],
+    "pdf_url": "http://testserver/api/bills/48/pdf/",
     "line_items": [
       {
         "id": 280,
@@ -33,7 +35,7 @@
         "kind": "energy",
         "quantity": 6.3,
         "unit": "m3",
-        "unit_price": "5.7100",
+        "unit_price": "5.710000",
         "amount": "35.97",
         "bbox": null
       },
@@ -45,7 +47,7 @@
         "kind": "distribution",
         "quantity": 6.3,
         "unit": "m3",
-        "unit_price": "4.6200",
+        "unit_price": "4.620000",
         "amount": "29.11",
         "bbox": null
       },
@@ -144,7 +146,15 @@
         "consumption": 6.4,
         "index_type": "real"
       }
-    ]
+    ],
+    "bill_number": "",
+    "validation": {
+      "status": "accepted",
+      "assigned_month": "2026-10",
+      "is_current_month": true,
+      "confirmed_by_user": false,
+      "checks": []
+    }
   },
   "36": {
     "id": 36,
@@ -171,6 +181,8 @@
     "status": "unpaid",
     "source": "seed",
     "file_url": null,
+    "files": [],
+    "pdf_url": "http://testserver/api/bills/36/pdf/",
     "line_items": [
       {
         "id": 244,
@@ -312,7 +324,15 @@
         "consumption": null,
         "index_type": "none"
       }
-    ]
+    ],
+    "bill_number": "",
+    "validation": {
+      "status": "accepted",
+      "assigned_month": "2026-10",
+      "is_current_month": true,
+      "confirmed_by_user": false,
+      "checks": []
+    }
   },
   "24": {
     "id": 24,
@@ -339,6 +359,8 @@
     "status": "unpaid",
     "source": "seed",
     "file_url": null,
+    "files": [],
+    "pdf_url": "http://testserver/api/bills/24/pdf/",
     "line_items": [
       {
         "id": 208,
@@ -348,7 +370,7 @@
         "kind": "energy",
         "quantity": 350.0,
         "unit": "kWh",
-        "unit_price": "0.7200",
+        "unit_price": "0.720000",
         "amount": "252.00",
         "bbox": null
       },
@@ -360,7 +382,7 @@
         "kind": "distribution",
         "quantity": 350.0,
         "unit": "kWh",
-        "unit_price": "0.3553",
+        "unit_price": "0.355300",
         "amount": "124.36",
         "bbox": null
       },
@@ -372,7 +394,7 @@
         "kind": "transport",
         "quantity": 350.0,
         "unit": "kWh",
-        "unit_price": "0.0365",
+        "unit_price": "0.036500",
         "amount": "12.78",
         "bbox": null
       },
@@ -384,7 +406,7 @@
         "kind": "regulated_fee",
         "quantity": 350.0,
         "unit": "kWh",
-        "unit_price": "0.0127",
+        "unit_price": "0.012700",
         "amount": "4.45",
         "bbox": null
       },
@@ -396,7 +418,7 @@
         "kind": "regulated_fee",
         "quantity": 350.0,
         "unit": "kWh",
-        "unit_price": "0.0740",
+        "unit_price": "0.074000",
         "amount": "25.90",
         "bbox": null
       },
@@ -408,7 +430,7 @@
         "kind": "regulated_fee",
         "quantity": 350.0,
         "unit": "kWh",
-        "unit_price": "0.0145",
+        "unit_price": "0.014500",
         "amount": "5.08",
         "bbox": null
       },
@@ -420,7 +442,7 @@
         "kind": "regulated_fee",
         "quantity": 350.0,
         "unit": "kWh",
-        "unit_price": "0.0001",
+        "unit_price": "0.000144",
         "amount": "0.05",
         "bbox": null
       },
@@ -432,7 +454,7 @@
         "kind": "regulated_fee",
         "quantity": 350.0,
         "unit": "kWh",
-        "unit_price": "0.0077",
+        "unit_price": "0.007700",
         "amount": "2.70",
         "bbox": null
       },
@@ -610,7 +632,15 @@
         "consumption": 177.0,
         "index_type": "self"
       }
-    ]
+    ],
+    "bill_number": "",
+    "validation": {
+      "status": "accepted",
+      "assigned_month": "2026-10",
+      "is_current_month": true,
+      "confirmed_by_user": false,
+      "checks": []
+    }
   },
   "12": {
     "id": 12,
@@ -637,6 +667,8 @@
     "status": "unpaid",
     "source": "seed",
     "file_url": null,
+    "files": [],
+    "pdf_url": "http://testserver/api/bills/12/pdf/",
     "line_items": [
       {
         "id": 100,
@@ -646,7 +678,7 @@
         "kind": "energy",
         "quantity": 211.0,
         "unit": "kWh",
-        "unit_price": "0.8800",
+        "unit_price": "0.880000",
         "amount": "185.68",
         "bbox": null
       },
@@ -658,7 +690,7 @@
         "kind": "distribution",
         "quantity": 211.0,
         "unit": "kWh",
-        "unit_price": "0.3553",
+        "unit_price": "0.355300",
         "amount": "74.97",
         "bbox": null
       },
@@ -670,7 +702,7 @@
         "kind": "transport",
         "quantity": 211.0,
         "unit": "kWh",
-        "unit_price": "0.0365",
+        "unit_price": "0.036500",
         "amount": "7.70",
         "bbox": null
       },
@@ -682,7 +714,7 @@
         "kind": "regulated_fee",
         "quantity": 211.0,
         "unit": "kWh",
-        "unit_price": "0.0127",
+        "unit_price": "0.012700",
         "amount": "2.68",
         "bbox": null
       },
@@ -694,7 +726,7 @@
         "kind": "regulated_fee",
         "quantity": 211.0,
         "unit": "kWh",
-        "unit_price": "0.0740",
+        "unit_price": "0.074000",
         "amount": "15.61",
         "bbox": null
       },
@@ -706,7 +738,7 @@
         "kind": "regulated_fee",
         "quantity": 211.0,
         "unit": "kWh",
-        "unit_price": "0.0145",
+        "unit_price": "0.014500",
         "amount": "3.06",
         "bbox": null
       },
@@ -718,7 +750,7 @@
         "kind": "regulated_fee",
         "quantity": 211.0,
         "unit": "kWh",
-        "unit_price": "0.0001",
+        "unit_price": "0.000144",
         "amount": "0.03",
         "bbox": null
       },
@@ -730,7 +762,7 @@
         "kind": "regulated_fee",
         "quantity": 211.0,
         "unit": "kWh",
-        "unit_price": "0.0077",
+        "unit_price": "0.007700",
         "amount": "1.62",
         "bbox": null
       },
@@ -904,6 +936,14 @@
         "consumption": 195.0,
         "index_type": "self"
       }
-    ]
+    ],
+    "bill_number": "",
+    "validation": {
+      "status": "accepted",
+      "assigned_month": "2026-10",
+      "is_current_month": true,
+      "confirmed_by_user": false,
+      "checks": []
+    }
   }
 }

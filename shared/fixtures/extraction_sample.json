@@ -1,0 +1,100 @@
+{
+  "provider": "PPC",
+  "category": "electricity",
+  "customer_code": "PPC-1002338471",
+  "meter_series": "EM-20391877",
+  "place_of_consumption": "Str. Lungă 10, Brașov",
+  "period_start": "2026-10-01",
+  "period_end": "2026-10-31",
+  "issue_date": "2026-11-05",
+  "due_date": "2026-11-20",
+  "total": 501.85,
+  "vat_rate": 21.0,
+  "consumption": 350.0,
+  "consumption_unit": "kWh",
+  "index_old": 42160.0,
+  "index_new": 42510.0,
+  "index_type": "estimated",
+  "line_items": [
+    {
+      "code": "energy",
+      "label": "Energie electrică activă",
+      "label_en": "Active energy (supply)",
+      "kind": "energy",
+      "quantity": 350.0,
+      "unit": "kWh",
+      "unit_price": 0.89,
+      "amount": 311.5
+    },
+    {
+      "code": "distribution",
+      "label": "Tarif distribuție JT",
+      "label_en": "Low-voltage distribution tariff",
+      "kind": "distribution",
+      "quantity": 350.0,
+      "unit": "kWh",
+      "unit_price": 0.21,
+      "amount": 73.5
+    },
+    {
+      "code": "transport",
+      "label": "Tarif transport (TG+TL)",
+      "label_en": "Transmission tariff",
+      "kind": "transport",
+      "quantity": 350.0,
+      "unit": "kWh",
+      "unit_price": 0.04,
+      "amount": 14.0
+    },
+    {
+      "code": "system_services",
+      "label": "Servicii de sistem",
+      "label_en": "System services",
+      "kind": "regulated_fee",
+      "quantity": 350.0,
+      "unit": "kWh",
+      "unit_price": 0.008,
+      "amount": 2.8
+    },
+    {
+      "code": "green_certificates",
+      "label": "Certificate verzi",
+      "label_en": "Green certificates",
+      "kind": "regulated_fee",
+      "quantity": 350.0,
+      "unit": "kWh",
+      "unit_price": 0.025,
+      "amount": 8.75
+    },
+    {
+      "code": "cogeneration",
+      "label": "Contribuție cogenerare de înaltă eficiență",
+      "label_en": "High-efficiency cogeneration contribution",
+      "kind": "regulated_fee",
+      "quantity": 350.0,
+      "unit": "kWh",
+      "unit_price": 0.006,
+      "amount": 2.1
+    },
+    {
+      "code": "excise",
+      "label": "Acciză",
+      "label_en": "Excise duty",
+      "kind": "regulated_fee",
+      "quantity": 350.0,
+      "unit": "kWh",
+      "unit_price": 0.006,
+      "amount": 2.1
+    },
+    {
+      "code": "vat",
+      "label": "TVA 21%",
+      "label_en": "VAT 21%",
+      "kind": "tax",
+      "quantity": null,
+      "unit": "",
+      "unit_price": null,
+      "amount": 87.1
+    }
+  ]
+}

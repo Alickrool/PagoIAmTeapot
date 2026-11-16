@@ -1,0 +1,811 @@
+{
+  "96": {
+    "id": 96,
+    "provider": "Apa Brasov",
+    "category": "water",
+    "customer_code": "CAB-551203",
+    "meter_series": "",
+    "place_of_consumption": "Str. Lungă 10, Brașov",
+    "county": "Brasov",
+    "period_start": "2026-10-01",
+    "period_end": "2026-10-31",
+    "issue_date": "2026-11-05",
+    "due_date": "2026-11-20",
+    "total": "72.24",
+    "currency": "RON",
+    "vat_rate": "11.00",
+    "consumption": 6.3,
+    "consumption_unit": "m3",
+    "index_old": 882.5999999999999,
+    "index_new": 888.8999999999999,
+    "index_type": "real",
+    "all_in_unit_price": 11.467,
+    "county_average": null,
+    "status": "unpaid",
+    "source": "seed",
+    "file_url": null,
+    "line_items": [
+      {
+        "id": 394,
+        "code": "water",
+        "label": "Apă potabilă",
+        "label_en": "Drinking water",
+        "kind": "energy",
+        "quantity": 6.3,
+        "unit": "m3",
+        "unit_price": "5.7100",
+        "amount": "35.97",
+        "bbox": null
+      },
+      {
+        "id": 395,
+        "code": "sewage",
+        "label": "Canalizare - epurare",
+        "label_en": "Sewage",
+        "kind": "distribution",
+        "quantity": 6.3,
+        "unit": "m3",
+        "unit_price": "4.6200",
+        "amount": "29.11",
+        "bbox": null
+      },
+      {
+        "id": 396,
+        "code": "vat",
+        "label": "TVA 11%",
+        "label_en": "VAT 11%",
+        "kind": "tax",
+        "quantity": null,
+        "unit": "",
+        "unit_price": null,
+        "amount": "7.16",
+        "bbox": null
+      }
+    ],
+    "audit": {
+      "status": "ok",
+      "anomalies": []
+    },
+    "history": [
+      {
+        "id": 85,
+        "period_end": "2025-11-30",
+        "total": "69.94",
+        "consumption": 6.1,
+        "index_type": "real"
+      },
+      {
+        "id": 86,
+        "period_end": "2025-12-31",
+        "total": "73.38",
+        "consumption": 6.4,
+        "index_type": "real"
+      },
+      {
+        "id": 87,
+        "period_end": "2026-01-31",
+        "total": "68.80",
+        "consumption": 6.0,
+        "index_type": "real"
+      },
+      {
+        "id": 88,
+        "period_end": "2026-02-28",
+        "total": "66.51",
+        "consumption": 5.8,
+        "index_type": "real"
+      },
+      {
+        "id": 89,
+        "period_end": "2026-03-31",
+        "total": "71.08",
+        "consumption": 6.2,
+        "index_type": "real"
+      },
+      {
+        "id": 90,
+        "period_end": "2026-04-30",
+        "total": "72.24",
+        "consumption": 6.3,
+        "index_type": "real"
+      },
+      {
+        "id": 91,
+        "period_end": "2026-05-31",
+        "total": "74.54",
+        "consumption": 6.5,
+        "index_type": "real"
+      },
+      {
+        "id": 92,
+        "period_end": "2026-06-30",
+        "total": "79.12",
+        "consumption": 6.9,
+        "index_type": "real"
+      },
+      {
+        "id": 93,
+        "period_end": "2026-07-31",
+        "total": "82.55",
+        "consumption": 7.2,
+        "index_type": "real"
+      },
+      {
+        "id": 94,
+        "period_end": "2026-08-31",
+        "total": "77.98",
+        "consumption": 6.8,
+        "index_type": "real"
+      },
+      {
+        "id": 95,
+        "period_end": "2026-09-30",
+        "total": "73.38",
+        "consumption": 6.4,
+        "index_type": "real"
+      }
+    ]
+  },
+  "84": {
+    "id": 84,
+    "provider": "Digi",
+    "category": "telecom",
+    "customer_code": "DG-88213409",
+    "meter_series": "",
+    "place_of_consumption": "Str. Lungă 10, Brașov",
+    "county": "Brasov",
+    "period_start": "2026-10-01",
+    "period_end": "2026-10-31",
+    "issue_date": "2026-11-05",
+    "due_date": "2026-11-20",
+    "total": "60.00",
+    "currency": "RON",
+    "vat_rate": "21.00",
+    "consumption": null,
+    "consumption_unit": "",
+    "index_old": null,
+    "index_new": null,
+    "index_type": "none",
+    "all_in_unit_price": null,
+    "county_average": null,
+    "status": "unpaid",
+    "source": "seed",
+    "file_url": null,
+    "line_items": [
+      {
+        "id": 358,
+        "code": "subscription",
+        "label": "Abonament Internet + TV",
+        "label_en": "Internet + TV subscription",
+        "kind": "subscription",
+        "quantity": 1.0,
+        "unit": "month",
+        "unit_price": null,
+        "amount": "37.19",
+        "bbox": null
+      },
+      {
+        "id": 359,
+        "code": "tv_extra_option",
+        "label": "Opțiune Extra TV + Antivirus",
+        "label_en": "Extra TV + Antivirus option",
+        "kind": "extra_service",
+        "quantity": 1.0,
+        "unit": "month",
+        "unit_price": null,
+        "amount": "12.40",
+        "bbox": null
+      },
+      {
+        "id": 360,
+        "code": "vat",
+        "label": "TVA 21%",
+        "label_en": "VAT 21%",
+        "kind": "tax",
+        "quantity": null,
+        "unit": "",
+        "unit_price": null,
+        "amount": "10.41",
+        "bbox": null
+      }
+    ],
+    "audit": {
+      "status": "warning",
+      "anomalies": [
+        {
+          "id": "extra_service:tv_extra_option",
+          "severity": "warning",
+          "title": "Paid add-on",
+          "message": "You pay 15 RON/month (VAT incl.) for \"Extra TV + Antivirus option\", added 6 months ago (90 RON so far). Do you still use it?",
+          "line_item_codes": [
+            "tv_extra_option"
+          ],
+          "evidence": {
+            "monthly_amount": 15.0,
+            "months_active": 6,
+            "total_paid": 90.0
+          },
+          "actions": [
+            {
+              "type": "cancel_service",
+              "label": "Cancel this option"
+            }
+          ]
+        }
+      ]
+    },
+    "history": [
+      {
+        "id": 73,
+        "period_end": "2025-11-30",
+        "total": "45.00",
+        "consumption": null,
+        "index_type": "none"
+      },
+      {
+        "id": 74,
+        "period_end": "2025-12-31",
+        "total": "45.00",
+        "consumption": null,
+        "index_type": "none"
+      },
+      {
+        "id": 75,
+        "period_end": "2026-01-31",
+        "total": "45.00",
+        "consumption": null,
+        "index_type": "none"
+      },
+      {
+        "id": 76,
+        "period_end": "2026-02-28",
+        "total": "45.00",
+        "consumption": null,
+        "index_type": "none"
+      },
+      {
+        "id": 77,
+        "period_end": "2026-03-31",
+        "total": "45.00",
+        "consumption": null,
+        "index_type": "none"
+      },
+      {
+        "id": 78,
+        "period_end": "2026-04-30",
+        "total": "45.00",
+        "consumption": null,
+        "index_type": "none"
+      },
+      {
+        "id": 79,
+        "period_end": "2026-05-31",
+        "total": "60.00",
+        "consumption": null,
+        "index_type": "none"
+      },
+      {
+        "id": 80,
+        "period_end": "2026-06-30",
+        "total": "60.00",
+        "consumption": null,
+        "index_type": "none"
+      },
+      {
+        "id": 81,
+        "period_end": "2026-07-31",
+        "total": "60.00",
+        "consumption": null,
+        "index_type": "none"
+      },
+      {
+        "id": 82,
+        "period_end": "2026-08-31",
+        "total": "60.00",
+        "consumption": null,
+        "index_type": "none"
+      },
+      {
+        "id": 83,
+        "period_end": "2026-09-30",
+        "total": "60.00",
+        "consumption": null,
+        "index_type": "none"
+      }
+    ]
+  },
+  "72": {
+    "id": 72,
+    "provider": "PPC",
+    "category": "electricity",
+    "customer_code": "PPC-1002338471",
+    "meter_series": "EM-20391877",
+    "place_of_consumption": "Str. Lungă 10, Brașov",
+    "county": "Brasov",
+    "period_start": "2026-10-01",
+    "period_end": "2026-10-31",
+    "issue_date": "2026-11-05",
+    "due_date": "2026-11-20",
+    "total": "501.85",
+    "currency": "RON",
+    "vat_rate": "21.00",
+    "consumption": 350.0,
+    "consumption_unit": "kWh",
+    "index_old": 42160.0,
+    "index_new": 42510.0,
+    "index_type": "estimated",
+    "all_in_unit_price": 1.434,
+    "county_average": 175.0,
+    "status": "unpaid",
+    "source": "seed",
+    "file_url": null,
+    "line_items": [
+      {
+        "id": 323,
+        "code": "energy",
+        "label": "Energie electrică activă",
+        "label_en": "Active energy (supply)",
+        "kind": "energy",
+        "quantity": 350.0,
+        "unit": "kWh",
+        "unit_price": "0.8900",
+        "amount": "311.50",
+        "bbox": null
+      },
+      {
+        "id": 324,
+        "code": "distribution",
+        "label": "Tarif distribuție JT",
+        "label_en": "Low-voltage distribution tariff",
+        "kind": "distribution",
+        "quantity": 350.0,
+        "unit": "kWh",
+        "unit_price": "0.2100",
+        "amount": "73.50",
+        "bbox": null
+      },
+      {
+        "id": 325,
+        "code": "transport",
+        "label": "Tarif transport (TG+TL)",
+        "label_en": "Transmission tariff",
+        "kind": "transport",
+        "quantity": 350.0,
+        "unit": "kWh",
+        "unit_price": "0.0400",
+        "amount": "14.00",
+        "bbox": null
+      },
+      {
+        "id": 326,
+        "code": "system_services",
+        "label": "Servicii de sistem",
+        "label_en": "System services",
+        "kind": "regulated_fee",
+        "quantity": 350.0,
+        "unit": "kWh",
+        "unit_price": "0.0080",
+        "amount": "2.80",
+        "bbox": null
+      },
+      {
+        "id": 327,
+        "code": "green_certificates",
+        "label": "Certificate verzi",
+        "label_en": "Green certificates",
+        "kind": "regulated_fee",
+        "quantity": 350.0,
+        "unit": "kWh",
+        "unit_price": "0.0250",
+        "amount": "8.75",
+        "bbox": null
+      },
+      {
+        "id": 328,
+        "code": "cogeneration",
+        "label": "Contribuție cogenerare de înaltă eficiență",
+        "label_en": "High-efficiency cogeneration contribution",
+        "kind": "regulated_fee",
+        "quantity": 350.0,
+        "unit": "kWh",
+        "unit_price": "0.0060",
+        "amount": "2.10",
+        "bbox": null
+      },
+      {
+        "id": 329,
+        "code": "excise",
+        "label": "Acciză",
+        "label_en": "Excise duty",
+        "kind": "regulated_fee",
+        "quantity": 350.0,
+        "unit": "kWh",
+        "unit_price": "0.0060",
+        "amount": "2.10",
+        "bbox": null
+      },
+      {
+        "id": 330,
+        "code": "vat",
+        "label": "TVA 21%",
+        "label_en": "VAT 21%",
+        "kind": "tax",
+        "quantity": null,
+        "unit": "",
+        "unit_price": null,
+        "amount": "87.10",
+        "bbox": null
+      }
+    ],
+    "audit": {
+      "status": "critical",
+      "anomalies": [
+        {
+          "id": "estimated_index",
+          "severity": "critical",
+          "title": "Estimated index",
+          "message": "You were billed on an estimated index (350 kWh vs your usual 177.2 kWh). Don't pay yet: submit your real meter reading and the bill will be recalculated.",
+          "line_item_codes": [
+            "energy"
+          ],
+          "evidence": {
+            "billed_consumption": 350.0,
+            "average_real_consumption": 177.2,
+            "unit": "kWh"
+          },
+          "actions": [
+            {
+              "type": "submit_reading",
+              "label": "Submit real reading"
+            },
+            {
+              "type": "dispute",
+              "label": "Contest this bill"
+            }
+          ]
+        },
+        {
+          "id": "above_market",
+          "severity": "warning",
+          "title": "Price above market",
+          "message": "You pay 1.434 RON/kWh all-in, the market reference is ~1.25. 3 suppliers in Pago would have charged up to 109.85 RON less for this bill.",
+          "line_item_codes": [
+            "energy"
+          ],
+          "evidence": {
+            "all_in_price": 1.434,
+            "market_reference": 1.25,
+            "offers": [
+              {
+                "supplier": "Hidroelectrica",
+                "offer": "Casa Verde (demo)",
+                "all_in_price": 1.12,
+                "estimated_total": 392.0,
+                "savings": 109.85
+              },
+              {
+                "supplier": "E.ON",
+                "offer": "Fix 12 luni (demo)",
+                "all_in_price": 1.24,
+                "estimated_total": 434.0,
+                "savings": 67.85
+              },
+              {
+                "supplier": "Electrica Furnizare",
+                "offer": "Eco Home (demo)",
+                "all_in_price": 1.29,
+                "estimated_total": 451.5,
+                "savings": 50.35
+              }
+            ]
+          },
+          "actions": [
+            {
+              "type": "switch_supplier",
+              "label": "Compare offers"
+            }
+          ]
+        },
+        {
+          "id": "above_county_average",
+          "severity": "info",
+          "title": "Above local average",
+          "message": "Your consumption (350 kWh) is 100% above the Brasov average (175).",
+          "line_item_codes": [],
+          "evidence": {
+            "consumption": 350.0,
+            "county_average": 175.0
+          },
+          "actions": []
+        }
+      ]
+    },
+    "history": [
+      {
+        "id": 61,
+        "period_end": "2025-11-30",
+        "total": "246.62",
+        "consumption": 172.0,
+        "index_type": "real"
+      },
+      {
+        "id": 62,
+        "period_end": "2025-12-31",
+        "total": "279.61",
+        "consumption": 195.0,
+        "index_type": "self"
+      },
+      {
+        "id": 63,
+        "period_end": "2026-01-31",
+        "total": "288.22",
+        "consumption": 201.0,
+        "index_type": "self"
+      },
+      {
+        "id": 64,
+        "period_end": "2026-02-28",
+        "total": "269.56",
+        "consumption": 188.0,
+        "index_type": "real"
+      },
+      {
+        "id": 65,
+        "period_end": "2026-03-31",
+        "total": "252.37",
+        "consumption": 176.0,
+        "index_type": "self"
+      },
+      {
+        "id": 66,
+        "period_end": "2026-04-30",
+        "total": "240.89",
+        "consumption": 168.0,
+        "index_type": "self"
+      },
+      {
+        "id": 67,
+        "period_end": "2026-05-31",
+        "total": "229.42",
+        "consumption": 160.0,
+        "index_type": "real"
+      },
+      {
+        "id": 68,
+        "period_end": "2026-06-30",
+        "total": "226.55",
+        "consumption": 158.0,
+        "index_type": "self"
+      },
+      {
+        "id": 69,
+        "period_end": "2026-07-31",
+        "total": "245.21",
+        "consumption": 171.0,
+        "index_type": "self"
+      },
+      {
+        "id": 70,
+        "period_end": "2026-08-31",
+        "total": "262.40",
+        "consumption": 183.0,
+        "index_type": "real"
+      },
+      {
+        "id": 71,
+        "period_end": "2026-09-30",
+        "total": "253.80",
+        "consumption": 177.0,
+        "index_type": "self"
+      }
+    ]
+  },
+  "60": {
+    "id": 60,
+    "provider": "Engie",
+    "category": "gas",
+    "customer_code": "EN-4410023981",
+    "meter_series": "G4-77812331",
+    "place_of_consumption": "Str. Lungă 10, Brașov",
+    "county": "Brasov",
+    "period_start": "2026-10-01",
+    "period_end": "2026-10-31",
+    "issue_date": "2026-11-05",
+    "due_date": "2026-11-20",
+    "total": "297.50",
+    "currency": "RON",
+    "vat_rate": "21.00",
+    "consumption": 508.0,
+    "consumption_unit": "kWh",
+    "index_old": 19050.476190476187,
+    "index_new": 19558.476190476187,
+    "index_type": "real",
+    "all_in_unit_price": 0.586,
+    "county_average": 520.0,
+    "status": "unpaid",
+    "source": "seed",
+    "file_url": null,
+    "line_items": [
+      {
+        "id": 232,
+        "code": "energy",
+        "label": "Gaze naturale - furnizare",
+        "label_en": "Gas supply",
+        "kind": "energy",
+        "quantity": 508.0,
+        "unit": "kWh",
+        "unit_price": "0.4000",
+        "amount": "203.20",
+        "bbox": null
+      },
+      {
+        "id": 233,
+        "code": "distribution",
+        "label": "Tarif distribuție gaze",
+        "label_en": "Gas distribution tariff",
+        "kind": "distribution",
+        "quantity": 508.0,
+        "unit": "kWh",
+        "unit_price": "0.0840",
+        "amount": "42.67",
+        "bbox": null
+      },
+      {
+        "id": 234,
+        "code": "vat",
+        "label": "TVA 21%",
+        "label_en": "VAT 21%",
+        "kind": "tax",
+        "quantity": null,
+        "unit": "",
+        "unit_price": null,
+        "amount": "51.63",
+        "bbox": null
+      }
+    ],
+    "audit": {
+      "status": "warning",
+      "anomalies": [
+        {
+          "id": "price_spike",
+          "severity": "warning",
+          "title": "Bill up 41.8%",
+          "message": "Your Engie bill went from 209.85 to 297.5 RON (+41.8%), but consumption rose only 8.1% (+14.02 RON); the supply price changed from 0.29 to 0.4 RON/kWh (+58.42 RON); VAT on top of the increase adds +15.21 RON.",
+          "line_item_codes": [
+            "energy",
+            "vat"
+          ],
+          "evidence": {
+            "previous_total": 209.85,
+            "current_total": 297.5,
+            "total_change_pct": 41.8,
+            "delta_total": 87.65,
+            "consumption_change_pct": 8.1,
+            "consumption_effect": 14.02,
+            "price_effect": 58.42,
+            "previous_energy_price": 0.29,
+            "current_energy_price": 0.4,
+            "vat_delta": 15.21
+          },
+          "actions": [
+            {
+              "type": "ask",
+              "label": "Why did it go up?"
+            },
+            {
+              "type": "autopay_rule",
+              "label": "Set a safety limit"
+            }
+          ]
+        },
+        {
+          "id": "above_market",
+          "severity": "warning",
+          "title": "Price above market",
+          "message": "You pay 0.586 RON/kWh all-in, the market reference is ~0.53. 1 supplier in Pago would have charged up to 33.34 RON less for this bill.",
+          "line_item_codes": [
+            "energy"
+          ],
+          "evidence": {
+            "all_in_price": 0.586,
+            "market_reference": 0.53,
+            "offers": [
+              {
+                "supplier": "E.ON",
+                "offer": "Gaz Confort (demo)",
+                "all_in_price": 0.52,
+                "estimated_total": 264.16,
+                "savings": 33.34
+              }
+            ]
+          },
+          "actions": [
+            {
+              "type": "switch_supplier",
+              "label": "Compare offers"
+            }
+          ]
+        }
+      ]
+    },
+    "history": [
+      {
+        "id": 49,
+        "period_end": "2025-11-30",
+        "total": "437.56",
+        "consumption": 980.0,
+        "index_type": "real"
+      },
+      {
+        "id": 50,
+        "period_end": "2025-12-31",
+        "total": "602.76",
+        "consumption": 1350.0,
+        "index_type": "real"
+      },
+      {
+        "id": 51,
+        "period_end": "2026-01-31",
+        "total": "678.66",
+        "consumption": 1520.0,
+        "index_type": "real"
+      },
+      {
+        "id": 52,
+        "period_end": "2026-02-28",
+        "total": "584.90",
+        "consumption": 1310.0,
+        "index_type": "real"
+      },
+      {
+        "id": 53,
+        "period_end": "2026-03-31",
+        "total": "464.35",
+        "consumption": 1040.0,
+        "index_type": "real"
+      },
+      {
+        "id": 54,
+        "period_end": "2026-04-30",
+        "total": "321.47",
+        "consumption": 720.0,
+        "index_type": "real"
+      },
+      {
+        "id": 55,
+        "period_end": "2026-05-31",
+        "total": "187.53",
+        "consumption": 420.0,
+        "index_type": "real"
+      },
+      {
+        "id": 56,
+        "period_end": "2026-06-30",
+        "total": "116.09",
+        "consumption": 260.0,
+        "index_type": "real"
+      },
+      {
+        "id": 57,
+        "period_end": "2026-07-31",
+        "total": "93.76",
+        "consumption": 210.0,
+        "index_type": "real"
+      },
+      {
+        "id": 58,
+        "period_end": "2026-08-31",
+        "total": "102.69",
+        "consumption": 230.0,
+        "index_type": "real"
+      },
+      {
+        "id": 59,
+        "period_end": "2026-09-30",
+        "total": "209.85",
+        "consumption": 470.0,
+        "index_type": "real"
+      }
+    ]
+  }
+}

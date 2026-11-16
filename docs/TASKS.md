@@ -1,0 +1,63 @@
+# Task split (2 people, parallel)
+
+Deadline: **Tuesday 17 Nov, 13:00** (project hand-in), then demos 13:00–16:00.
+Working skeleton already runs end to end: seeded demo data, rule-based audit, mock AI, all 5 screens.
+Your job is to make it real, accurate, and good-looking.
+
+Ownership: **Frontend = `mobile/`**, **Backend = `backend/` + `shared/fixtures/`**. Do not edit the other person's folder
+without telling them; `docs/API.md` is shared (see the rule at its top).
+
+## Frontend (React Native / Expo) – Person A
+
+Priority order. P0 = needed for the demo, P1 = makes it win, P2 = only if time is left.
+
+| # | P | Task | Done when |
+|---|---|---|---|
+| A1 | P0 | Run the app in Expo Go with `EXPO_PUBLIC_MOCK=1`, then against the backend on the LAN | Home shows 4 bills with 🟢🟡🔴 from the real API |
+| A2 | P0 | Pago look & feel: brand colours in `src/theme.ts`, provider logos/initials, home like Pago's bill list | Looks like a Pago screen, not a template |
+| A3 | P0 | Bill screen: clear hierarchy (total → badges → anomaly cards → lines), highlighted lines visibly tappable | A stranger understands it in 5 s |
+| A4 | P0 | Ask UX: suggested-question chips ("Why is VAT so high?", "What is cogeneration?", "Why did it go up?"), loading state, answer card that scrolls into view | Tap a chip → answer visible without scrolling |
+| A5 | P1 | 12-month history bar chart from `bill.history` (`react-native-svg`, works in Expo Go); estimated months in red | Chart on the PPC bill shows the spike |
+| A6 | P1 | Action screens polish: Dispute (edit + mailto/share), Offers, AutoPay result screen (not just an Alert), submit-reading modal | Every anomaly button leads somewhere sensible |
+| A7 | P1 | Scan flow: progress UI while the AI reads (it takes ~10–20 s), error state, then land on the bill | Scanning a real bill photo works on the phone |
+| A8 | P2 | Interactive document: show the original photo/PDF (`file_url`) with highlight boxes from `line_items[].bbox` | Needs B6 |
+| A9 | P2 | Small "scan → audit" animation on the badges (the demo wow moment) | |
+
+## Backend (Django + Claude) – Person B
+
+| # | P | Task | Done when |
+|---|---|---|---|
+| B1 | P0 | Put the API key in `backend/.env`, scan 3–4 **real** bills (your own Engie/PPC/Hidroelectrica/Digi PDFs/photos). Tune `EXTRACTION_PROMPT` in `services/ai.py` | Totals and line items match the paper bill on every test bill |
+| B2 | P0 | Check every `[VERIFY]` line in `bills/knowledge/romania_utilities.md` against ANRE/official sources; delete what you can't verify | No unverified "fact" left |
+| B3 | P0 | Ask quality: run ~10 demo questions (tap each PPC/Engie line + free text), tune `ASK_SYSTEM`; keep answers short and tied to the numbers | Answers are correct and < 5 s |
+| B4 | P0 | Make the demo bills realistic: compare `seed_demo.py` amounts with a real bill of the same supplier; adjust if a juror from Pago would spot nonsense | |
+| B5 | P1 | `POST /bills/{id}/reading/ {index_new}` → recompute consumption & estimated total, return updated `BillDetail` (the "submit real reading" action) | PPC bill turns from 🔴 to 🟢 live in the demo |
+| B6 | P1 | For PDF bills: fill `line_items[].bbox` (pypdf text positions, or ask the model for approximate boxes) | Frontend can draw highlights |
+| B7 | P1 | Demo hosting: run `runserver 0.0.0.0:8000` on the laptop, test from both phones; plan B = `AI_MOCK=1` + fixtures | Works on the Pago office Wi-Fi |
+| B8 | P2 | Streaming answers for `/ask` (SSE) | |
+| B9 | P2 | More rules: penalty detection on real bills, "regularization" detection, gas m³→kWh sanity check | |
+
+## Timeline
+
+| When | Frontend | Backend |
+|---|---|---|
+| Mon until 18:00 | A1, A2, A3 | B1, B2 |
+| Mon evening | A4, A5 | B3, B4 |
+| Tue 08:00–11:00 | A6, A7 (+ A8 if B6 is done) | B5, B6, B7 |
+| Tue 11:00–12:30 | **Feature freeze.** Rehearse the 3-minute demo together twice, fix only bugs | |
+| Tue 12:30 | Final commit, push, hand in | |
+
+## Demo script (3 min)
+
+1. **Home** – "Today Pago shows 4 bills and a Pay button. We added an auditor." Three badges: 🔴 PPC, 🟡 Engie, 🟡 Digi, 🟢 water.
+2. **PPC 🔴** – "Billed 350 kWh on an *estimated* index vs your usual 177. Don't pay yet." → *Submit real reading* (B5) → badge turns 🟢.
+3. **Engie 🟡** – "+42% but consumption only +8%." Tap the VAT line → AI explains with the real numbers and the 21% VAT change.
+4. **Digi 🟡** – "15 RON/month for an add-on added 6 months ago, 90 RON so far." → *Cancel this option* → ready-to-send letter.
+5. **Smart Auto-Pay** – "Pay automatically only under 250 RON and never on estimated index." → simulate → blocked, with reasons.
+6. **Live scan** – photo of a real paper bill → extracted and audited in ~15 s.
+7. **Business slide/sentence** – retention (users open Pago for advice, not only to pay) + lead generation (switch-supplier commissions).
+
+## Git
+
+- Small commits, only inside your folder. `git pull --rebase` before every push.
+- Contract change = `docs/API.md` + `mobile/src/api/types.ts` + `backend/bills/serializers.py` + `export_fixtures`, one commit.

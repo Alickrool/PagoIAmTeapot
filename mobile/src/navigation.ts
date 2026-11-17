@@ -9,11 +9,12 @@ export type TabParamList = {
 
 export type RootStackParamList = {
   Tabs: NavigatorScreenParams<TabParamList> | undefined;
-  Bill: { id: number };
+  Bill: { id: number; notice?: string }; // notice: toast shown on open (scan result, duplicate)
   Dispute: { billId: number; anomalyId?: string };
   Offers: { billId: number };
   AutoPay: { billId: number; provider: string; suggestedMax: number };
   Provider: { slug: string; provider: string };
+  AddProvider: undefined;
 };
 
 export type ScreenProps<T extends keyof RootStackParamList> = NativeStackScreenProps<RootStackParamList, T>;

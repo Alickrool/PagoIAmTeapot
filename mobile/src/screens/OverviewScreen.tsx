@@ -1,8 +1,10 @@
 import { useFocusEffect } from '@react-navigation/native';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, Share, Text, View } from 'react-native';
 import { api, MOCK } from '../api/client';
-import type { DashboardMonth, DashboardResponse, DashboardSlice } from '../api/types';
+import type { DashboardMonth, DashboardResponse, ValidationStatus } from '../api/types';
+import { ReviewMark } from '../components/ValidationCard';
+import { isFlagged } from '../validation';
 import { useBudget } from '../budget';
 import { BudgetModal } from '../components/BudgetModal';
 import { Button } from '../components/Button';
@@ -12,31 +14,8 @@ import { MonthPager } from '../components/MonthPager';
 import { SeverityBadge } from '../components/SeverityBadge';
 import { useCopy, useStyles, useTheme, type Theme } from '../mode';
 import { useStackNavigation } from '../navigation';
-import { category, deltaColor, deltaLabel, money, monthLabel, monthName, tabular } from '../theme';
-
-const EXTRA = ['#10B981', '#EC4899', '#14B8A6', '#F97316', '#6366F1'];
-
-/** Category colour per slice; a second provider of the same category gets an extra colour. */
-function sliceColors(slices: DashboardSlice[]) {
-  const used = new Set<string>();
-  let extra = 0;
-  return Object.fromEntries(
-    slices.map((s) => {
-      let c = (category[s.category] ?? category.other).color;
-      if (used.has(c)) c = EXTRA[extra++ % EXTRA.length];
-      used.add(c);
-      return [s.slug, c];
-    }),
-  );
-}
-
-/** Suggested budget: the average month + 10%, rounded up to 50 lei. */
-const suggestBudget = (avg: string | null, total: number) => Math.ceil(((avg ? Number(avg) : total) * 1.1) / 50) * 50;
-
-/** Every month we've seen, oldest first. The API returns a 12-month window ending at the selected month,
- *  so picking an older month must not drop the newer ones (the "disappearing months" bug). */
-const mergeMonths = (a: DashboardMonth[], b: DashboardMonth[]) =>
-  Object.values(Object.fromEntries([...a, ...b].map((m) => [m.month, m]))).sort((x, y) => x.month.localeCompare(y.month));
+import { mergeMonths, sliceColors, suggestBudget } from '../overviewMath';
+import { deltaColor, deltaLabel, money, monthLabel, monthName, tabular } from '../theme';
 
 const capital = (s: string) => s[0].toUpperCase() + s.slice(1);
 
@@ -47,28 +26,71 @@ export default function OverviewScreen() {
   const styles = useStyles(makeStyles);
   const [data, setData] = useState<DashboardResponse | null>(null);
   const [history, setHistory] = useState<DashboardMonth[]>([]);
-  const [month, setMonth] = useState<string | undefined>(undefined);
-  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false); // only for pull-to-refresh, never for a month swipe
   const [error, setError] = useState<string | null>(null);
   const [budgetOpen, setBudgetOpen] = useState(false);
+  const [statuses, setStatuses] = useState<Map<number, ValidationStatus>>(new Map());
+  const cache = useRef(new Map<string, DashboardResponse>()); // month -> response: swiping back is instant
+  const wanted = useRef<string | undefined>(undefined); // last month asked for: ignore late answers for others
 
   const current = history.length ? history[history.length - 1].month : data?.month; // latest month = "this month"
   const { budget, setBudget } = useBudget(current);
 
-  const load = useCallback((m?: string) => {
-    setLoading(true);
-    setError(null);
-    api
-      .dashboard(m)
-      .then((d) => {
-        setData(d);
-        setHistory((h) => mergeMonths(h, d.months));
-      })
-      .catch((e) => setError(String(e?.message ?? e)))
-      .finally(() => setLoading(false));
+  const fetchMonth = useCallback(async (m?: string) => {
+    const d = await api.dashboard(m);
+    cache.current.set(d.month, d);
+    setHistory((h) => mergeMonths(h, d.months));
+    return d;
   }, []);
 
-  useFocusEffect(useCallback(() => load(month), [load, month]));
+  /** Neighbours of `m` are fetched in the background so the next swipe has nothing to wait for. */
+  const prefetchAround = useCallback(
+    (m: string, months: string[]) => {
+      const i = months.indexOf(m);
+      for (const n of [months[i - 1], months[i + 1]]) if (n && !cache.current.has(n)) fetchMonth(n).catch(() => {});
+    },
+    [fetchMonth],
+  );
+
+  /** Month change (swipe, arrows, history): show the cached month at once, keep the current one until a new one arrives. */
+  const show = useCallback(
+    (m: string) => {
+      wanted.current = m;
+      const hit = cache.current.get(m);
+      if (hit) {
+        setData(hit);
+        return;
+      }
+      fetchMonth(m)
+        .then((d) => wanted.current === m && setData(d))
+        .catch((e) => wanted.current === m && setError(String(e?.message ?? e)));
+    },
+    [fetchMonth],
+  );
+
+  /** Fresh data (screen focus or pull-to-refresh): drop the cache, reload the shown month and the review marks. */
+  const refresh = useCallback(
+    (pull = false) => {
+      if (pull) setRefreshing(true);
+      setError(null);
+      cache.current.clear();
+      const m = wanted.current;
+      fetchMonth(m)
+        .then((d) => {
+          if (wanted.current === m) setData(d);
+          api.billStatuses().then(setStatuses).catch(() => {});
+        })
+        .catch((e) => setError(String(e?.message ?? e)))
+        .finally(() => setRefreshing(false));
+    },
+    [fetchMonth],
+  );
+
+  useFocusEffect(useCallback(() => refresh(), [refresh]));
+
+  useEffect(() => {
+    if (data) prefetchAround(data.month, history.map((h) => h.month));
+  }, [data, history, prefetchAround]);
 
   if (!data) {
     return (
@@ -76,7 +98,7 @@ export default function OverviewScreen() {
         {error ? (
           <>
             <Text style={styles.muted}>{error}</Text>
-            <Button title="Încearcă din nou" onPress={() => load(month)} />
+            <Button title="Încearcă din nou" onPress={() => refresh()} />
           </>
         ) : (
           <ActivityIndicator color={t.accent} />
@@ -102,11 +124,11 @@ export default function OverviewScreen() {
 
   const switcher = (
     <View style={styles.switcher}>
-      <Pressable onPress={() => prev && setMonth(prev)} disabled={!prev} hitSlop={12} accessibilityLabel="Luna anterioară" style={styles.arrowBtn}>
+      <Pressable onPress={() => prev && show(prev)} disabled={!prev} hitSlop={12} accessibilityLabel="Luna anterioară" style={styles.arrowBtn}>
         <Text style={[styles.arrow, !prev && styles.arrowOff]}>‹</Text>
       </Pressable>
       <Text style={styles.monthTitle}>{monthLabel(data.month)}</Text>
-      <Pressable onPress={() => next && setMonth(next)} disabled={!next} hitSlop={12} accessibilityLabel="Luna următoare" style={styles.arrowBtn}>
+      <Pressable onPress={() => next && show(next)} disabled={!next} hitSlop={12} accessibilityLabel="Luna următoare" style={styles.arrowBtn}>
         <Text style={[styles.arrow, !next && styles.arrowOff]}>›</Text>
       </Pressable>
     </View>
@@ -149,6 +171,7 @@ export default function OverviewScreen() {
             <Text style={[styles.rowTitle, { flex: 1 }]} numberOfLines={1}>
               {s.provider}
             </Text>
+            {isFlagged(statuses.get(s.bill_id)) && <ReviewMark />}
             {s.audit_status !== 'ok' && <SeverityBadge severity={s.audit_status} />}
             <Text style={[styles.rowTotal, tabular]}>{money(s.total)}</Text>
           </Pressable>
@@ -161,7 +184,7 @@ export default function OverviewScreen() {
     <View style={{ gap: 8 }}>
       <Text style={styles.section}>{copy.history}</Text>
       <View style={styles.card}>
-        {t.mode !== 'senior' && <MonthBars bars={history.slice(-12).map(monthBar)} selected={data.month} onSelect={setMonth} height={90} />}
+        {t.mode !== 'senior' && <MonthBars bars={history.slice(-12).map(monthBar)} selected={data.month} onSelect={show} height={90} />}
         <ScrollView style={styles.historyBox} nestedScrollEnabled showsVerticalScrollIndicator>
           {[...history].reverse().map((m, idx, arr) => {
             const before = arr[idx + 1];
@@ -170,7 +193,7 @@ export default function OverviewScreen() {
             return (
               <Pressable
                 key={m.month}
-                onPress={() => setMonth(m.month)}
+                onPress={() => show(m.month)}
                 style={({ pressed }) => [styles.histRow, sel && styles.histRowSel, pressed && { opacity: 0.6 }]}
                 accessibilityRole="button"
                 accessibilityState={{ selected: sel }}
@@ -188,7 +211,7 @@ export default function OverviewScreen() {
 
   return (
     <>
-      <ScrollView style={{ backgroundColor: t.bg }} contentContainerStyle={styles.page} refreshControl={<RefreshControl refreshing={loading} onRefresh={() => load(month)} tintColor={t.accent} />}>
+      <ScrollView style={{ backgroundColor: t.bg }} contentContainerStyle={styles.page} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => refresh(true)} tintColor={t.accent} />}>
         {MOCK && <Text style={styles.mock}>MOD DEMO: date din shared/fixtures</Text>}
 
         {t.mode === 'genz' && (
@@ -202,7 +225,7 @@ export default function OverviewScreen() {
               <MonthPager
                 months={months}
                 selected={data.month}
-                onSelect={setMonth}
+                onSelect={show}
                 height={248}
                 renderPage={(m, sel) =>
                   sel ? (
@@ -241,7 +264,7 @@ export default function OverviewScreen() {
               <MonthPager
                 months={months}
                 selected={data.month}
-                onSelect={setMonth}
+                onSelect={show}
                 height={206}
                 renderPage={(m, sel) => (
                   <BudgetRing key={sel ? `sel-${m}` : m} total={totalOf(m)} budget={budgetFor(m)} estimated={!(m === current && budget)} animate={sel} />

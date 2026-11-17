@@ -66,9 +66,49 @@ export interface BillSummary {
   currency: string;
   status: BillStatus;
   audit_status: AuditStatus;
+  validation_status?: ValidationStatus; // docs/API_V2.md §6
 }
 
-export interface BillDetail extends Omit<BillSummary, 'audit_status'> {
+// ---------- Scan validation (docs/API_V2.md §6) ----------
+
+export type ValidationStatus = 'accepted' | 'needs_review';
+
+export interface ValidationCheck {
+  id: string; // stable, e.g. "not_current_month", "vat_amount", "prompt_injection_suspected"
+  severity: 'info' | 'warning';
+  field: string;
+  message: string; // Romanian, with the real numbers: show as-is
+}
+
+export interface Validation {
+  status: ValidationStatus;
+  assigned_month: string; // "2026-09"
+  is_current_month: boolean;
+  confirmed_by_user: boolean;
+  checks: ValidationCheck[];
+}
+
+/** Error codes of POST /bills/scan/ and the other endpoints (API_V2 §1 + §6). */
+export type ApiErrorCode =
+  | 'no_files'
+  | 'too_many_files'
+  | 'unsupported_type'
+  | 'file_too_large'
+  | 'not_a_bill'
+  | 'unreadable'
+  | 'ai_busy'
+  | 'ai_error'
+  | 'image_too_large'
+  | 'encrypted_pdf'
+  | 'suspicious_file'
+  | 'too_many_pages'
+  | 'unreadable_file'
+  | 'invalid_extraction'
+  | 'invalid_period'
+  | 'duplicate_bill'
+  | 'too_many_requests';
+
+export interface BillDetail extends Omit<BillSummary, 'audit_status' | 'validation_status'> {
   customer_code: string;
   meter_series: string;
   place_of_consumption: string;
@@ -87,6 +127,7 @@ export interface BillDetail extends Omit<BillSummary, 'audit_status'> {
   line_items: LineItem[];
   audit: Audit;
   history: HistoryPoint[]; // oldest first
+  validation?: Validation; // §6; optional so older backends / fixtures still type-check
 }
 
 export interface AskResponse {

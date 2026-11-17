@@ -90,11 +90,11 @@ Decisions (the plan's §11 proposals, taken as-is for now):
 
 | # | Task | Status |
 |---|---|---|
-| AV1 | `types.ts`: `BillDetail.validation`, `BillSummary.validation_status`, new error codes, `existing_bill_id` | open |
-| AV2 | Scan result: toast "Am pus factura în septembrie 2026" when `is_current_month` is false (use the `not_current_month` message) | open |
-| AV3 | Bill screen: `warning` checks in one card with "E corect" → `POST /bills/{id}/confirm/`; `info` checks as small notes | open |
-| AV4 | `409 duplicate_bill` → "Ai scanat deja factura asta" + open `existing_bill_id`; `429` → show `detail` | open |
-| AV5 | Lists (home, provider history): a small mark on bills with `validation_status = needs_review` | open |
+| AV1 | `types.ts`: `BillDetail.validation`, `BillSummary.validation_status`, new error codes, `existing_bill_id` | ✅ `types.ts` + `parseApiError` (code, existing_bill_id) |
+| AV2 | Scan result: toast "Am pus factura în septembrie 2026" when `is_current_month` is false (use the `not_current_month` message) | ✅ toast on the bill screen after the scan |
+| AV3 | Bill screen: `warning` checks in one card with "E corect" → `POST /bills/{id}/confirm/`; `info` checks as small notes | ✅ `ValidationCard` |
+| AV4 | `409 duplicate_bill` → "Ai scanat deja factura asta" + open `existing_bill_id`; `429` → show `detail` | ✅ opens the existing bill + toast; 429 shows `detail` |
+| AV5 | Lists (home, provider history): a small mark on bills with `validation_status = needs_review` | ✅ "De verificat" on Acasă and provider history (statuses from `/bills/?all=1`) |
 
 Out of scope for the hackathon (pitch it as the next step): provider registry with verified CUIs, customer name
 check, login and per-user bills, ANAF online check, `PATCH` to correct fields, file retention, scan log.

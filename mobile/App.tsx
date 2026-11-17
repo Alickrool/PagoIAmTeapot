@@ -8,6 +8,7 @@ import { Icon, type IconName } from './src/components/Icon';
 import { ModeSwitcher } from './src/components/ModeSwitcher';
 import { ModeProvider, useCopy, useMode, useTheme } from './src/mode';
 import type { RootStackParamList, TabParamList } from './src/navigation';
+import AddProviderScreen from './src/screens/AddProviderScreen';
 import AutoPayScreen from './src/screens/AutoPayScreen';
 import BillScreen from './src/screens/BillScreen';
 import DisputeScreen from './src/screens/DisputeScreen';
@@ -120,6 +121,7 @@ function Root() {
         />
         <Stack.Screen name="Bill" component={BillScreen} options={{ title: 'Factura' }} />
         <Stack.Screen name="Provider" component={ProviderScreen} options={{ title: 'Furnizor' }} />
+        <Stack.Screen name="AddProvider" component={AddProviderScreen} options={{ title: 'Adaugă furnizor' }} />
         <Stack.Screen name="Dispute" component={DisputeScreen} options={{ title: 'Contestă factura' }} />
         <Stack.Screen name="Offers" component={OffersScreen} options={{ title: 'Oferte mai bune' }} />
         <Stack.Screen name="AutoPay" component={AutoPayScreen} options={{ title: 'Plată automată' }} />

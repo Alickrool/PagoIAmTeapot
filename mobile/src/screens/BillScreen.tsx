@@ -19,6 +19,8 @@ import type { Anomaly, AnomalyAction, AskResponse, BillDetail, LineItem, Recalcu
 import { AnomalyCard } from '../components/AnomalyCard';
 import { Button } from '../components/Button';
 import { ConfirmDialog } from '../components/ConfirmDialog';
+import { Toast } from '../components/Toast';
+import { ValidationCard } from '../components/ValidationCard';
 import { Icon } from '../components/Icon';
 import { ReadingModal } from '../components/ReadingModal';
 import { SeverityBadge } from '../components/SeverityBadge';
@@ -27,7 +29,7 @@ import type { ScreenProps } from '../navigation';
 import { money, tabular } from '../theme';
 
 export default function BillScreen({ route, navigation }: ScreenProps<'Bill'>) {
-  const { id } = route.params;
+  const { id, notice } = route.params;
   const t = useTheme();
   const copy = useCopy();
   const styles = useStyles(makeStyles);
@@ -171,6 +173,14 @@ export default function BillScreen({ route, navigation }: ScreenProps<'Bill'>) {
           {pdfNote && <Text style={styles.muted}>{pdfNote}</Text>}
         </View>
 
+        <ValidationCard
+          validation={bill.validation}
+          onConfirm={async () => {
+            const updated = await api.confirmBill(bill.id);
+            setBill(updated);
+          }}
+        />
+
         {bill.audit.anomalies.map((a) => (
           <AnomalyCard key={a.id} anomaly={a} onAction={(action) => onAction(action, a)} />
         ))}
@@ -247,6 +257,8 @@ export default function BillScreen({ route, navigation }: ScreenProps<'Bill'>) {
           <Button title={copy.ask} onPress={() => question && ask({ question })} disabled={!question || asking} variant="secondary" />
         </View>
       </View>
+
+      <Toast key={`${id}-${notice ?? ''}`} message={notice} />
 
       {readingOpen && (
         <ReadingModal

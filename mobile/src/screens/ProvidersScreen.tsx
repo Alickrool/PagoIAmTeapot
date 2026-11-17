@@ -9,6 +9,7 @@ import { SeverityBadge } from '../components/SeverityBadge';
 import { useCopy, useStyles, useTheme, type Theme } from '../mode';
 import { useStackNavigation } from '../navigation';
 import { acceptProvider, pendingProviders } from '../providerList';
+import { manualProviders, withoutBills, type ManualProvider } from '../providersRo';
 import { category, deltaColor, deltaLabel, monthLabel, tabular } from '../theme';
 
 /** One compact row per provider: category, bills, last bill, trend vs average, audit. The trend chart is on the provider screen. */
@@ -19,16 +20,18 @@ export default function ProvidersScreen() {
   const navigation = useStackNavigation();
   const [items, setItems] = useState<ProviderSummary[] | null>(null);
   const [fresh, setFresh] = useState<ProviderSummary[]>([]); // seen in a scanned bill, not added yet
+  const [noBills, setNoBills] = useState<ManualProvider[]>([]); // added by hand, no bill yet
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(() => {
     setLoading(true);
     setError(null);
-    Promise.all([api.providers(), pendingProviders()])
-      .then(([list, pending]) => {
+    Promise.all([api.providers(), pendingProviders(), manualProviders()])
+      .then(([list, pending, manual]) => {
         setItems(list.filter((p) => !pending.has(p.slug)));
         setFresh(list.filter((p) => pending.has(p.slug)));
+        setNoBills(withoutBills(manual, list));
       })
       .catch((e) => setError(String(e?.message ?? e)))
       .finally(() => setLoading(false));
@@ -85,7 +88,21 @@ export default function ProvidersScreen() {
         </View>
       }
       ListFooterComponent={
-        <Button title="＋ Adaugă furnizor" variant="ghost" onPress={() => navigation.navigate('Tabs', { screen: 'Scan' })} style={{ marginTop: 4 }} />
+        <View style={{ gap: 10 }}>
+          {noBills.map((m) => (
+            <View key={m.slug} style={styles.row}>
+              <ProviderAvatar provider={m.name} category={m.category} size={t.mode === 'senior' ? 48 : 40} />
+              <View style={{ flex: 1, gap: 2, minWidth: 0 }}>
+                <Text style={styles.name} numberOfLines={1}>
+                  {m.name}
+                </Text>
+                <Text style={styles.meta}>{category[m.category].label} · nicio factură încă</Text>
+              </View>
+              <Button title="Adaugă factură" variant="secondary" onPress={() => navigation.navigate('Tabs', { screen: 'Scan' })} />
+            </View>
+          ))}
+          <Button title="＋ Adaugă furnizor" variant="ghost" onPress={() => navigation.navigate('AddProvider')} style={{ marginTop: 4 }} />
+        </View>
       }
       renderItem={({ item: p }) => {
         const c = category[p.category] ?? category.other;

@@ -81,20 +81,32 @@
     },
     {
       "n": 14,
+      "member": 1,
+      "time": "2026-11-17 10:00",
+      "headline": "Aplicația arată verificările de la scanare și are formularul de furnizori; 111 teste trec"
+    },
+    {
+      "n": 15,
       "member": 2,
       "time": "2026-11-17 10:00",
       "headline": "Ziua demo-ului: backend-ul e gata; azi testăm la birou și rotim cheia Gemini"
+    },
+    {
+      "n": 16,
+      "member": 1,
+      "time": "2026-11-17 10:11",
+      "headline": "Aplicația rulează pe hotspot, gata pentru testul de demo"
     }
   ],
   "members": {
     "1": {
       "building": "Aplicația mobilă Pago Bill Audit (Expo) în 3 interfețe, Gen Z, Millennials și Senior: vezi facturile lunii într-o roată, scanezi factura din poze sau PDF, Gemini o citește și prinde greșelile. Ca un detectiv care vorbește pe limba fiecărui client.",
-      "works": "Scanarea pornește pe cameră, cu comutare la imagine sau PDF. Tab-urile se schimbă cu swipe, iar roata lunii se glisează între luni și se desenează animat. Bugetul lunii se setează dintr-un buton. Fiecare factură are întrebări pe tipul ei (apă, gaz, curent) și buton „Vezi factura (PDF)”, care deschide acum factura, pentru că backend-ul o servește. Furnizorii noi din facturi scanate se adaugă cu un tap. Iconițele sunt simple, fără emoji. Branch-ul frontend-final e unit în main. Testul de integritate a trecut: backend-ul și aplicația rulează pe același cod și aceeași adresă, iar toate endpoint-urile au forma așteptată de aplicație.",
-      "blocking": "Cheia Gemini trebuie rotită înainte de demo. Un test vechi de backend (coordonatele rândurilor pe PDF-ul demo) pică pe laptopul acesta.",
+      "works": "Aplicația arată verificările de la scanare: mesajul „Am pus factura în luna X”, cardul cu „E corect” pentru facturile de verificat, deschiderea facturii deja scanate și marcajul „De verificat” în liste. Roata lunii se schimbă fără reîncărcare, iar istoricul furnizorului colorează fiecare factură (roșu = anomalie, galben = atenție). „Adaugă furnizor” are acum un formular cu furnizori din România și pasul „Adaugă factură”. 111 teste automate în aplicație trec.",
+      "blocking": "Cheia Gemini trebuie rotită înainte de demo. Ultimele modificări din aplicație sunt pe branch-ul frontend-final și trebuie unite în main. Laptopul schimbă rețeaua între Wi-Fi și hotspot, iar adresa serverului trebuie actualizată de fiecare dată.",
       "features": [
         {
           "name": "Claude Code",
-          "for": "a făcut scanarea cu camera, swipe-ul între tab-uri, roata pe luni, bugetul și întrebările pe fiecare factură, și a scris planul de verificare a datelor la scanare"
+          "for": "a făcut verificările de scanare în aplicație, formularul de furnizori și roata fără reîncărcare, a scris 111 teste și raportul lor"
         },
         {
           "name": "Browserul integrat",
@@ -121,7 +133,7 @@
           "for": "actualizează pagina Pulse la fiecare 2 ore"
         }
       ],
-      "next": "Testăm pe telefon verificările noi de la scanare (luna, sumele, duplicatele) și le arătăm în aplicație."
+      "next": "Unim frontend-final în main și testăm aplicația pe telefon înainte de demo."
     },
     "2": {
       "building": "Pago Bill Audit: înainte să apeși «Plătește», AI-ul citește factura, ți-o explică pe înțeles și prinde greșelile (index estimat, scumpiri ascunse, opțiuni plătite uitate). Ca un contabil de buzunar care se uită pe factură în locul tău.",

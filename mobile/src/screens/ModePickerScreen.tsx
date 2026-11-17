@@ -5,8 +5,8 @@ import { COPY, THEMES, useMode, type Mode } from '../mode';
 const ORDER: Mode[] = ['genz', 'millennial', 'senior'];
 const SAMPLE: Record<Mode, string> = {
   genz: 'Red flag: PPC vrea 501,85 lei',
-  millennial: 'Octombrie a fost generos: 131,59 lei peste buget',
-  senior: 'Sărut-mâna! Aveți 4 facturi.',
+  millennial: 'Sinteza lunii: 1.001,83 lei · 131,59 lei peste buget',
+  senior: 'Aveți 4 facturi de plată.',
 };
 
 /** First launch (and "Schimbă modul"): each card is drawn in that mode's own colours. */

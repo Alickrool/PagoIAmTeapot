@@ -1,4 +1,4 @@
-// Swipe right to archive (docs/API_V2.md §8), the undo bar, the app name "AI Pago" and the mode names.
+// Swipe left to archive (docs/API_V2.md §8), the undo bar, the app name "AI Pago" and the mode names.
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import fs from 'fs';
@@ -56,7 +56,7 @@ beforeEach(async () => {
   await AsyncStorage.clear();
 });
 
-describe('swipe rules', () => {
+describe('swipe rules (distances measured to the left)', () => {
   it('a short swipe goes back, half the button opens it, a long swipe does it at once', () => {
     expect(swipeEnd(30, 0, false)).toBe('close');
     expect(swipeEnd(ACTION_W / 2, 0, false)).toBe('open');
@@ -110,9 +110,16 @@ describe('Providers list: archive from the list', () => {
     (api.providers as jest.Mock).mockResolvedValue([card('ppc', 'PPC', { audit_status: 'critical' }), card('digi', 'Digi')]);
   });
 
-  it('shows the swipe hint', async () => {
+  it('no intro sentence on top; the swipe hint sits under "Adaugă furnizor"', async () => {
     await render(<ProvidersScreen />);
     expect(await screen.findByText(COPY.millennial.swipeHint)).toBeTruthy();
+    expect(screen.queryByText(/Fiecare factură, comparată/)).toBeNull();
+    // texts in screen order
+    const order = screen.getAllByText(/.+/).map((n) => [n.props.children].flat().join(''));
+    const at = (s: string) => order.findIndex((x) => x.includes(s));
+    expect(at('Adaugă furnizor')).toBeGreaterThan(-1);
+    expect(at('Adaugă furnizor')).toBeLessThan(at(COPY.millennial.swipeHint));
+    expect(at('Digi')).toBeLessThan(at(COPY.millennial.swipeHint)); // under the list, not above it
   });
 
   it('archiving moves the card to "Arhivă" at once and offers "Anulează"; undo brings it back', async () => {
@@ -173,20 +180,22 @@ describe('names', () => {
     expect(JSON.stringify(app.plugins)).toMatch(/AI Pago folosește microfonul/);
   });
 
-  it('modes: Gen Z stays informal; the other two have formal names', () => {
-    expect(COPY.genz.modeName).toBe('Gen Z');
+  it('modes: Innovative (young), Profesional (middle age), Classic (seniors)', () => {
+    expect(COPY.genz.modeName).toBe('Innovative');
     expect(COPY.millennial.modeName).toBe('Profesional');
-    expect(COPY.senior.modeName).toBe('Clasic');
+    expect(COPY.senior.modeName).toBe('Classic');
+    // the line under each name describes the style, not the age group
+    for (const c of Object.values(COPY)) expect(c.modeDesc).not.toMatch(/^Pentru |tineri|vârsta de mijloc|seniori/i);
   });
 
   it('every mode has the swipe texts', () => {
     for (const c of Object.values(COPY)) {
-      expect(c.swipeHint).toMatch(/dreapta/);
+      expect(c.swipeHint).toMatch(/stânga/);
       expect(c.archiveShort && c.unarchiveShort && c.undo).toBeTruthy();
     }
   });
 
-  it('no tab swipe on Furnizori, where swiping right archives', () => {
+  it('no tab swipe on Furnizori, where swiping a provider archives it', () => {
     const app = fs.readFileSync(path.join(root, 'App.tsx'), 'utf8');
     expect(app).toMatch(/name="Providers" component=\{ProvidersScreen\} options=\{\{ swipeEnabled: false \}\}/);
   });

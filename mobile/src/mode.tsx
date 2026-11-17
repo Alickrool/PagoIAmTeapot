@@ -1,6 +1,6 @@
 // Generation modes (design: "Pago pe generații" mockup). One app, three looks + tones, shown as
-// "Gen Z" (informal), "Profesional" (millennial) and "Clasic" (senior):
-// genz = dark, lime accent, slang · millennial = light, Pago violet, classy · senior = large text, navy, warm.
+// "Innovative" (young people, informal), "Profesional" (middle age, corporate look) and "Classic" (seniors):
+// genz = dark, lime accent, slang · millennial = light, petrol blue, corporate · senior = large text, navy, warm.
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import type { AuditStatus, Severity } from './api/types';
@@ -54,16 +54,17 @@ export const THEMES: Record<Mode, Theme> = {
     fs: scale(1),
     touch: 48,
   },
+  // "Profesional": corporate look for the middle generation: cool greys, deep petrol blue, crisp corners.
   millennial: {
     mode: 'millennial',
     dark: false,
-    bg: '#F5F6FA',
+    bg: '#F3F5F8',
     surface: '#FFFFFF',
-    surface2: '#F0F1F5',
-    text: '#16181D',
-    muted: '#4B5160',
-    border: '#E5E7EB',
-    accent: '#5B3DF5',
+    surface2: '#EDF1F5',
+    text: '#0F172A',
+    muted: '#475569',
+    border: '#D9E0E8',
+    accent: '#0E5A78',
     onAccent: '#FFFFFF',
     highlight: '#FFF4CC',
     sev: {
@@ -72,9 +73,9 @@ export const THEMES: Record<Mode, Theme> = {
       warning: { color: '#B45309', bg: '#FEF3C7' },
       critical: { color: '#B91C1C', bg: '#FEE2E2' },
     },
-    radius: 24,
-    inner: 8,
-    pad: 16,
+    radius: 18, // crisper than the other modes; inner = radius − pad (design rule 14)
+    inner: 4,
+    pad: 14,
     fs: scale(1),
     touch: 48,
   },
@@ -109,7 +110,7 @@ const lei = (v: number | string) => `${Number(v).toFixed(2).replace('.', ',')} l
 /** Copy per mode. Same facts, different voice. */
 export const COPY = {
   genz: {
-    modeName: 'Gen Z',
+    modeName: 'Innovative',
     modeDesc: 'Dark mode, direct, cu slang',
     tabOverview: 'Acasă',
     tabScan: 'Scanează',
@@ -139,7 +140,6 @@ export const COPY = {
       old != null ? `Ultimul index: ${old}. Scrie ce arată contorul acum (${unit}).` : 'Scrie ce arată contorul acum.',
     readingSend: 'Trimite',
     readingDone: (diff: number) => (diff < 0 ? `Gata. Ai scăpat de ${lei(-diff)}. Easy.` : `Gata. Diferență: ${lei(diff)}.`),
-    providersIntro: 'Fiecare factură, comparată cu cele de dinainte. Nimic nu scapă.',
     scanEmptyTitle: 'Pozează factura',
     scanEmptyBody: 'Poze, galerie sau PDF. Le poți amesteca, le trimitem ca o singură factură.',
     scanSteps: ['Urcăm pozele', 'Citim factura', 'Facem stalking pe ultimele 12 luni', 'Vânăm red flags'],
@@ -162,23 +162,23 @@ export const COPY = {
     unarchivedToast: (p: string) => `${p} e înapoi în listă.`,
     archiveShort: 'Arhivează',
     unarchiveShort: 'Scoate',
-    swipeHint: 'Glisează un furnizor spre dreapta ca să-l arhivezi.',
+    swipeHint: 'Glisează un furnizor spre stânga ca să-l arhivezi.',
     undo: 'Anulează',
   },
   millennial: {
     modeName: 'Profesional',
-    modeDesc: 'Buget, automatizări și economii, la obiect',
+    modeDesc: 'Stil corporate: rapoarte, buget și economii',
     tabOverview: 'Buget',
     tabScan: 'Scanează',
     tabProviders: 'Furnizori',
-    overviewTitle: 'Bugetul lunii',
-    greeting: 'Bună',
+    overviewTitle: 'Situația lunii',
+    greeting: 'Bună ziua',
     streak: (n: number) => `${n} luni plătite la timp`,
     vsPrev: (diff: number, month: string) =>
       diff > 0 ? `Cu ${lei(diff)} mai mult decât în ${month}` : `Cu ${lei(-diff)} mai puțin decât în ${month}`,
     alertTitle: (provider: string, total: string) => `${provider} merită o a doua privire: ${lei(total)}`,
     alertCta: 'Revizuiește factura',
-    whereMoney: 'Unde se duc banii',
+    whereMoney: 'Repartizarea cheltuielilor',
     compare: 'Comparație',
     history: 'Istoric · alege o lună',
     sev: { ok: 'În regulă', info: 'Info', warning: 'Atenție', critical: 'Anomalie' } as Record<Severity, string>,
@@ -196,7 +196,6 @@ export const COPY = {
       old != null ? `Indexul anterior: ${old}. Introdu valoarea de pe contor (${unit}).` : 'Introdu valoarea de pe contor.',
     readingSend: 'Recalculează factura',
     readingDone: (diff: number) => (diff < 0 ? `Factura a fost recalculată: ${lei(diff)}` : `Factura a fost recalculată: +${lei(diff)}`),
-    providersIntro: 'Fiecare factură, comparată cu cele anterioare.',
     scanEmptyTitle: 'Adaugă paginile unei facturi',
     scanEmptyBody: 'Fotografii, imagini din galerie sau PDF, în ordinea paginilor. Le analizăm împreună.',
     scanSteps: ['Încărcăm paginile', 'Citim factura', 'Comparăm cu istoricul tău', 'Verificăm anomaliile'],
@@ -219,17 +218,17 @@ export const COPY = {
     unarchivedToast: (p: string) => `${p} a revenit în lista de furnizori.`,
     archiveShort: 'Arhivează',
     unarchiveShort: 'Scoate',
-    swipeHint: 'Glisează un furnizor spre dreapta pentru a-l arhiva.',
+    swipeHint: 'Glisați un furnizor spre stânga pentru arhivare.',
     undo: 'Anulează',
   },
   senior: {
-    modeName: 'Clasic',
+    modeName: 'Classic',
     modeDesc: 'Text mare, limbaj simplu și politicos',
     tabOverview: 'Facturi',
     tabScan: 'Fotografiați',
     tabProviders: 'Istoric',
     overviewTitle: 'Acasă',
-    greeting: 'Sărut-mâna!',
+    greeting: 'Bună ziua!', // not shown on the Classic home screen
     streak: (n: number) => `Ați plătit la timp ${n} luni la rând`,
     vsPrev: (diff: number, month: string) =>
       diff > 0 ? `Cu ${lei(diff)} mai mult decât în ${month}` : `Cu ${lei(-diff)} mai puțin decât în ${month}`,
@@ -252,7 +251,6 @@ export const COPY = {
     readingHint: (old: number | null) => (old != null ? `Data trecută contorul arăta ${old}.` : 'Scrieți numărul de pe contor.'),
     readingSend: 'Trimiteți cifra',
     readingDone: (diff: number) => (diff < 0 ? `Mulțumim! Plătiți cu ${lei(-diff)} mai puțin.` : `Mulțumim! Factura a fost refăcută.`),
-    providersIntro: 'Fiecare factură, comparată cu cele de dinainte.',
     scanEmptyTitle: 'Fotografiați factura',
     scanEmptyBody: 'Faceți câte o poză fiecărei pagini. Noi o citim și vă spunem dacă e ceva greșit.',
     scanSteps: ['Trimitem pozele', 'Citim factura', 'O comparăm cu cele vechi', 'Căutăm greșeli'],
@@ -275,7 +273,7 @@ export const COPY = {
     unarchivedToast: (p: string) => `${p} este din nou în listă.`,
     archiveShort: 'Arhivați',
     unarchiveShort: 'Scoateți',
-    swipeHint: 'Trageți un furnizor spre dreapta ca să-l puneți în arhivă.',
+    swipeHint: 'Trageți un furnizor spre stânga ca să-l puneți în arhivă.',
     undo: 'Anulați',
   },
 };

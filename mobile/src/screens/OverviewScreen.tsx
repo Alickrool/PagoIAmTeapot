@@ -9,6 +9,7 @@ import { useBudget } from '../budget';
 import { BudgetModal } from '../components/BudgetModal';
 import { Button } from '../components/Button';
 import { Donut } from '../components/charts/Donut';
+import { KpiStrip } from '../components/KpiStrip';
 import { MonthBars, monthBar } from '../components/charts/MonthBars';
 import { MonthPager } from '../components/MonthPager';
 import { SeverityBadge } from '../components/SeverityBadge';
@@ -154,7 +155,7 @@ export default function OverviewScreen() {
             </Text>
             <Text style={styles.link}>Modifică</Text>
           </View>
-          <View style={styles.barTrack}>
+          <View style={styles.barTrack} testID="budget-bar">
             <View style={[styles.barFill, { width: `${Math.min(total / budget, 1) * 100}%`, backgroundColor: total > budget ? t.sev.critical.color : t.accent }]} />
           </View>
         </View>
@@ -283,6 +284,7 @@ export default function OverviewScreen() {
               {diff != null && data.previous_month && <Text style={[styles.small, tabular, { textAlign: 'center' }]}>{copy.vsPrev(diff, monthName(data.previous_month))}</Text>}
               {budgetRow}
             </View>
+            <KpiStrip data={data} />
             {alert}
             {breakdown}
             {historyCard}
@@ -291,7 +293,6 @@ export default function OverviewScreen() {
 
         {t.mode === 'senior' && (
           <>
-            <Text style={styles.greet}>{copy.greeting}</Text>
             <View style={{ gap: 4 }}>
               <Text style={styles.seniorSub}>
                 {unpaid.length > 0 ? `Vă așteaptă ${unpaid.length} ${unpaid.length > 1 ? 'facturi' : 'factură'} de plată` : 'Toate facturile sunt plătite'}
@@ -373,8 +374,9 @@ const makeStyles = (t: Theme) => ({
   centerTotal: { fontSize: t.fs(30), fontWeight: '800' as const, color: t.text },
   vsPrev: { fontSize: t.fs(14), fontWeight: '700' as const, textAlign: 'center' as const },
   budgetRow: { alignSelf: 'stretch' as const, minHeight: 44, justifyContent: 'center' as const, paddingTop: 8, borderTopWidth: 1, borderColor: t.border },
-  barTrack: { height: 6, borderRadius: 3, backgroundColor: t.surface2, overflow: 'hidden' as const },
-  barFill: { height: 6, borderRadius: 3 },
+  // budget bar: thick enough to read at a glance (bigger in Senior / Classic)
+  barTrack: { height: t.mode === 'senior' ? 16 : 12, borderRadius: 8, backgroundColor: t.border, overflow: 'hidden' as const },
+  barFill: { height: t.mode === 'senior' ? 16 : 12, borderRadius: 8 },
   link: { color: t.accent, fontWeight: '700' as const, fontSize: t.fs(14), textAlign: 'center' as const },
   alert: { backgroundColor: t.sev.critical.bg, borderRadius: t.radius, padding: t.pad, gap: 12 },
   alertTitle: { color: t.sev.critical.color, fontSize: t.fs(18), fontWeight: '800' as const, lineHeight: t.fs(24) },

@@ -91,14 +91,8 @@ export default function ProvidersScreen() {
         contentContainerStyle={{ padding: 16, gap: 10 }}
         refreshControl={<RefreshControl refreshing={loading} onRefresh={load} tintColor={t.accent} />}
         ListHeaderComponent={
+          !actionError && fresh.length === 0 ? undefined : (
           <View style={{ gap: 10, marginBottom: 4 }}>
-            <Text style={styles.intro}>{copy.providersIntro}</Text>
-            {active.length > 0 && (
-              <View style={styles.hintRow}>
-                <Icon name="archive" size={14} color={t.muted} />
-                <Text style={[styles.meta, { flex: 1 }]}>{copy.swipeHint}</Text>
-              </View>
-            )}
             {actionError && <Text style={styles.error}>{actionError}</Text>}
             {fresh.length > 0 && (
               <View style={styles.fresh}>
@@ -122,6 +116,7 @@ export default function ProvidersScreen() {
               </View>
             )}
           </View>
+          )
         }
         ListFooterComponent={
           <View style={{ gap: 10 }}>
@@ -138,6 +133,12 @@ export default function ProvidersScreen() {
               </View>
             ))}
             <Button title="＋ Adaugă furnizor" variant="ghost" onPress={() => navigation.navigate('AddProvider')} style={{ marginTop: 4 }} />
+            {active.length > 0 && (
+              <View style={styles.hintRow}>
+                <Icon name="archive" size={14} color={t.muted} />
+                <Text style={styles.meta}>{copy.swipeHint}</Text>
+              </View>
+            )}
 
             {/* §8: providers the user left. Grey, at the bottom; their bills stay. */}
             {archived.length > 0 && (
@@ -193,7 +194,7 @@ export default function ProvidersScreen() {
           const c = category[p.category] ?? category.other;
           const tone = rowTone(p.audit_status, t); // the whole card: red = anomaly, yellow = warning
           return (
-            // swipe right -> "Arhivează" (contract ended); a long swipe archives at once
+            // swipe left -> "Arhivează" (contract ended); a long swipe archives at once
             <SwipeAction label={copy.archiveShort} icon="archive" onAction={() => setArchived(p, true)} testID={`swipe-${p.slug}`}>
               <Pressable
                 onPress={() => navigation.navigate('Provider', { slug: p.slug, provider: p.provider })}
@@ -247,7 +248,6 @@ export default function ProvidersScreen() {
 const makeStyles = (t: Theme) =>
   StyleSheet.create({
     centerFill: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12, padding: 24, backgroundColor: t.bg },
-    intro: { color: t.muted, fontSize: t.fs(14), marginBottom: 4 },
     row: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: t.surface, borderRadius: t.radius - 6, borderWidth: 1.5, borderColor: 'transparent', paddingVertical: 12, paddingHorizontal: 14, minHeight: t.touch + 12 },
     line: { flexDirection: 'row', alignItems: 'center', gap: 8 },
     fresh: { backgroundColor: t.surface, borderRadius: t.radius - 6, padding: 14, gap: 10, borderWidth: 1.5, borderColor: t.accent },
@@ -263,6 +263,6 @@ const makeStyles = (t: Theme) =>
     archiveTitle: { flex: 1, color: t.muted, fontWeight: '800', fontSize: t.fs(15) },
     archiveToggle: { color: t.accent, fontWeight: '700', fontSize: t.fs(14) },
     archivedRow: { backgroundColor: t.bg, borderColor: t.border, borderStyle: 'dashed' },
-    hintRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+    hintRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingHorizontal: 8 },
     error: { color: t.sev.critical.color, fontSize: t.fs(13), fontWeight: '600' },
   });

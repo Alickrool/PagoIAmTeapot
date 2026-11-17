@@ -4,12 +4,16 @@ import { Animated, Easing, PanResponder, Platform, Pressable, StyleSheet, Text }
 import { useTheme } from '../mode';
 import { Icon, type IconName } from './Icon';
 
+// Swipe to the LEFT: the finger moves left, the card follows, the button shows on the right.
+// Inside, `x` is the distance moved (always >= 0); the card is drawn at -x.
+
 /** Width of the button that the swipe uncovers. */
 export const ACTION_W = 104;
 /** A long swipe (this far) does the action at once, without tapping the button. */
 export const COMMIT_DX = 210;
 
-/** Where the card goes when the finger lifts: back, open on the button, or all the way (do it). */
+/** Where the card goes when the finger lifts: back, open on the button, or all the way (do it).
+ *  `dx` / `vx` are measured towards the left (finger moving left = positive). */
 export function swipeEnd(dx: number, vx: number, wasOpen: boolean): 'close' | 'open' | 'commit' {
   const pos = (wasOpen ? ACTION_W : 0) + dx;
   if (pos >= COMMIT_DX) return 'commit';
@@ -61,13 +65,13 @@ function createSwipe(setIsOpen: (v: boolean) => void, setFolding: (v: boolean) =
     ]).start(() => onAction());
   };
   const pan = PanResponder.create({
-    onMoveShouldSetPanResponder: (_, g) => Math.abs(g.dx) > 8 && Math.abs(g.dx) > Math.abs(g.dy) * 1.5 && (g.dx > 0 || open),
+    onMoveShouldSetPanResponder: (_, g) => Math.abs(g.dx) > 8 && Math.abs(g.dx) > Math.abs(g.dy) * 1.5 && (g.dx < 0 || open),
     onPanResponderGrant: () => {
       x.stopAnimation();
       buzzed = open;
     },
     onPanResponderMove: (_, g) => {
-      const raw = (open ? ACTION_W : 0) + g.dx;
+      const raw = (open ? ACTION_W : 0) - g.dx;
       x.setValue(rubber(raw));
       if (!buzzed && raw >= ACTION_W) {
         buzzed = true;
@@ -75,7 +79,7 @@ function createSwipe(setIsOpen: (v: boolean) => void, setFolding: (v: boolean) =
       }
     },
     onPanResponderRelease: (_, g) => {
-      const end = swipeEnd(g.dx, g.vx, open);
+      const end = swipeEnd(-g.dx, -g.vx, open);
       if (end === 'commit') commit();
       else springTo(end === 'open' ? ACTION_W : 0);
     },
@@ -100,9 +104,9 @@ function createSwipe(setIsOpen: (v: boolean) => void, setFolding: (v: boolean) =
 }
 
 /**
- * Swipe the card to the right to uncover an action button (archive / bring back). The icon grows and tilts as the card
- * moves, a light tap of the phone marks the point where the button is fully shown; on the action the card flies out
- * to the right, fades and the row folds away, then `onAction` runs.
+ * Swipe the card to the left to uncover an action button on the right (archive / bring back). The icon grows and tilts
+ * as the card moves, a light tap of the phone marks the point where the button is fully shown; on the action the card
+ * flies out to the left, fades and the row folds away, then `onAction` runs.
  */
 export function SwipeAction({
   children,
@@ -123,9 +127,10 @@ export function SwipeAction({
   const [ctl] = useState(() => createSwipe(setIsOpen, setFolding));
   useEffect(() => ctl.setOnAction(onAction), [ctl, onAction]);
   const { x, fade, height } = ctl;
+  const [left] = useState(() => Animated.multiply(x, -1));
 
   const scale = x.interpolate({ inputRange: [0, ACTION_W, COMMIT_DX], outputRange: [0.4, 1, 1.2], extrapolate: 'clamp' });
-  const rotate = x.interpolate({ inputRange: [0, ACTION_W, COMMIT_DX], outputRange: ['-30deg', '0deg', '12deg'], extrapolate: 'clamp' });
+  const rotate = x.interpolate({ inputRange: [0, ACTION_W, COMMIT_DX], outputRange: ['30deg', '0deg', '-12deg'], extrapolate: 'clamp' });
   const reveal = x.interpolate({ inputRange: [0, 28], outputRange: [0, 1], extrapolate: 'clamp' });
 
   return (
@@ -146,7 +151,7 @@ export function SwipeAction({
         </Pressable>
       </Animated.View>
 
-      <Animated.View style={{ transform: [{ translateX: x }], opacity: fade }} {...ctl.pan.panHandlers}>
+      <Animated.View style={{ transform: [{ translateX: left }], opacity: fade }} {...ctl.pan.panHandlers}>
         {children}
         {/* while open, a tap on the card closes it instead of opening the provider */}
         {isOpen && <Pressable style={StyleSheet.absoluteFill} onPress={() => ctl.springTo(0)} accessibilityLabel="Închide" />}
@@ -156,6 +161,6 @@ export function SwipeAction({
 }
 
 const styles = StyleSheet.create({
-  under: { position: 'absolute', left: 0, top: 0, bottom: 0, overflow: 'hidden', justifyContent: 'center' },
+  under: { position: 'absolute', right: 0, top: 0, bottom: 0, overflow: 'hidden', justifyContent: 'center', alignItems: 'flex-end' },
   button: { width: ACTION_W, flex: 1, alignItems: 'center', justifyContent: 'center', gap: 4 },
 });

@@ -11,7 +11,7 @@ money as **strings**, dates `YYYY-MM-DD`). Types on the app side: `mobile/src/ap
 | 4 | `GET /api/providers/{slug}/` | Provider history screen | ✅ **live** |
 | 5 | `GET /api/bills/{id}/pdf/` | Bill screen: "Vezi factura (PDF)" | ✅ **live** |
 | 6 | Scan validation: `validation` in `BillDetail`, `POST /api/bills/{id}/confirm/` | Scan result + bill screen | ✅ **live** (app side: AV-tasks in [TASKS.md](TASKS.md)) |
-| 7 | `GET /api/search/?q=`, `POST /api/search/voice/`, `paid_at` | Search bar + voice (all tabs) | 🚧 contract, backend in progress (S-tasks in [TASKS.md](TASKS.md)) |
+| 7 | `GET /api/search/?q=`, `POST /api/search/voice/`, `paid_at` | Search bar + voice (all tabs) | ✅ **live** (voice: mock + tests; live check with a phone recording pending) |
 
 The app already works without 2–4: until they exist (404) it computes the same JSON on the phone from
 `GET /bills/` + `GET /bills/{id}/` (`mobile/src/api/derive.ts`). That file is a **reference implementation** of the
@@ -368,7 +368,7 @@ from the document.
 **Bills scanned before validation existed**: `python manage.py revalidate` runs the rules again on their stored
 extraction (no Gemini). An impossible period on an old scan becomes a warning there, never a deletion.
 
-## 7. Search + voice search 🚧
+## 7. Search + voice search ✅ live
 
 One search bar above the tabs. **The backend understands the query, the app only shows the answer.** Text and voice
 use the same rules, so voice never invents filters the rules cannot explain.
@@ -413,6 +413,9 @@ To drop a chip, call again with the remaining chips' values as params and no `q`
   - else `null`.
 - `chips.kind`: `provider | category | month | status`; `label` is Romanian, ready to show.
 - `message`: one Romanian sentence for the top of the list; with no results it says what was understood and what to try.
+- Example responses for every case: `shared/fixtures/search.json` (exported from the real API, keyed by query).
+- Demo data note: Engie and PPC are both electricity, so "lumină octombrie" finds 2 bills (no jump); say the provider
+  ("PPC octombrie") to open one bill directly.
 - Errors: `400 empty_query` (no `q` and no filter params), `400 bad_month`.
 
 ### `POST /api/search/voice/` (multipart, field `audio`)

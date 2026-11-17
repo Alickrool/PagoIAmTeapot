@@ -20,7 +20,7 @@ class BillListSerializer(serializers.ModelSerializer):
     class Meta:
         model = Bill
         fields = ["id", "provider", "category", "period_start", "period_end", "due_date", "total", "currency",
-                  "status", "audit_status", "source", "created_at", "validation_status"]
+                  "status", "paid_at", "audit_status", "source", "created_at", "validation_status"]
 
     def get_audit_status(self, bill):
         return audit_bill(bill)["status"]
@@ -48,7 +48,7 @@ class BillDetailSerializer(serializers.ModelSerializer):
         fields = ["id", "provider", "category", "customer_code", "meter_series", "place_of_consumption", "county",
                   "period_start", "period_end", "issue_date", "due_date", "total", "currency", "vat_rate",
                   "consumption", "consumption_unit", "index_old", "index_new", "index_type", "all_in_unit_price",
-                  "county_average", "status", "source", "file_url", "files", "pdf_url", "line_items", "audit", "history",
+                  "county_average", "status", "paid_at", "source", "file_url", "files", "pdf_url", "line_items", "audit", "history",
                   "bill_number", "validation"]
 
     def get_audit(self, bill):

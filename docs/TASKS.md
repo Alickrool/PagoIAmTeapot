@@ -107,19 +107,20 @@ Contract: [API_V2.md §7](API_V2.md). The backend understands the query (rules; 
 the app shows results and jumps to the screens we already have. Stays in Expo Go: `expo-audio`, no speech module.
 If Gemini cannot read the phone's audio, the keyboard's own dictation mic types into the same field (demo still works).
 
-**Demo line:** Senior mode → mic → "Arată-mi factura de lumină din octombrie" → the PPC October bill opens (🔴 estimated index).
+**Demo line:** Senior mode → mic → "Arată-mi factura PPC din octombrie" → the PPC October bill opens (🔴 estimated index).
+("lumină" alone finds Engie + PPC, both electricity, so it shows a list instead of jumping.)
 
 ### Backend – Person B
 
 | # | Task | Status |
 |---|---|---|
 | S0 | Merge `frontend-final` into `main` | ✅ 66 backend tests green |
-| S1 | Contract (API_V2 §7) + `shared/fixtures/search.json` for the app's mock mode | contract ✅, fixtures after S3 |
-| S2 | `services/search.py`: months, providers (aliases + misspellings), categories, status words → filters, chips, target, message | open |
-| S3 | `GET /api/search/` | open |
-| S4 | `Bill.paid_at` (migration), set by `pay`, dates for paid demo bills, in serializers | open |
-| S5 | `POST /api/search/voice/`: audio checks, Gemini speech → query, mock, rate limit (spike a real phone m4a first) | open |
-| S6 | Tests + live e2e with a real voice clip | open |
+| S1 | Contract (API_V2 §7) + `shared/fixtures/search.json` for the app's mock mode | ✅ fixtures keyed by query (8 cases) |
+| S2 | `services/search.py`: months, providers (aliases + misspellings), categories, status words → filters, chips, target, message | ✅ "mai"/"noi" count as months only after "din/în/luna…" or before a year |
+| S3 | `GET /api/search/` | ✅ |
+| S4 | `Bill.paid_at` (migration), set by `pay`, dates for paid demo bills, in serializers | ✅ run `migrate`; demo dates need `seed_demo` |
+| S5 | `POST /api/search/voice/`: audio checks, Gemini speech → query, mock, rate limit (spike a real phone m4a first) | ✅ mock + tests; live check below |
+| S6 | Tests + live e2e with a real voice clip | ✅ 10 tests (`tests_search.py`), 76 total; live clip: open |
 
 ### Frontend – Person A
 

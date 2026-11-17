@@ -60,6 +60,26 @@ def sniff(data: bytes) -> str | None:
     return None
 
 
+MAX_AUDIO_BYTES = 1024 * 1024  # about 30 s of phone m4a
+
+
+def sniff_audio(data: bytes) -> str | None:
+    """Voice search (docs/API_V2.md §7): the audio type from the magic bytes, as Gemini names it."""
+    if data[4:8] == b"ftyp" and data[8:12] not in HEIF_BRANDS:
+        return "audio/mp4"  # m4a from expo-audio on iOS and Android
+    if data[:4] == b"RIFF" and data[8:12] == b"WAVE":
+        return "audio/wav"
+    if data.startswith(b"OggS"):
+        return "audio/ogg"
+    if data.startswith(b"\x1aE\xdf\xa3"):
+        return "audio/webm"
+    if data.startswith(b"ID3") or (len(data) > 1 and data[0] == 0xFF and data[1] in (0xFB, 0xF3, 0xF2)):
+        return "audio/mp3"
+    if len(data) > 1 and data[0] == 0xFF and data[1] & 0xF6 == 0xF0:
+        return "audio/aac"  # raw ADTS
+    return None
+
+
 def _label(name: str) -> str:
     return name or "Un fișier"
 

@@ -44,6 +44,8 @@ python manage.py test bills       # demo scenarios + scan validation must stay g
 
 Every scan is validated before it is saved (docs/API_V2.md §6): file safety, period/month, amounts and VAT,
 duplicates, prompt-injection checks. Scans and questions are rate-limited per device (`SCAN_RATE`, `ASK_RATE`).
+Search bar and voice search: `GET /api/search/?q=ppc octombrie`, `POST /api/search/voice/` (docs/API_V2.md §7).
+After pulling, run `migrate` again (new field `Bill.paid_at`) and `seed_demo` for the demo payment dates.
 
 ## Run the app
 

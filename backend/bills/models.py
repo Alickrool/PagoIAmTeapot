@@ -56,6 +56,7 @@ class Bill(models.Model):
     index_type = models.CharField(max_length=16, choices=IndexType.choices, default=IndexType.NONE)
 
     status = models.CharField(max_length=16, choices=Status.choices, default=Status.UNPAID)
+    paid_at = models.DateField(null=True, blank=True)  # set by POST /pay/; the receipt the search shows
     source = models.CharField(max_length=16, choices=Source.choices, default=Source.SEED)
     file = models.FileField(upload_to="bills/", null=True, blank=True)  # first uploaded page (see BillFile)
     pdf_cache = models.FileField(upload_to="bills/pdf/", null=True, blank=True)  # combined pages, built on demand

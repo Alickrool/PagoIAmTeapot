@@ -44,4 +44,9 @@ class Command(BaseCommand):
                            for li in ppc.line_items.all()],
         })
         dump("extraction_sample.json", sample.model_dump(mode="json"))
+
+        # Search bar (docs/API_V2.md §7): one response per example query, for the app's mock mode and tests.
+        queries = ["ppc octombrie", "PPC", "luna trecută", "factura de lumină din septembrie", "neplătite",
+                   "de verificat", "orange", "bla bla"]
+        dump("search.json", {q: c.get("/api/search/", {"q": q}).json() for q in queries})
         self.stdout.write(self.style.SUCCESS(f"Fixtures written to {out}"))

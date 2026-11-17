@@ -9,9 +9,10 @@
     "total": "72.24",
     "currency": "RON",
     "status": "unpaid",
+    "paid_at": null,
     "audit_status": "ok",
     "source": "seed",
-    "created_at": "2026-11-16T19:48:35.384873Z",
+    "created_at": "2026-11-17T08:25:26.206804Z",
     "validation_status": "accepted"
   },
   {
@@ -24,9 +25,10 @@
     "total": "60.00",
     "currency": "RON",
     "status": "unpaid",
+    "paid_at": null,
     "audit_status": "warning",
     "source": "seed",
-    "created_at": "2026-11-16T19:48:35.376856Z",
+    "created_at": "2026-11-17T08:25:26.198344Z",
     "validation_status": "accepted"
   },
   {
@@ -39,9 +41,10 @@
     "total": "517.06",
     "currency": "RON",
     "status": "unpaid",
+    "paid_at": null,
     "audit_status": "critical",
     "source": "seed",
-    "created_at": "2026-11-16T19:48:35.369833Z",
+    "created_at": "2026-11-17T08:25:26.191203Z",
     "validation_status": "accepted"
   },
   {
@@ -54,9 +57,10 @@
     "total": "352.53",
     "currency": "RON",
     "status": "unpaid",
+    "paid_at": null,
     "audit_status": "warning",
     "source": "seed",
-    "created_at": "2026-11-16T19:48:35.353681Z",
+    "created_at": "2026-11-17T08:25:26.175445Z",
     "validation_status": "accepted"
   }
 ]

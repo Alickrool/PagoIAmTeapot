@@ -53,7 +53,7 @@ def make_bill(provider, category, y, m, items, *, vat=VAT, consumption=None, uni
         due_date=end + timedelta(days=20), total=D(net + vat_amount), vat_rate=vat, consumption=consumption,
         consumption_unit=unit, index_old=index_old,
         index_new=(index_old + consumption) if index_old is not None and consumption else None,
-        index_type=index_type, status="paid", source="seed",
+        index_type=index_type, status="paid", paid_at=end + timedelta(days=16), source="seed",
     )
     for i, li in enumerate(lines):
         LineItem.objects.create(bill=bill, order=i, **li)
@@ -133,5 +133,5 @@ class Command(BaseCommand):
         seed_water()
         # Current-month bills are the unpaid ones on the home screen.
         last = Bill.objects.order_by("-period_end").first().period_end
-        Bill.objects.filter(period_end=last).update(status="unpaid")
+        Bill.objects.filter(period_end=last).update(status="unpaid", paid_at=None)
         self.stdout.write(self.style.SUCCESS(f"Seeded {Bill.objects.count()} bills."))

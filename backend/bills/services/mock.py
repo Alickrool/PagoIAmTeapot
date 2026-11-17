@@ -43,3 +43,9 @@ def dispute(bill: dict, anomaly: dict | None) -> DisputeLetter:
               f"{bill['period_start']} - {bill['period_end']}, în valoare de {lei(bill['total'])}.\n\n"
               f"Motiv: {reason}\n\nVă rog să recalculați factura.\n\nCu stimă,\n[Nume Prenume]\n[Telefon]"),
     )
+
+
+def voice_query() -> "VoiceQuery":
+    from bills.services.ai import VoiceQuery
+
+    return VoiceQuery(transcript="Factura PPC din octombrie", query="factura PPC din octombrie")

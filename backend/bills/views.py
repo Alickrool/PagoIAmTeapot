@@ -1,4 +1,5 @@
 import re
+from datetime import date
 
 from django.conf import settings
 from django.http import FileResponse, HttpResponse, JsonResponse
@@ -14,7 +15,8 @@ from bills.models import AutoPayRule, Bill, BillFile, ValidationStatus
 from bills.throttles import AskThrottle, ScanThrottle
 from bills.serializers import (AskSerializer, AutoPayRuleSerializer, BillDetailSerializer, BillListSerializer,
                                DisputeSerializer, LineItemSerializer, PaySerializer, ReadingSerializer)
-from bills.services import ai, billpdf, market, mock, overview
+from bills.services import ai, billpdf, market, mock, overview, search
+from bills.services.validation import files as file_checks
 from bills.services.reading import ReadingError, submit_reading
 from bills.services.ro import lei
 from bills.services import scan as scan_service
@@ -151,7 +153,8 @@ class BillViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, viewsets.Gen
             if rule.block_if_anomaly and audit["status"] == "critical":
                 reasons.append("Auditul a găsit o anomalie gravă.")
         bill.status = Bill.Status.BLOCKED if reasons else Bill.Status.PAID
-        bill.save(update_fields=["status"])
+        bill.paid_at = date.today() if bill.status == Bill.Status.PAID else None
+        bill.save(update_fields=["status", "paid_at"])
         return Response({"status": bill.status, "reasons": reasons}, status=status.HTTP_200_OK)
 
 
@@ -181,6 +184,55 @@ class DashboardView(APIView):
             return Response(overview.dashboard(month))
         except overview.NoBills:
             return Response({"code": "no_bills", "detail": "Nu ai încă facturi. Scanează prima factură."}, status=404)
+
+
+class SearchView(APIView):
+    """GET /api/search/?q=ppc octombrie (+ provider/category/month/status params) - docs/API_V2.md §7."""
+
+    def get(self, request):
+        q = (request.query_params.get("q") or "").strip()[:200]
+        params = {k: request.query_params.get(k) for k in ("provider", "category", "month", "status")}
+        if not q and not any(params.values()):
+            return Response({"code": "empty_query", "detail": "Scrie ce cauți, de exemplu „PPC octombrie”."}, status=400)
+        try:
+            return Response(search.search(q, params))
+        except search.BadMonth:
+            return Response({"code": "bad_month", "detail": "Luna trebuie să arate ca 2026-10."}, status=400)
+
+
+class VoiceSearchView(APIView):
+    """POST /api/search/voice/ (multipart `audio`): Gemini writes down what was said, the search rules do the rest."""
+
+    parser_classes = [MultiPartParser, FormParser]
+    throttle_classes = [AskThrottle]
+
+    def post(self, request):
+        f = request.FILES.get("audio")
+        if not f:
+            return Response({"code": "no_audio", "detail": "Nu am primit nicio înregistrare."}, status=400)
+        if f.size > file_checks.MAX_AUDIO_BYTES:
+            return Response({"code": "audio_too_large",
+                             "detail": "Înregistrarea e prea lungă. Spune pe scurt ce cauți (cel mult 30 de secunde)."},
+                            status=400)
+        data = f.read()
+        mime = file_checks.sniff_audio(data)
+        if not mime:
+            return Response({"code": "unsupported_audio", "detail": "Nu pot citi înregistrarea asta. Încearcă din nou."},
+                            status=400)
+        names = sorted({p.bill.provider for p in overview.points()})
+        try:
+            heard = mock.voice_query() if settings.AI_MOCK else ai.transcribe_query(data, mime, names)
+        except (ai.AIUnavailable, genai_errors.APIError) as e:
+            return _ai_error_response(e)
+        query = heard.query.strip()[:200]
+        if not query:
+            return Response({"code": "not_understood", "transcript": heard.transcript,
+                             "detail": "N-am înțeles ce cauți. Încearcă: „factura PPC din octombrie”."}, status=422)
+        result = search.search(query, transcript=heard.transcript.strip()[:300])
+        if not result["filters"] or not any(result["filters"].values()):
+            return Response({"code": "not_understood", "transcript": heard.transcript,
+                             "detail": f"Am auzit „{heard.transcript}”, dar n-am înțeles ce factură cauți."}, status=422)
+        return Response(result)
 
 
 class ProvidersView(APIView):

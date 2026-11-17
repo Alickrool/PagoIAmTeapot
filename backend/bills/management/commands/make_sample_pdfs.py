@@ -2,13 +2,21 @@
 
 Gives us realistic "bad" bills to scan live in the demo, and text PDFs to test extraction/bbox on.
 Usage: python manage.py seed_demo && python manage.py make_sample_pdfs   (writes to ../samples/)
+
+Also two Apa Brasov variants for the anomaly demo (docs/TASKS.md, demo script):
+- demo_apa_brasov_2026_10_scumpa.pdf: water price 5,71 -> 14,90 lei/m3, every line, VAT and the total consistent
+  -> the audit catches it (price_spike; total jump + unit price in the provider history).
+- demo_apa_brasov_2026_09_modificata.pdf: the September bill with only the total raised by 100 lei by hand
+  -> validation catches it (lines_sum: the lines do not add up to the total) -> "De verificat".
 """
 
 import zlib
+from decimal import ROUND_HALF_UP, Decimal
 from pathlib import Path
 
 from django.conf import settings
 from django.core.management.base import BaseCommand
+from django.db import transaction
 from reportlab import rl_config
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
@@ -69,7 +77,7 @@ def render(bill: Bill, path: Path, font: str, bold: str):
         unit_meter = "m3" if bill.category == "gas" else bill.consumption_unit
         idx = [["Index vechi", "Index nou", "Tip citire", "Cantitate facturată"],
                [ro(bill.index_old, 0), ro(bill.index_new, 0) if bill.index_new else "-", INDEX_LABEL[bill.index_type],
-                f"{ro(bill.consumption, 0)} {bill.consumption_unit}"]]
+                f"{ro(bill.consumption, 0 if float(bill.consumption).is_integer() else 2)} {bill.consumption_unit}"]]
         story += [p(f"Citiri contor ({unit_meter})", 9, True),
                   Table(idx, colWidths=[40 * mm] * 4, style=[
                       ("FONT", (0, 0), (-1, -1), font, 8), ("FONT", (0, 0), (-1, 0), bold, 8),
@@ -80,7 +88,8 @@ def render(bill: Bill, path: Path, font: str, bold: str):
     rows = [["Denumire", "Cantitate", "U.M.", "Preț unitar (lei)", "Valoare (lei)"]]
     for li in bill.line_items.all():
         rows.append([li.label,
-                     ro(li.quantity, 0) if li.quantity is not None and li.unit_price is not None else "",
+                     ro(li.quantity, 0 if float(li.quantity).is_integer() else 2)
+                     if li.quantity is not None and li.unit_price is not None else "",
                      li.unit if li.unit_price is not None else "",
                      ro(li.unit_price, 4) if li.unit_price is not None else "",
                      ro(li.amount)])
@@ -100,6 +109,33 @@ def render(bill: Bill, path: Path, font: str, bold: str):
                       title=f"{bill.provider} demo bill").build(story)
 
 
+CENT = Decimal("0.01")
+WATER_PRICE_SCUMP = Decimal("14.90")  # lei/m3, the seeded one is 5.71
+VARIANTS = [  # (file, provider, (year, month), change)
+    ("demo_apa_brasov_2026_10_scumpa.pdf", "Apa Brasov", (2026, 10), "price"),
+    ("demo_apa_brasov_2026_09_modificata.pdf", "Apa Brasov", (2026, 9), "total"),
+]
+
+
+def _change(bill: Bill, change: str):
+    """Edit the bill in place (the caller rolls the transaction back)."""
+    if change == "total":
+        bill.total += Decimal("100.00")
+        bill.save(update_fields=["total"])
+        return
+    lines = list(bill.line_items.all())
+    water = next(li for li in lines if li.code == "water")
+    water.unit_price = WATER_PRICE_SCUMP
+    water.amount = (Decimal(str(water.quantity)) * WATER_PRICE_SCUMP).quantize(CENT, ROUND_HALF_UP)
+    water.save()
+    net = sum(li.amount for li in lines if li.kind != "tax")
+    vat = next(li for li in lines if li.code == "vat")
+    vat.amount = (net * bill.vat_rate / 100).quantize(CENT, ROUND_HALF_UP)
+    vat.save()
+    bill.total = net + vat.amount
+    bill.save(update_fields=["total"])
+
+
 class Command(BaseCommand):
     help = "Write demo PDF invoices for the current seeded bills into samples/."
 
@@ -115,4 +151,14 @@ class Command(BaseCommand):
                 self.stdout.write(f"  {path.name}")
             except PermissionError:
                 self.stdout.write(self.style.WARNING(f"  {path.name}: file is open in another program, close it and rerun"))
+        for name, provider, (year, month), change in VARIANTS:
+            bill = Bill.objects.filter(source="seed", provider=provider, period_end__year=year,
+                                       period_end__month=month).first()
+            if not bill:
+                continue
+            with transaction.atomic():
+                _change(bill, change)
+                render(Bill.objects.prefetch_related("line_items").get(pk=bill.pk), out / name, font, bold)
+                transaction.set_rollback(True)  # the demo data stays as seeded
+            self.stdout.write(f"  {name}")
         self.stdout.write(self.style.SUCCESS(f"Written to {out}"))

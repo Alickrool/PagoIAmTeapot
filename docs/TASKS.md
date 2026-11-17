@@ -164,6 +164,16 @@ Cut order if late: F5 → demo `paid_at` dates → voice auto-jump (keep the lis
    with reasons.
 6. **Scan tab, live** – 2 photos of a real paper bill (or `demo_ppc_2026_10.pdf`) → extracted and audited
    (instant from cache).
+6b. **Anomalies caught on a scan** (files from `make_sample_pdfs`, already cached):
+   - `demo_apa_brasov_2026_10_scumpa.pdf` – water was 🟢 a second ago. Same consumption, water price
+     5,71 → 14,90 lei/m3 → 🟡 "a crescut cu 86%, dar consumul chiar a scăzut; prețul apei s-a schimbat de la 5,71 la
+     14,9 lei/m3"; Furnizori → Apa Brasov: 🔴 "Factura a crescut" (+86%) and "Prețul pe unitate a crescut" (+89%).
+   - `demo_apa_brasov_2026_09_modificata.pdf` – the September bill with only the total raised by hand
+     (+100 lei) → "De verificat": "Rândurile facturii adună 73,38 lei, dar totalul citit e 173,38 lei." The line for
+     the pitch: **the AI reads, the rules check the bill's own math.** Then "E corect" is the user's call.
+   - Rehearsing again: `seed_demo` first (a second scan of a *different* edit of the same bill gets 409 duplicate;
+     the same file again just reopens the bill). Do not scan the original `demo_apa_brasov_2026_10.pdf` before the
+     expensive one: same bill number → 409.
 7. **Business** – retention (users open Pago for advice, not only to pay) + lead generation (switch-supplier
    commissions).
 

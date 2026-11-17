@@ -102,6 +102,12 @@
       "member": 1,
       "time": "2026-11-17 12:11",
       "headline": "Căutare cu vocea, arhivă cu glisare și trei moduri: Innovative, Profesional, Classic"
+    },
+    {
+      "n": 18,
+      "member": 2,
+      "time": "2026-11-17 13:37",
+      "headline": "Căutare cu vocea, arhivă de furnizori și scriptul prezentării; 307 teste trec"
     }
   ],
   "members": {
@@ -146,13 +152,13 @@
       "next": "Încercăm pe iPhone glisarea și căutarea cu vocea, apoi unim frontend-final în main pentru demo."
     },
     "2": {
-      "building": "Pago Bill Audit: înainte să apeși «Plătește», AI-ul citește factura, ți-o explică pe înțeles și prinde greșelile (index estimat, scumpiri ascunse, opțiuni plătite uitate). Ca un contabil de buzunar care se uită pe factură în locul tău.",
-      "works": "Verificarea la scanare e gata pe backend și urcată pe GitHub: 52 de teste trecute și un test live cu Gemini, 33 din 33 de pași corecți. Ce citește AI-ul e doar o propunere: regulile din cod verifică luna și anul, sumele și TVA-ul, iar factura din altă lună intră în luna ei. Aceeași factură trimisă a doua oară, chiar ca PDF după poze, e oprită (409). Fișierele periculoase sunt respinse, pozele se salvează fără date GPS, iar o factură cu text care dă ordine AI-ului e semnalată și își păstrează suma tipărită. Butonul „E corect” confirmă factura.",
-      "blocking": "Nimic blocant pe backend. Partea din aplicație pentru avertismente și „E corect” e gata pe ramura colegului și urmează să intre în main. Când modelul Gemini e ocupat (503), trece pe modelul de rezervă și scanarea durează 25–30 de secunde. Cheia Gemini trebuie rotită înainte de demo, iar rețeaua de la birou o testăm azi dimineață.",
+      "building": "AI Pago: înainte să apeși «Plătește», AI-ul citește factura, ți-o explică pe înțeles și prinde greșelile (index estimat, scumpiri ascunse, opțiuni plătite uitate). Ca un contabil de buzunar care se uită pe factură în locul tău.",
+      "works": "Backend-ul e gata pentru demo: căutare scrisă și cu vocea („Arată-mi factura PPC din octombrie” deschide factura), data plății pe fiecare factură, arhivă pentru furnizorii vechi și refuz clar când un fișier are mai multe facturi. Am pregătit două facturi demo cu anomalii: apă scumpă (+86%) și un total modificat de mână, prins ca „De verificat”. Când Gemini e aglomerat, fiecare cerere are limită de timp și trece pe modele ușoare. Scriptul prezentării de 10 minute e scris; 307 teste trec (83 backend, 224 aplicație).",
+      "blocking": "Nimic blocant. Cheia Gemini trebuie rotită înainte de demo.",
       "features": [
         {
           "name": "Claude Code",
-          "for": "a scris backend-ul Django, traducerea în română, PDF-ul facturii, verificarea datelor la scanare, testele și comiturile"
+          "for": "a scris backend-ul Django, verificarea scanărilor, căutarea cu vocea, arhiva, testele și scriptul prezentării"
         },
         {
           "name": "Căutare pe web",
@@ -177,9 +183,21 @@
         {
           "name": "Sarcini programate",
           "for": "actualizează pagina Pulse la fiecare 2 ore"
+        },
+        {
+          "name": "Mod de planificare",
+          "for": "a făcut planul pentru căutare cu vocea și planul prezentării"
+        },
+        {
+          "name": "Întrebare cu variante",
+          "for": "a ales ce înseamnă „chitanță” în căutare și limba prezentării"
+        },
+        {
+          "name": "Export sesiune",
+          "for": "a salvat jurnalul întregii sesiuni, fără cheia Gemini"
         }
       ],
-      "next": "Azi dimineață: testăm telefonul pe Wi-Fi-ul de la birou, rotim cheia Gemini, încărcăm datele demo și punem facturile demo în cache, ca scanarea pe scenă să fie instantanee."
+      "next": "Înregistrăm clipurile demo, repetăm scriptul de 10 minute și prezentăm MVP-ul juriului."
     }
   }
 }

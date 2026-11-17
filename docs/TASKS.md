@@ -120,7 +120,7 @@ If Gemini cannot read the phone's audio, the keyboard's own dictation mic types 
 | S3 | `GET /api/search/` | ✅ |
 | S4 | `Bill.paid_at` (migration), set by `pay`, dates for paid demo bills, in serializers | ✅ run `migrate`; demo dates need `seed_demo` |
 | S5 | `POST /api/search/voice/`: audio checks, Gemini speech → query, mock, rate limit (spike a real phone m4a first) | ✅ mock + tests; live check below |
-| S6 | Tests + live e2e with a real voice clip | ✅ 10 tests (`tests_search.py`), 76 total; live clip: open |
+| S6 | Tests + live e2e with a real voice clip | ✅ 10 tests (`tests_search.py`), 76 total; live Gemini on a WAV clip: "Arată-mi factura PPC din octombrie" → `PPC octombrie` in 2.2 s. Left: one m4a recorded by the phone (with F4) |
 
 ### Frontend – Person A
 

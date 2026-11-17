@@ -11,7 +11,7 @@ money as **strings**, dates `YYYY-MM-DD`). Types on the app side: `mobile/src/ap
 | 4 | `GET /api/providers/{slug}/` | Provider history screen | ✅ **live** |
 | 5 | `GET /api/bills/{id}/pdf/` | Bill screen: "Vezi factura (PDF)" | ✅ **live** |
 | 6 | Scan validation: `validation` in `BillDetail`, `POST /api/bills/{id}/confirm/` | Scan result + bill screen | ✅ **live** (app side: AV-tasks in [TASKS.md](TASKS.md)) |
-| 7 | `GET /api/search/?q=`, `POST /api/search/voice/`, `paid_at` | Search bar + voice (all tabs) | ✅ **live** (voice: mock + tests; live check with a phone recording pending) |
+| 7 | `GET /api/search/?q=`, `POST /api/search/voice/`, `paid_at` | Search bar + voice (all tabs) | ✅ **live** (voice checked live on WAV; phone m4a still to try) |
 
 The app already works without 2–4: until they exist (404) it computes the same JSON on the phone from
 `GET /bills/` + `GET /bills/{id}/` (`mobile/src/api/derive.ts`). That file is a **reference implementation** of the

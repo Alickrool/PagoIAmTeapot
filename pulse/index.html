@@ -6,388 +6,284 @@
 <title>I'm a teapot · Pulse</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
-:root {
-  --ground: #EFF2F7;
-  --surface: #FFF;
-  --surface-2: #F7F8FB;
-  --ink: #161F28;
-  --muted: #5A6B8F;
-  --line: #DFE6F6;
-  --accent: #2B59C3;
-  --accent-soft: #E6F0FF;
-  --on-accent: #FFF;
-  --shadow: 0 0 1.4px rgba(24,24,27,.3), 0 5.6px 11.2px rgba(24,24,27,.1);
-  --yellow: #FFD54A;
+:root{
+  --ground:#EFF2F7;--surface:#FFF;--surface-2:#F7F8FB;--ink:#161F28;--muted:#5A6B8F;--line:#DFE6F6;
+  --accent:#2B59C3;--accent-soft:#E6F0FF;--on-accent:#FFF;
+  --shadow:0 0 1.4px rgba(24,24,27,.3),0 5.6px 11.2px rgba(24,24,27,.1);
+  --yellow:#FFD54A;
 }
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --ground: #0E131A;
-    --surface: #171D26;
-    --surface-2: #1D2430;
-    --ink: #E6EAF2;
-    --muted: #94A3BD;
-    --line: #2A3240;
-    --accent: #7FA2F5;
-    --accent-soft: #1A2747;
-    --on-accent: #0E131A;
-    --shadow: 0 4px 12px rgba(0,0,0,.35);
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ground:#0E131A;--surface:#171D26;--surface-2:#1D2430;--ink:#E6EAF2;--muted:#94A3BD;--line:#2A3240;
+    --accent:#7FA2F5;--accent-soft:#1A2747;--on-accent:#0E131A;
+    --shadow:0 4px 12px rgba(0,0,0,.35);
   }
 }
-:root[data-theme="dark"] {
-  --ground: #0E131A;
-  --surface: #171D26;
-  --surface-2: #1D2430;
-  --ink: #E6EAF2;
-  --muted: #94A3BD;
-  --line: #2A3240;
-  --accent: #7FA2F5;
-  --accent-soft: #1A2747;
-  --on-accent: #0E131A;
-  --shadow: 0 4px 12px rgba(0,0,0,.35);
+:root[data-theme="dark"]{
+  --ground:#0E131A;--surface:#171D26;--surface-2:#1D2430;--ink:#E6EAF2;--muted:#94A3BD;--line:#2A3240;
+  --accent:#7FA2F5;--accent-soft:#1A2747;--on-accent:#0E131A;
+  --shadow:0 4px 12px rgba(0,0,0,.35);
 }
-* { box-sizing: border-box; }
-html { background: var(--ground); }
-body {
-  margin: 0;
-  background: var(--ground);
-  color: var(--ink);
-  font-family: 'Poppins', system-ui, sans-serif;
-  font-size: 15px;
-  line-height: 1.6;
-  overflow-wrap: anywhere;
-}
-h1, h2, h3, p, ul, ol { margin: 0; }
-h1 { font-weight: 800; font-size: clamp(30px, 5.2vw, 46px); line-height: 1.1; }
-h2 { font-weight: 700; font-size: 1.35rem; line-height: 1.3; }
-h3 { font-weight: 600; font-size: 1rem; line-height: 1.35; }
-svg { max-width: 100%; height: auto; }
-.page {
-  max-width: 880px;
-  margin: 0 auto;
-  padding: 20px 16px 32px;
-  display: flex;
-  flex-direction: column;
-  gap: 28px;
-}
-.masthead { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
-.wordmark { font-weight: 800; font-size: 1.6rem; color: var(--accent); letter-spacing: -.02em; line-height: 1; }
-.sep { width: 1px; height: 22px; background: var(--line); }
-.mast-sub { font-size: .8rem; color: var(--muted); }
-
-.poster {
-  position: relative;
-  overflow: hidden;
-  background: linear-gradient(160deg, #2A56D4, #1E43B8);
-  color: #FFF;
-  border-radius: 28px;
-  padding: 28px;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 24px;
-  align-items: center;
-  max-width: 100%;
-}
-.poster::after {
-  content: "";
-  position: absolute; right: -80px; bottom: -100px;
-  width: 340px; height: 340px;
-  background: radial-gradient(circle, rgba(255,213,74,.55), rgba(255,213,74,0) 65%);
-  pointer-events: none;
-}
-.poster-text { flex: 1 1 280px; min-width: 0; position: relative; z-index: 1; display: flex; flex-direction: column; gap: 14px; }
-.poster h1 { color: #FFD54A; }
-.poster .subline { font-weight: 700; font-size: 1.05rem; color: #FFF; }
-.poster .analogy { color: rgba(255,255,255,.92); font-size: .95rem; }
-.poster-art { flex: 0 1 200px; margin: 0 auto; position: relative; z-index: 1; }
-.poster-art svg { display: block; width: 100%; max-width: 200px; margin: 0 auto; }
-
-.section { display: flex; flex-direction: column; gap: 14px; }
-.card {
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: 18px;
-  box-shadow: var(--shadow);
-  max-width: 100%;
-}
-.icon {
-  flex: none;
-  width: 48px; height: 48px;
-  border-radius: 14px;
-  background: var(--accent-soft);
-  color: var(--accent);
-  display: grid; place-items: center;
-}
-.icon svg { width: 26px; height: 26px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
-
-.pill {
-  display: inline-flex; align-items: center;
-  border-radius: 999px;
-  padding: 2px 10px;
-  font-size: .72rem; font-weight: 700; line-height: 1.5;
-  white-space: nowrap;
-}
-.pill.m1 { background: var(--accent); color: var(--on-accent); }
-.pill.m2 { background: #FFD54A; color: #161F28; }
-.pill.here { background: #FFD54A; color: #161F28; }
-
-/* flow */
-.flow { display: flex; align-items: stretch; gap: 10px; }
-.step { flex: 1 1 0; min-width: 0; padding: 16px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 8px; }
-.step svg { width: 100%; max-width: 180px; }
-.step .num { font-size: .72rem; font-weight: 700; color: var(--muted); }
-.arrow { flex: none; align-self: center; width: 34px; color: var(--accent); }
-.arrow svg { width: 34px; height: 34px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
-
-/* trail */
-.trail { list-style: none; padding: 0; display: flex; flex-direction: column; gap: 10px; position: relative; }
-.trail::before { content: ""; position: absolute; left: 21px; top: 10px; bottom: 10px; width: 2px; background: var(--line); }
-.stop { position: relative; display: flex; gap: 12px; align-items: flex-start; }
-.dot {
-  flex: none; position: relative; z-index: 1;
-  width: 44px; height: 44px; border-radius: 50%;
-  background: var(--surface); border: 2px solid var(--accent);
-  color: var(--accent); font-weight: 700; font-size: .8rem;
-  display: grid; place-items: center;
-}
-.stop.last .dot { background: #FFD54A; border-color: #FFD54A; color: #161F28; }
-.stop .card { flex: 1 1 auto; min-width: 0; padding: 12px 14px; display: flex; flex-direction: column; gap: 6px; }
-.stop .meta { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
-.stop time { font-size: .75rem; color: var(--muted); }
-.stop p { font-weight: 500; }
-
-/* tools */
-.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; }
-.tile { padding: 16px; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
-.tile-head { display: flex; align-items: center; gap: 12px; }
-.uses { list-style: none; padding: 0; display: flex; flex-direction: column; gap: 8px; }
-.uses li { display: flex; gap: 8px; align-items: flex-start; font-size: .88rem; }
-.uses li span:last-child { min-width: 0; }
-
-/* next */
-.nexts { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; }
-.next { padding: 16px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
-.next-head { display: flex; align-items: center; gap: 10px; }
-
-footer { border-top: 1px solid var(--line); padding-top: 14px; font-size: .8rem; color: var(--muted); }
-
-@media (max-width: 640px) {
-  .flow { flex-direction: column; }
-  .arrow { transform: rotate(90deg); }
-  .poster { padding: 22px; border-radius: 24px; }
-}
+*{box-sizing:border-box}
+html{background:var(--ground)}
+body{margin:0;background:var(--ground);color:var(--ink);font-family:'Poppins',system-ui,sans-serif;font-size:15px;line-height:1.6;overflow-wrap:anywhere}
+h1{font-weight:800;font-size:clamp(30px,5.2vw,46px);line-height:1.1;margin:0}
+h2{font-weight:700;font-size:1.35rem;margin:0 0 14px}
+h3{font-weight:600;font-size:1rem;margin:0}
+p{margin:0}
+svg{max-width:100%;height:auto;display:block}
+.page{max-width:880px;margin:0 auto;padding:20px 16px 32px;display:flex;flex-direction:column;gap:28px}
+.mast{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.wordmark{font-weight:800;font-size:1.7rem;color:var(--accent);text-transform:lowercase;letter-spacing:-.02em}
+.sep{width:1px;height:24px;background:var(--line)}
+.mast small{color:var(--muted);font-size:.8rem}
+.poster{background:linear-gradient(160deg,#2A56D4,#1E43B8);color:#FFF;border-radius:28px;padding:28px;position:relative;overflow:hidden;display:grid;grid-template-columns:1.2fr 1fr;gap:22px;align-items:center}
+.poster::after{content:"";position:absolute;right:-90px;bottom:-110px;width:340px;height:340px;background:radial-gradient(circle,rgba(255,213,74,.55),rgba(255,213,74,0) 65%);pointer-events:none}
+.poster>*{position:relative;z-index:1}
+.poster h1{color:var(--yellow)}
+.poster .sub{font-weight:700;margin-top:12px;font-size:1.05rem}
+.poster .ana{margin-top:12px;padding:12px 14px;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.38);border-radius:16px;font-size:.92rem}
+.poster .ana b{color:var(--yellow)}
+.phone{border:1px solid rgba(255,255,255,.38);background:rgba(255,255,255,.14);border-radius:34px;padding:14px;max-width:260px;width:100%;margin:0 auto}
+@media (max-width:640px){.poster{grid-template-columns:1fr;padding:22px}}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);padding:18px;max-width:100%}
+.flow{display:grid;grid-template-columns:1fr auto 1fr auto 1fr;gap:10px;align-items:stretch}
+.step{text-align:center;display:flex;flex-direction:column;gap:8px;align-items:center}
+.step svg{width:100%;max-width:170px}
+.step h3{color:var(--accent)}
+.step p{font-size:.85rem;color:var(--muted)}
+.arrow{align-self:center;color:var(--accent)}
+.arrow svg{width:34px}
+@media (max-width:640px){.flow{grid-template-columns:1fr}.arrow{justify-self:center;transform:rotate(90deg)}}
+.trail{list-style:none;margin:0;padding:0;position:relative}
+.trail::before{content:"";position:absolute;left:19px;top:8px;bottom:8px;width:3px;background:var(--line);border-radius:3px}
+.stop{position:relative;display:flex;gap:14px;align-items:flex-start;padding:0 0 12px}
+.dot{flex:none;width:40px;height:40px;border-radius:50%;background:var(--accent-soft);color:var(--accent);border:2px solid var(--accent);display:grid;place-items:center;font-weight:700;font-size:.8rem;z-index:1}
+.stop.here .dot{background:var(--yellow);color:#161F28;border-color:var(--yellow)}
+.stop .box{flex:1;min-width:0;background:var(--surface);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);padding:10px 14px}
+.stop .meta{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:.75rem;color:var(--muted);margin-bottom:2px}
+.stop .box p{font-weight:500}
+.pill{display:inline-block;border-radius:999px;padding:1px 10px;font-size:.72rem;font-weight:700;line-height:1.6}
+.m1{background:var(--accent);color:var(--on-accent)}
+.m2{background:#FFD54A;color:#161F28}
+.here-pill{background:#FFD54A;color:#161F28}
+.tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px}
+.tile{display:flex;flex-direction:column;gap:10px;min-width:0}
+.tile .head{display:flex;align-items:center;gap:12px}
+.ico{flex:none;width:48px;height:48px;border-radius:14px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center}
+.ico svg{width:26px;height:26px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.uses{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.uses li{display:flex;gap:8px;align-items:flex-start;font-size:.85rem}
+.uses .pill{flex:none;margin-top:2px}
+.next{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media (max-width:640px){.next{grid-template-columns:1fr}}
+.next .card{display:flex;flex-direction:column;gap:8px}
+footer{color:var(--muted);font-size:.8rem;border-top:1px solid var(--line);padding-top:14px}
+.ln{fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.tx{fill:currentColor;font-family:'Poppins',system-ui,sans-serif}
 </style>
 </head>
 <body>
 <div class="page">
 
-  <header class="masthead">
-    <span class="wordmark">pago</span>
-    <span class="sep" aria-hidden="true"></span>
-    <span class="mast-sub">AI Hackathon · I'm a teapot</span>
-  </header>
+<header class="mast">
+  <span class="wordmark">pago</span>
+  <span class="sep"></span>
+  <small>AI Hackathon · I'm a teapot</small>
+</header>
 
-  <!-- 2. HERO POSTER -->
-  <section class="poster" aria-labelledby="hero-title">
-    <div class="poster-text">
-      <h1 id="hero-title">Pago Bill Audit</h1>
-      <p class="subline">AI-ul citește factura înainte să apeși „Plătește” și prinde greșelile.</p>
-      <p class="analogy">Ca un detectiv și un contabil de buzunar: se uită pe factură în locul tău și vorbește pe limba fiecărui client.</p>
-    </div>
-    <div class="poster-art" aria-hidden="true">
-      <svg viewBox="0 0 200 260" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-        <rect x="8" y="8" width="184" height="244" rx="34" fill="rgba(255,255,255,.14)" stroke="rgba(255,255,255,.38)"/>
-        <line x1="78" y1="22" x2="122" y2="22" stroke="rgba(255,255,255,.38)"/>
-        <!-- bill -->
-        <path d="M56 50h72v110l-9-6-9 6-9-6-9 6-9-6-9 6-9-6z" stroke="#FFF" transform="translate(-4 0)"/>
-        <line x1="66" y1="72" x2="112" y2="72" stroke="#FFF"/>
-        <line x1="66" y1="90" x2="104" y2="90" stroke="#FFF"/>
-        <line x1="66" y1="108" x2="112" y2="108" stroke="#FFF"/>
-        <line x1="66" y1="126" x2="92" y2="126" stroke="#FFD54A"/>
-        <!-- magnifier -->
-        <circle cx="132" cy="150" r="26" stroke="#FFD54A"/>
-        <line x1="151" y1="169" x2="170" y2="188" stroke="#FFD54A"/>
-        <path d="M121 150l8 8 14-16" stroke="#FFD54A"/>
-        <!-- sparkles -->
-        <path d="M40 200v12M34 206h12" stroke="#FFD54A"/>
-        <path d="M150 52v8M146 56h8" stroke="#FFF"/>
-        <circle cx="100" cy="226" r="4" stroke="#FFF"/>
+<section class="poster" aria-label="Ce construim">
+  <div>
+    <h1>Factura ta, pe înțelesul tău</h1>
+    <p class="sub">Înainte să apeși «Plătește», AI-ul citește factura și prinde greșelile.</p>
+    <p class="ana"><b>Ca</b> un detectiv de buzunar care vorbește pe limba fiecărui client: tineri, vârsta de mijloc, seniori.</p>
+  </div>
+  <div class="phone">
+    <svg viewBox="0 0 200 260" role="img" aria-label="Telefon cu o factură și o lupă" style="color:#FFF">
+      <rect x="40" y="10" width="120" height="240" rx="22" class="ln" stroke="#FFF"/>
+      <line x1="85" y1="24" x2="115" y2="24" class="ln" stroke="#FFF"/>
+      <rect x="62" y="48" width="76" height="96" rx="8" class="ln" stroke="#FFF"/>
+      <line x1="72" y1="66" x2="120" y2="66" class="ln" stroke="#FFF"/>
+      <line x1="72" y1="82" x2="128" y2="82" class="ln" stroke="#FFF"/>
+      <line x1="72" y1="98" x2="108" y2="98" class="ln" stroke="#FFF"/>
+      <circle cx="118" cy="122" r="20" class="ln" stroke="#FFD54A"/>
+      <line x1="132" y1="137" x2="148" y2="154" class="ln" stroke="#FFD54A"/>
+      <path d="M109 122l7 7 12-13" class="ln" stroke="#FFD54A"/>
+      <rect x="62" y="186" width="76" height="30" rx="15" class="ln" stroke="#FFD54A"/>
+      <path d="M86 201l8 8 14-16" class="ln" stroke="#FFD54A"/>
+    </svg>
+  </div>
+</section>
+
+<section aria-label="Problemă, idee, demo">
+  <h2>Problemă → Idee → Demo</h2>
+  <div class="card flow" style="color:var(--ink)">
+    <div class="step">
+      <svg viewBox="0 0 170 130" role="img" aria-label="Factură cu semn de întrebare și semn de exclamare">
+        <rect x="45" y="12" width="80" height="106" rx="8" class="ln" stroke="currentColor"/>
+        <line x1="58" y1="32" x2="100" y2="32" class="ln" stroke="currentColor"/>
+        <line x1="58" y1="46" x2="110" y2="46" class="ln" stroke="currentColor"/>
+        <text x="85" y="98" text-anchor="middle" font-size="40" font-weight="800" class="tx" style="fill:var(--accent)">?</text>
+        <circle cx="140" cy="30" r="14" class="ln" stroke="#D93B3B"/>
+        <line x1="140" y1="23" x2="140" y2="32" class="ln" stroke="#D93B3B"/>
+        <circle cx="140" cy="38" r="1" class="ln" stroke="#D93B3B"/>
       </svg>
+      <h3>Problema</h3>
+      <p>Factura e greu de înțeles și are greșeli ascunse.</p>
     </div>
-  </section>
-
-  <!-- 3. PROBLEM -> IDEA -> DEMO -->
-  <section class="section" aria-labelledby="flow-title">
-    <h2 id="flow-title">Problemă → Idee → Demo</h2>
-    <div class="flow">
-      <figure class="card step" style="margin:0">
-        <svg viewBox="0 0 180 130" fill="none" stroke="var(--ink)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="Factură încurcată cu semn de întrebare">
-          <path d="M50 14h64v90l-8-5-8 5-8-5-8 5-8-5-8 5-8-5z" fill="var(--surface-2)"/>
-          <line x1="60" y1="34" x2="104" y2="34"/>
-          <line x1="60" y1="50" x2="96" y2="50"/>
-          <line x1="60" y1="66" x2="104" y2="66"/>
-          <circle cx="132" cy="84" r="20" stroke="var(--accent)" fill="var(--accent-soft)"/>
-          <path d="M125 78a7 7 0 1 1 10 6c-3 2-3 3-3 6" stroke="var(--accent)"/>
-          <circle cx="132" cy="97" r=".6" stroke="var(--accent)"/>
-          <path d="M22 40l6 6M28 40l-6 6" stroke="var(--muted)"/>
-        </svg>
-        <span class="num">1</span>
-        <h3>Problemă</h3>
-        <p>Facturile sunt greu de înțeles.</p>
-      </figure>
-      <div class="arrow" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 12h15M13 6l6 6-6 6"/></svg></div>
-      <figure class="card step" style="margin:0">
-        <svg viewBox="0 0 180 130" fill="none" stroke="var(--ink)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="Lupă peste o factură">
-          <path d="M34 14h60v88l-7-5-7 5-7-5-7 5-7-5-7 5-7-5z" fill="var(--surface-2)"/>
-          <line x1="44" y1="34" x2="84" y2="34"/>
-          <line x1="44" y1="50" x2="78" y2="50"/>
-          <line x1="44" y1="66" x2="84" y2="66"/>
-          <circle cx="112" cy="70" r="26" stroke="var(--accent)" fill="var(--accent-soft)" fill-opacity=".6"/>
-          <line x1="131" y1="89" x2="152" y2="110" stroke="var(--accent)"/>
-          <path d="M101 70l8 8 14-16" stroke="var(--accent)"/>
-        </svg>
-        <span class="num">2</span>
-        <h3>Idee</h3>
-        <p>AI-ul citește, explică și caută greșeli.</p>
-      </figure>
-      <div class="arrow" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 12h15M13 6l6 6-6 6"/></svg></div>
-      <figure class="card step" style="margin:0">
-        <svg viewBox="0 0 180 130" fill="none" stroke="var(--ink)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="Telefon cu bifă">
-          <rect x="60" y="8" width="60" height="114" rx="14" fill="var(--surface-2)"/>
-          <line x1="80" y1="17" x2="100" y2="17"/>
-          <circle cx="90" cy="60" r="18" stroke="var(--accent)" fill="var(--accent-soft)"/>
-          <path d="M81 60l7 7 12-13" stroke="var(--accent)"/>
-          <line x1="72" y1="94" x2="108" y2="94"/>
-          <line x1="72" y1="104" x2="96" y2="104"/>
-          <path d="M30 30v10M25 35h10M148 82v10M143 87h10" stroke="var(--accent)"/>
-        </svg>
-        <span class="num">3</span>
-        <h3>Demo</h3>
-        <p>Scanezi factura pe telefon și vezi răspunsul.</p>
-      </figure>
+    <div class="arrow"><svg viewBox="0 0 34 24"><path d="M3 12h26M20 4l9 8-9 8" class="ln" stroke="currentColor"/></svg></div>
+    <div class="step">
+      <svg viewBox="0 0 170 130" role="img" aria-label="Lupă deasupra unei facturi">
+        <rect x="35" y="14" width="70" height="96" rx="8" class="ln" stroke="currentColor"/>
+        <line x1="48" y1="34" x2="90" y2="34" class="ln" stroke="currentColor"/>
+        <line x1="48" y1="48" x2="92" y2="48" class="ln" stroke="currentColor"/>
+        <circle cx="105" cy="68" r="24" class="ln" stroke="var(--accent)"/>
+        <line x1="123" y1="86" x2="146" y2="112" class="ln" stroke="var(--accent)"/>
+        <path d="M94 68l8 8 14-16" class="ln" stroke="var(--accent)"/>
+      </svg>
+      <h3>Ideea</h3>
+      <p>AI-ul citește factura, o explică și prinde greșelile.</p>
     </div>
-  </section>
-
-  <!-- 4. TRAIL -->
-  <section class="section" aria-labelledby="trail-title">
-    <h2 id="trail-title">Drumul nostru</h2>
-    <ol class="trail">
-      <li class="stop"><span class="dot">1</span><div class="card"><div class="meta"><span class="pill m2">M2</span><time>2026-11-16 12:44</time></div><p>Backend-ul citește facturi cu Gemini și le verifică automat</p></div></li>
-      <li class="stop"><span class="dot">2</span><div class="card"><div class="meta"><span class="pill m1">M1</span><time>2026-11-16 13:21</time></div><p>Aplicația are 3 interfețe pe generații și citește facturi reale cu Gemini</p></div></li>
-      <li class="stop"><span class="dot">3</span><div class="card"><div class="meta"><span class="pill m2">M2</span><time>2026-11-16 13:37</time></div><p>Toate ecranele noi primesc date reale din backend; testăm pe telefon prin hotspot</p></div></li>
-      <li class="stop"><span class="dot">4</span><div class="card"><div class="meta"><span class="pill m1">M1</span><time>2026-11-16 14:11</time></div><p>Butonul de interfețe e gata, iar aplicația e unită în main</p></div></li>
-      <li class="stop"><span class="dot">5</span><div class="card"><div class="meta"><span class="pill m2">M2</span><time>2026-11-16 15:37</time></div><p>Backend-ul vorbește românește, deschide facturile scanate ca PDF și a trecut toate cele 28 de verificări</p></div></li>
-      <li class="stop"><span class="dot">6</span><div class="card"><div class="meta"><span class="pill m1">M1</span><time>2026-11-16 17:29</time></div><p>Scanare cu camera, swipe între tab-uri și un plan pentru verificarea facturilor</p></div></li>
-      <li class="stop"><span class="dot">7</span><div class="card"><div class="meta"><span class="pill m2">M2</span><time>2026-11-16 17:37</time></div><p>Backend-ul e curat și gata de lucru; așteptăm planul nou făcut împreună cu colegul</p></div></li>
-      <li class="stop"><span class="dot">8</span><div class="card"><div class="meta"><span class="pill m1">M1</span><time>2026-11-16 18:42</time></div><p>Planul de verificare a facturilor e scris și așteaptă discuția în echipă</p></div></li>
-      <li class="stop"><span class="dot">9</span><div class="card"><div class="meta"><span class="pill m2">M2</span><time>2026-11-16 19:37</time></div><p>Backend-ul e pregătit pentru planul de verificare la scanare; îl facem după discuția în echipă</p></div></li>
-      <li class="stop"><span class="dot">10</span><div class="card"><div class="meta"><span class="pill m1">M1</span><time>2026-11-16 21:08</time></div><p>Aplicația a pornit pe rețeaua nouă, iar PDF-ul facturii se deschide</p></div></li>
-      <li class="stop"><span class="dot">11</span><div class="card"><div class="meta"><span class="pill m2">M2</span><time>2026-11-16 21:49</time></div><p>Backend-ul verifică acum fiecare factură scanată: luna, sumele, duplicatele și fișierele periculoase</p></div></li>
-      <li class="stop"><span class="dot">12</span><div class="card"><div class="meta"><span class="pill m1">M1</span><time>2026-11-16 22:12</time></div><p>Testul de integritate a trecut: aplicația și backend-ul vorbesc aceeași limbă</p></div></li>
-      <li class="stop"><span class="dot">13</span><div class="card"><div class="meta"><span class="pill m2">M2</span><time>2026-11-16 23:37</time></div><p>Verificarea la scanare a trecut testul live cu Gemini; pregătim demo-ul de mâine</p></div></li>
-      <li class="stop"><span class="dot">14</span><div class="card"><div class="meta"><span class="pill m1">M1</span><time>2026-11-17 10:00</time></div><p>Aplicația arată verificările de la scanare și are formularul de furnizori; 111 teste trec</p></div></li>
-      <li class="stop"><span class="dot">15</span><div class="card"><div class="meta"><span class="pill m2">M2</span><time>2026-11-17 10:00</time></div><p>Ziua demo-ului: backend-ul e gata; azi testăm la birou și rotim cheia Gemini</p></div></li>
-      <li class="stop last"><span class="dot">16</span><div class="card"><div class="meta"><span class="pill m1">M1</span><span class="pill here">Ești aici</span><time>2026-11-17 10:11</time></div><p>Aplicația rulează pe hotspot, gata pentru testul de demo</p></div></li>
-    </ol>
-  </section>
-
-  <!-- 5. CUM FOLOSIM CLAUDE -->
-  <section class="section" aria-labelledby="tools-title">
-    <h2 id="tools-title">Cum folosim Claude</h2>
-    <div class="tiles">
-
-      <article class="card tile">
-        <div class="tile-head"><span class="icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 7l-5 5 5 5M16 7l5 5-5 5M14 4l-4 16"/></svg></span><h3>Claude Code</h3></div>
-        <ul class="uses">
-          <li><span class="pill m1">M1</span><span>a făcut verificările de scanare în aplicație, formularul de furnizori și roata fără reîncărcare, a scris 111 teste și raportul lor</span></li>
-          <li><span class="pill m2">M2</span><span>a scris backend-ul Django, traducerea în română, PDF-ul facturii, verificarea datelor la scanare, testele și comiturile</span></li>
-        </ul>
-      </article>
-
-      <article class="card tile">
-        <div class="tile-head"><span class="icon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"/></svg></span><h3>Browserul integrat</h3></div>
-        <ul class="uses">
-          <li><span class="pill m1">M1</span><span>a testat fiecare interfață la mărime de telefon</span></li>
-          <li><span class="pill m2">M2</span><span>a citit anunțul hackathonului ca să verifice dacă ideea se potrivește</span></li>
-        </ul>
-      </article>
-
-      <article class="card tile">
-        <div class="tile-head"><span class="icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M7 10l3 2-3 2M13 15h4"/></svg></span><h3>Panoul Terminal</h3></div>
-        <ul class="uses">
-          <li><span class="pill m1">M1</span><span>a pornit login-ul Expo pe laptop</span></li>
-          <li><span class="pill m2">M2</span><span>a pornit backend-ul și Expo cu codul QR pentru telefon</span></li>
-        </ul>
-      </article>
-
-      <article class="card tile">
-        <div class="tile-head"><span class="icon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="6" r="3"/><circle cx="5" cy="19" r="3"/><circle cx="19" cy="19" r="3"/><path d="M12 9v4M12 13l-6 3M12 13l6 3"/></svg></span><h3>Subagent</h3></div>
-        <ul class="uses">
-          <li><span class="pill m1">M1</span><span>desenează această pagină Pulse</span></li>
-          <li><span class="pill m2">M2</span><span>desenează această pagină Pulse</span></li>
-        </ul>
-      </article>
-
-      <article class="card tile">
-        <div class="tile-head"><span class="icon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l3 2M9 3h6"/></svg></span><h3>Sarcini programate</h3></div>
-        <ul class="uses">
-          <li><span class="pill m1">M1</span><span>actualizează pagina Pulse la fiecare 2 ore</span></li>
-          <li><span class="pill m2">M2</span><span>actualizează pagina Pulse la fiecare 2 ore</span></li>
-        </ul>
-      </article>
-
-      <article class="card tile">
-        <div class="tile-head"><span class="icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M8 21h8M12 18v3M7 14l3-4 3 3 4-6"/></svg></span><h3>Artifact (canvas de design)</h3></div>
-        <ul class="uses">
-          <li><span class="pill m1">M1</span><span>mockup-ul pe generații, cu 20 de reguli de design și tonul fiecărei vârste</span></li>
-        </ul>
-      </article>
-
-      <article class="card tile">
-        <div class="tile-head"><span class="icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v11H9l-5 4z"/><path d="M9 9.5a3 3 0 1 1 4 2.7c-.7.3-1 .8-1 1.3"/></svg></span><h3>Întrebare cu variante</h3></div>
-        <ul class="uses">
-          <li><span class="pill m1">M1</span><span>a ales între ecrane direct în aplicație și un design separat</span></li>
-        </ul>
-      </article>
-
-      <article class="card tile">
-        <div class="tile-head"><span class="icon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg></span><h3>Căutare pe web</h3></div>
-        <ul class="uses">
-          <li><span class="pill m2">M2</span><span>a verificat faptele despre TVA, plafonări și tarifele ANRE</span></li>
-        </ul>
-      </article>
-
-      <article class="card tile">
-        <div class="tile-head"><span class="icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z"/><path d="M4 21V5M9 8h6"/></svg></span><h3>Skill-ul claude-api</h3></div>
-        <ul class="uses">
-          <li><span class="pill m2">M2</span><span>a luat documentația SDK la începutul proiectului</span></li>
-        </ul>
-      </article>
-
+    <div class="arrow"><svg viewBox="0 0 34 24"><path d="M3 12h26M20 4l9 8-9 8" class="ln" stroke="currentColor"/></svg></div>
+    <div class="step">
+      <svg viewBox="0 0 170 130" role="img" aria-label="Telefon cu cameră și bifă">
+        <rect x="55" y="8" width="60" height="114" rx="14" class="ln" stroke="currentColor"/>
+        <circle cx="85" cy="48" r="14" class="ln" stroke="var(--accent)"/>
+        <circle cx="85" cy="48" r="5" class="ln" stroke="var(--accent)"/>
+        <rect x="68" y="82" width="34" height="20" rx="10" class="ln" stroke="var(--accent)"/>
+        <path d="M77 92l5 5 10-10" class="ln" stroke="var(--accent)"/>
+      </svg>
+      <h3>Demo</h3>
+      <p>Scanezi factura, vezi avertismentele, apeși „E corect”.</p>
     </div>
-  </section>
+  </div>
+</section>
 
-  <!-- 6. PASUL URMATOR -->
-  <section class="section" aria-labelledby="next-title">
-    <h2 id="next-title">Pasul următor</h2>
-    <div class="nexts">
-      <article class="card next">
-        <div class="next-head"><span class="icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span><span class="pill m1">M1</span></div>
-        <p>Unim frontend-final în main și testăm aplicația pe telefon înainte de demo.</p>
-      </article>
-      <article class="card next">
-        <div class="next-head"><span class="icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span><span class="pill m2">M2</span></div>
-        <p>Azi dimineață: testăm telefonul pe Wi-Fi-ul de la birou, rotim cheia Gemini, încărcăm datele demo și punem facturile demo în cache, ca scanarea pe scenă să fie instantanee.</p>
-      </article>
+<section aria-label="Traseul">
+  <h2>Traseul nostru</h2>
+  <ol class="trail">
+    <li class="stop"><span class="dot">1</span><div class="box"><div class="meta"><span class="pill m2">M2</span><span>2026-11-16 12:44</span></div><p>Backend-ul citește facturi cu Gemini și le verifică automat</p></div></li>
+    <li class="stop"><span class="dot">2</span><div class="box"><div class="meta"><span class="pill m1">M1</span><span>2026-11-16 13:21</span></div><p>Aplicația are 3 interfețe pe generații și citește facturi reale cu Gemini</p></div></li>
+    <li class="stop"><span class="dot">3</span><div class="box"><div class="meta"><span class="pill m2">M2</span><span>2026-11-16 13:37</span></div><p>Toate ecranele noi primesc date reale din backend; testăm pe telefon prin hotspot</p></div></li>
+    <li class="stop"><span class="dot">4</span><div class="box"><div class="meta"><span class="pill m1">M1</span><span>2026-11-16 14:11</span></div><p>Butonul de interfețe e gata, iar aplicația e unită în main</p></div></li>
+    <li class="stop"><span class="dot">5</span><div class="box"><div class="meta"><span class="pill m2">M2</span><span>2026-11-16 15:37</span></div><p>Backend-ul vorbește românește, deschide facturile scanate ca PDF și a trecut toate cele 28 de verificări</p></div></li>
+    <li class="stop"><span class="dot">6</span><div class="box"><div class="meta"><span class="pill m1">M1</span><span>2026-11-16 17:29</span></div><p>Scanare cu camera, swipe între tab-uri și un plan pentru verificarea facturilor</p></div></li>
+    <li class="stop"><span class="dot">7</span><div class="box"><div class="meta"><span class="pill m2">M2</span><span>2026-11-16 17:37</span></div><p>Backend-ul e curat și gata de lucru; așteptăm planul nou făcut împreună cu colegul</p></div></li>
+    <li class="stop"><span class="dot">8</span><div class="box"><div class="meta"><span class="pill m1">M1</span><span>2026-11-16 18:42</span></div><p>Planul de verificare a facturilor e scris și așteaptă discuția în echipă</p></div></li>
+    <li class="stop"><span class="dot">9</span><div class="box"><div class="meta"><span class="pill m2">M2</span><span>2026-11-16 19:37</span></div><p>Backend-ul e pregătit pentru planul de verificare la scanare; îl facem după discuția în echipă</p></div></li>
+    <li class="stop"><span class="dot">10</span><div class="box"><div class="meta"><span class="pill m1">M1</span><span>2026-11-16 21:08</span></div><p>Aplicația a pornit pe rețeaua nouă, iar PDF-ul facturii se deschide</p></div></li>
+    <li class="stop"><span class="dot">11</span><div class="box"><div class="meta"><span class="pill m2">M2</span><span>2026-11-16 21:49</span></div><p>Backend-ul verifică acum fiecare factură scanată: luna, sumele, duplicatele și fișierele periculoase</p></div></li>
+    <li class="stop"><span class="dot">12</span><div class="box"><div class="meta"><span class="pill m1">M1</span><span>2026-11-16 22:12</span></div><p>Testul de integritate a trecut: aplicația și backend-ul vorbesc aceeași limbă</p></div></li>
+    <li class="stop"><span class="dot">13</span><div class="box"><div class="meta"><span class="pill m2">M2</span><span>2026-11-16 23:37</span></div><p>Verificarea la scanare a trecut testul live cu Gemini; pregătim demo-ul de mâine</p></div></li>
+    <li class="stop"><span class="dot">14</span><div class="box"><div class="meta"><span class="pill m1">M1</span><span>2026-11-17 10:00</span></div><p>Aplicația arată verificările de la scanare și are formularul de furnizori; 111 teste trec</p></div></li>
+    <li class="stop"><span class="dot">15</span><div class="box"><div class="meta"><span class="pill m2">M2</span><span>2026-11-17 10:00</span></div><p>Ziua demo-ului: backend-ul e gata; azi testăm la birou și rotim cheia Gemini</p></div></li>
+    <li class="stop"><span class="dot">16</span><div class="box"><div class="meta"><span class="pill m1">M1</span><span>2026-11-17 10:11</span></div><p>Aplicația rulează pe hotspot, gata pentru testul de demo</p></div></li>
+    <li class="stop here"><span class="dot">17</span><div class="box"><div class="meta"><span class="pill m1">M1</span><span>2026-11-17 12:11</span></div><p>Căutare cu vocea, arhivă cu glisare și trei moduri: Innovative, Profesional, Classic</p><div class="meta" style="margin:6px 0 0"><span class="pill here-pill">Ești aici</span></div></div></li>
+  </ol>
+</section>
+
+<section aria-label="Cum folosim Claude">
+  <h2>Cum folosim Claude</h2>
+  <div class="tiles">
+
+    <article class="card tile">
+      <div class="head"><span class="ico"><svg viewBox="0 0 24 24"><path d="M8 7l-5 5 5 5M16 7l5 5-5 5M14 4l-4 16"/></svg></span><h3>Claude Code</h3></div>
+      <ul class="uses">
+        <li><span class="pill m1">M1</span><span>a făcut căutarea cu vocea, arhiva cu glisare și modul corporate, a scris testele și rapoartele despre modificările backend-ului</span></li>
+        <li><span class="pill m2">M2</span><span>a scris backend-ul Django, traducerea în română, PDF-ul facturii, verificarea datelor la scanare, testele și comiturile</span></li>
+      </ul>
+    </article>
+
+    <article class="card tile">
+      <div class="head"><span class="ico"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M3 9h18"/><circle cx="6.5" cy="6.5" r=".6"/></svg></span><h3>Browserul integrat</h3></div>
+      <ul class="uses">
+        <li><span class="pill m1">M1</span><span>a încercat căutarea, arhivarea și glisarea pe serverul real, la mărime de telefon</span></li>
+        <li><span class="pill m2">M2</span><span>a citit anunțul hackathonului ca să verifice dacă ideea se potrivește</span></li>
+      </ul>
+    </article>
+
+    <article class="card tile">
+      <div class="head"><span class="ico"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3M21 14v7h-4M14 21v-1"/></svg></span><h3>Trimitere de fișiere</h3></div>
+      <ul class="uses">
+        <li><span class="pill m1">M1</span><span>a trimis codul QR care deschide aplicația pe telefon</span></li>
+      </ul>
+    </article>
+
+    <article class="card tile">
+      <div class="head"><span class="ico"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M3 9h18M9 9v12"/></svg></span><h3>Artifact (canvas de design)</h3></div>
+      <ul class="uses">
+        <li><span class="pill m1">M1</span><span>mockup-ul pe generații, cu 20 de reguli de design și tonul fiecărei vârste</span></li>
+      </ul>
+    </article>
+
+    <article class="card tile">
+      <div class="head"><span class="ico"><svg viewBox="0 0 24 24"><path d="M9 9a3 3 0 1 1 4.5 2.6c-1 .6-1.5 1.2-1.5 2.4"/><circle cx="12" cy="17.5" r=".6"/><circle cx="12" cy="12" r="9"/></svg></span><h3>Întrebare cu variante</h3></div>
+      <ul class="uses">
+        <li><span class="pill m1">M1</span><span>a ales între ecrane direct în aplicație și un design separat</span></li>
+      </ul>
+    </article>
+
+    <article class="card tile">
+      <div class="head"><span class="ico"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M7 10l3 2-3 2M12 15h5"/></svg></span><h3>Panoul Terminal</h3></div>
+      <ul class="uses">
+        <li><span class="pill m1">M1</span><span>a pornit login-ul Expo pe laptop</span></li>
+        <li><span class="pill m2">M2</span><span>a pornit backend-ul și Expo cu codul QR pentru telefon</span></li>
+      </ul>
+    </article>
+
+    <article class="card tile">
+      <div class="head"><span class="ico"><svg viewBox="0 0 24 24"><circle cx="12" cy="5" r="2.5"/><circle cx="5" cy="19" r="2.5"/><circle cx="19" cy="19" r="2.5"/><path d="M12 7.5V12M12 12L6 17M12 12l6 5"/></svg></span><h3>Subagent</h3></div>
+      <ul class="uses">
+        <li><span class="pill m1">M1</span><span>desenează această pagină Pulse</span></li>
+        <li><span class="pill m2">M2</span><span>desenează această pagină Pulse</span></li>
+      </ul>
+    </article>
+
+    <article class="card tile">
+      <div class="head"><span class="ico"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span><h3>Sarcini programate</h3></div>
+      <ul class="uses">
+        <li><span class="pill m1">M1</span><span>actualizează pagina Pulse la fiecare 2 ore</span></li>
+        <li><span class="pill m2">M2</span><span>actualizează pagina Pulse la fiecare 2 ore</span></li>
+      </ul>
+    </article>
+
+    <article class="card tile">
+      <div class="head"><span class="ico"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M16 16l5 5M4 11h14M11 4c-3 3-3 11 0 14M11 4c3 3 3 11 0 14" opacity=".0"/><path d="M4 11h14M11 4c-2.5 3-2.5 11 0 14M11 4c2.5 3 2.5 11 0 14"/></svg></span><h3>Căutare pe web</h3></div>
+      <ul class="uses">
+        <li><span class="pill m2">M2</span><span>a verificat faptele despre TVA, plafonări și tarifele ANRE</span></li>
+      </ul>
+    </article>
+
+    <article class="card tile">
+      <div class="head"><span class="ico"><svg viewBox="0 0 24 24"><path d="M5 4h11l3 3v13H5z"/><path d="M9 11h6M9 15h6"/></svg></span><h3>Skill-ul claude-api</h3></div>
+      <ul class="uses">
+        <li><span class="pill m2">M2</span><span>a luat documentația SDK la începutul proiectului</span></li>
+      </ul>
+    </article>
+
+  </div>
+</section>
+
+<section aria-label="Pasul următor">
+  <h2>Pasul următor</h2>
+  <div class="next">
+    <div class="card">
+      <div><span class="pill m1">M1</span></div>
+      <p>Încercăm pe iPhone glisarea și căutarea cu vocea, apoi unim frontend-final în main pentru demo.</p>
     </div>
-  </section>
+    <div class="card">
+      <div><span class="pill m2">M2</span></div>
+      <p>Azi dimineață: testăm telefonul pe Wi-Fi-ul de la birou, rotim cheia Gemini, încărcăm datele demo și punem facturile demo în cache, ca scanarea pe scenă să fie instantanee.</p>
+    </div>
+  </div>
+</section>
 
-  <footer>Făcut la Pago</footer>
+<footer>Făcut la Pago</footer>
+
 </div>
-
-<script type="application/json" id="pulse-data">
-{
+<script type="application/json" id="pulse-data">{
   "team": "I'm a teapot",
   "ticks": [
     {
@@ -485,21 +381,31 @@ footer { border-top: 1px solid var(--line); padding-top: 14px; font-size: .8rem;
       "member": 1,
       "time": "2026-11-17 10:11",
       "headline": "Aplicația rulează pe hotspot, gata pentru testul de demo"
+    },
+    {
+      "n": 17,
+      "member": 1,
+      "time": "2026-11-17 12:11",
+      "headline": "Căutare cu vocea, arhivă cu glisare și trei moduri: Innovative, Profesional, Classic"
     }
   ],
   "members": {
     "1": {
-      "building": "Aplicația mobilă Pago Bill Audit (Expo) în 3 interfețe, Gen Z, Millennials și Senior: vezi facturile lunii într-o roată, scanezi factura din poze sau PDF, Gemini o citește și prinde greșelile. Ca un detectiv care vorbește pe limba fiecărui client.",
-      "works": "Aplicația arată verificările de la scanare: mesajul „Am pus factura în luna X”, cardul cu „E corect” pentru facturile de verificat, deschiderea facturii deja scanate și marcajul „De verificat” în liste. Roata lunii se schimbă fără reîncărcare, iar istoricul furnizorului colorează fiecare factură (roșu = anomalie, galben = atenție). „Adaugă furnizor” are acum un formular cu furnizori din România și pasul „Adaugă factură”. 111 teste automate în aplicație trec.",
-      "blocking": "Cheia Gemini trebuie rotită înainte de demo. Ultimele modificări din aplicație sunt pe branch-ul frontend-final și trebuie unite în main. Laptopul schimbă rețeaua între Wi-Fi și hotspot, iar adresa serverului trebuie actualizată de fiecare dată.",
+      "building": "Aplicația mobilă AI Pago (Expo) în 3 interfețe: Innovative pentru tineri, Profesional pentru vârsta de mijloc și Classic pentru seniori. Vezi facturile lunii, cauți o factură scriind sau vorbind, scanezi factura, iar Gemini o citește și prinde greșelile. Ca un detectiv care vorbește pe limba fiecărui client.",
+      "works": "Bara de căutare de sus găsește facturi după furnizor, lună sau status, chiar scrise greșit („enji” → Engie), iar microfonul caută cu vocea. Furnizorii cu probleme au toată căsuța roșie sau galbenă. Un furnizor cu care ai încheiat contractul se mută în Arhivă glisând spre stânga, cu animație și „Anulează”, iar facturile lui rămân. Modul Profesional are aspect corporate și o „Sinteză a lunii” care se poate exporta. 224 de teste automate în aplicație trec.",
+      "blocking": "Vocea înregistrată pe Android (m4a) nu e înțeleasă de Gemini; pe iPhone aplicația trimite WAV, care merge. Glisarea și vocea mai trebuie încercate pe telefon înainte de demo.",
       "features": [
         {
           "name": "Claude Code",
-          "for": "a făcut verificările de scanare în aplicație, formularul de furnizori și roata fără reîncărcare, a scris 111 teste și raportul lor"
+          "for": "a făcut căutarea cu vocea, arhiva cu glisare și modul corporate, a scris testele și rapoartele despre modificările backend-ului"
         },
         {
           "name": "Browserul integrat",
-          "for": "a testat fiecare interfață la mărime de telefon"
+          "for": "a încercat căutarea, arhivarea și glisarea pe serverul real, la mărime de telefon"
+        },
+        {
+          "name": "Trimitere de fișiere",
+          "for": "a trimis codul QR care deschide aplicația pe telefon"
         },
         {
           "name": "Artifact (canvas de design)",
@@ -522,7 +428,7 @@ footer { border-top: 1px solid var(--line); padding-top: 14px; font-size: .8rem;
           "for": "actualizează pagina Pulse la fiecare 2 ore"
         }
       ],
-      "next": "Unim frontend-final în main și testăm aplicația pe telefon înainte de demo."
+      "next": "Încercăm pe iPhone glisarea și căutarea cu vocea, apoi unim frontend-final în main pentru demo."
     },
     "2": {
       "building": "Pago Bill Audit: înainte să apeși «Plătește», AI-ul citește factura, ți-o explică pe înțeles și prinde greșelile (index estimat, scumpiri ascunse, opțiuni plătite uitate). Ca un contabil de buzunar care se uită pe factură în locul tău.",

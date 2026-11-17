@@ -79,7 +79,8 @@ function Tabs() {
       >
         <Tab.Screen name="Overview" component={OverviewScreen} />
         <Tab.Screen name="Scan" component={ScanScreen} />
-        <Tab.Screen name="Providers" component={ProvidersScreen} />
+        {/* no tab swipe here: swiping a provider to the left archives it */}
+        <Tab.Screen name="Providers" component={ProvidersScreen} options={{ swipeEnabled: false }} />
       </Tab.Navigator>
     </View>
   );

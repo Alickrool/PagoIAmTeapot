@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Pago Bill Audit",
+    "name": "AI Pago",
     "slug": "pago-bill-audit",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -25,7 +25,7 @@
       [
         "expo-audio",
         {
-          "microphonePermission": "Pago folosește microfonul ca să cauți facturi cu vocea."
+          "microphonePermission": "AI Pago folosește microfonul ca să cauți facturi cu vocea."
         }
       ]
     ]

@@ -238,6 +238,8 @@ export interface ProviderSummary {
   audit_status: AuditStatus;
   anomalies_count: number;
   totals: string[]; // oldest first, max 12
+  archived?: boolean; // §8: the user left this provider; still listed with all its bills, at the bottom
+  archived_at?: string | null; // ISO date-time
 }
 
 export interface AnomalyShort {
@@ -291,6 +293,8 @@ export interface ProviderHistory {
   category: Category;
   currency: string;
   consumption_unit: string;
+  archived?: boolean; // §8
+  archived_at?: string | null;
   stats: {
     average_total: string | null;
     min_total: string;

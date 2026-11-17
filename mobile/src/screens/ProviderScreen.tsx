@@ -8,7 +8,10 @@ import { Button } from '../components/Button';
 import { MonthBars } from '../components/charts/MonthBars';
 import { ProviderAvatar } from '../components/ProviderAvatar';
 import type { ScreenProps } from '../navigation';
-import { useStyles, useTheme, type Theme } from '../mode';
+import { archivedLabel } from '../archive';
+import { ConfirmDialog } from '../components/ConfirmDialog';
+import { Toast } from '../components/Toast';
+import { useCopy, useStyles, useTheme, type Theme } from '../mode';
 import { category, deltaColor, deltaLabel, money, monthLabel } from '../theme';
 import { Icon } from '../components/Icon';
 import { paidLabel, rowTone } from '../status';
@@ -19,8 +22,13 @@ const INDEX_LABEL: Record<IndexType, string> = { real: 'Index citit', self: 'Aut
 
 export default function ProviderScreen({ route, navigation }: ScreenProps<'Provider'>) {
   const t = useTheme();
+  const copy = useCopy();
   const styles = useStyles(makeStyles);
   const { slug, provider, month } = route.params;
+  const [confirmArchive, setConfirmArchive] = useState(false);
+  const [archiving, setArchiving] = useState(false);
+  const [archiveError, setArchiveError] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ key: number; text: string } | null>(null);
   const [data, setData] = useState<ProviderHistory | null>(null);
   const [statuses, setStatuses] = useState<Map<number, ValidationStatus>>(new Map());
   const [paidDates, setPaidDates] = useState<Map<number, string>>(new Map());
@@ -75,86 +83,134 @@ export default function ProviderScreen({ route, navigation }: ScreenProps<'Provi
   const open = (id: number) => navigation.navigate('Bill', { id });
   const unit = data.consumption_unit;
 
-  return (
-    <ScrollView style={{ backgroundColor: t.bg }} contentContainerStyle={{ padding: 16, gap: 14, paddingBottom: 32 }}>
-      {/* Header + stats */}
-      <View style={styles.card}>
-        <View style={styles.headerRow}>
-          <ProviderAvatar provider={data.provider} category={data.category} size={48} />
-          <View style={{ flex: 1 }}>
-            <Text style={styles.title}>{data.provider}</Text>
-            <Text style={styles.muted}>
-              {c.label} · {data.bills.length} facturi
-            </Text>
-          </View>
-        </View>
-        <View style={styles.stats}>
-          <Stat label="Medie" value={data.stats.average_total ? money(data.stats.average_total) : '–'} />
-          <Stat label="Minim" value={money(data.stats.min_total)} />
-          <Stat label="Maxim" value={money(data.stats.max_total)} />
-        </View>
-        <View style={styles.stats}>
-          <Stat label="Ultimele 12 luni" value={money(data.stats.sum_12m)} />
-          {data.stats.average_consumption != null && <Stat label="Consum mediu" value={`${data.stats.average_consumption} ${unit}`} />}
-        </View>
-      </View>
+  /** §8: contract ended -> archive (only the look changes, every bill stays); or bring it back. */
+  const setArchived = async (on: boolean) => {
+    setConfirmArchive(false);
+    setArchiveError(null);
+    setArchiving(true);
+    try {
+      const card = await api.setProviderArchived(slug, on);
+      setData((d) => (d ? { ...d, archived: card.archived ?? on, archived_at: card.archived_at ?? null } : d));
+      setToast({ key: Date.now(), text: on ? copy.archivedToast(data.provider) : copy.unarchivedToast(data.provider) });
+    } catch (e) {
+      setArchiveError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setArchiving(false);
+    }
+  };
 
-      {/* Chart */}
-      <View style={[styles.card, { gap: 12 }]}>
-        <View style={styles.headerRow}>
-          <Text style={[styles.section, { flex: 1, marginTop: 0 }]}>Ultimele 12 facturi</Text>
-          {hasConsumption && (
-            <View style={styles.toggle}>
-              {(['total', 'consumption'] as Metric[]).map((m) => (
-                <Pressable key={m} onPress={() => setMetric(m)} style={[styles.toggleBtn, metric === m && styles.toggleOn]}>
-                  <Text style={[styles.toggleText, metric === m && { color: t.onAccent }]}>{m === 'total' ? 'RON' : unit}</Text>
-                </Pressable>
-              ))}
+  return (
+    <View style={{ flex: 1, backgroundColor: t.bg }}>
+      <ScrollView style={{ backgroundColor: t.bg }} contentContainerStyle={{ padding: 16, gap: 14, paddingBottom: 32 }}>
+        {/* Header + stats */}
+        <View style={styles.card}>
+          <View style={styles.headerRow}>
+            <ProviderAvatar provider={data.provider} category={data.category} size={48} />
+            <View style={{ flex: 1 }}>
+              <Text style={styles.title}>{data.provider}</Text>
+              <Text style={styles.muted}>
+                {c.label} · {data.bills.length} facturi
+              </Text>
+            </View>
+          </View>
+          {data.archived && (
+            <View style={styles.archivedBanner} testID="archived-banner">
+              <Icon name="archive" size={18} color={t.muted} />
+              <Text style={styles.archivedText}>{archivedLabel(data.archived_at)} · facturile rămân aici</Text>
             </View>
           )}
+          <View style={styles.stats}>
+            <Stat label="Medie" value={data.stats.average_total ? money(data.stats.average_total) : '–'} />
+            <Stat label="Minim" value={money(data.stats.min_total)} />
+            <Stat label="Maxim" value={money(data.stats.max_total)} />
+          </View>
+          <View style={styles.stats}>
+            <Stat label="Ultimele 12 luni" value={money(data.stats.sum_12m)} />
+            {data.stats.average_consumption != null && <Stat label="Consum mediu" value={`${data.stats.average_consumption} ${unit}`} />}
+          </View>
         </View>
-        <MonthBars
-          bars={chronological.map((b) => ({
-            key: String(b.id),
-            label: monthLabel(b.period_end.slice(0, 7), true),
-            value: metric === 'total' ? Number(b.total) : (b.consumption ?? 0),
-            status: b.audit_status,
-            highlight: b.index_type === 'estimated',
-          }))}
-          selected={selected != null ? String(selected) : String(data.bills[0]?.id)}
-          onSelect={(k) => setSelected(Number(k))}
-        />
-        <View style={styles.legend}>
-          <Legend color={t.accent} label="Selectată" />
-          <Legend color={t.sev.critical.color} label="Index estimat" />
-          <Legend color={t.sev.critical.color} label="Problemă găsită" dot />
-        </View>
-        {selected != null && <SelectedBill bill={data.bills.find((b) => b.id === selected)!} unit={unit} onOpen={open} />}
-      </View>
 
-      {/* Discrepancies */}
-      <Text style={styles.section}>
-        Discrepanțe {data.discrepancies.length > 0 ? `· ${data.discrepancies.length}` : ''}
-      </Text>
-      {data.discrepancies.length === 0 ? (
-        <View style={[styles.card, { flexDirection: 'row', gap: 10, alignItems: 'center' }]}>
-          <Icon name="check" color={t.sev.ok.color} size={26} />
-          <Text style={{ flex: 1, color: t.text }}>Fiecare factură e în linie cu cele de dinainte.</Text>
+        {/* Chart */}
+        <View style={[styles.card, { gap: 12 }]}>
+          <View style={styles.headerRow}>
+            <Text style={[styles.section, { flex: 1, marginTop: 0 }]}>Ultimele 12 facturi</Text>
+            {hasConsumption && (
+              <View style={styles.toggle}>
+                {(['total', 'consumption'] as Metric[]).map((m) => (
+                  <Pressable key={m} onPress={() => setMetric(m)} style={[styles.toggleBtn, metric === m && styles.toggleOn]}>
+                    <Text style={[styles.toggleText, metric === m && { color: t.onAccent }]}>{m === 'total' ? 'RON' : unit}</Text>
+                  </Pressable>
+                ))}
+              </View>
+            )}
+          </View>
+          <MonthBars
+            bars={chronological.map((b) => ({
+              key: String(b.id),
+              label: monthLabel(b.period_end.slice(0, 7), true),
+              value: metric === 'total' ? Number(b.total) : (b.consumption ?? 0),
+              status: b.audit_status,
+              highlight: b.index_type === 'estimated',
+            }))}
+            selected={selected != null ? String(selected) : String(data.bills[0]?.id)}
+            onSelect={(k) => setSelected(Number(k))}
+          />
+          <View style={styles.legend}>
+            <Legend color={t.accent} label="Selectată" />
+            <Legend color={t.sev.critical.color} label="Index estimat" />
+            <Legend color={t.sev.critical.color} label="Problemă găsită" dot />
+          </View>
+          {selected != null && <SelectedBill bill={data.bills.find((b) => b.id === selected)!} unit={unit} onOpen={open} />}
         </View>
-      ) : (
-        data.discrepancies.map((d) => <DiscrepancyCard key={d.id} d={d} onPress={() => open(d.bill_id)} />)
-      )}
 
-      {/* Timeline */}
-      <Text style={styles.section}>Toate facturile · {data.bills.length}</Text>
-      <View style={styles.list}>
-        <ScrollView style={{ maxHeight: t.mode === 'senior' ? 420 : 340 }} nestedScrollEnabled showsVerticalScrollIndicator>
-          {data.bills.map((b) => (
-            <BillRow key={b.id} bill={b} unit={unit} flagged={isFlagged(statuses.get(b.id))} paidAt={paidDates.get(b.id)} onPress={() => open(b.id)} />
-          ))}
-        </ScrollView>
-      </View>
-    </ScrollView>
+        {/* Discrepancies */}
+        <Text style={styles.section}>
+          Discrepanțe {data.discrepancies.length > 0 ? `· ${data.discrepancies.length}` : ''}
+        </Text>
+        {data.discrepancies.length === 0 ? (
+          <View style={[styles.card, { flexDirection: 'row', gap: 10, alignItems: 'center' }]}>
+            <Icon name="check" color={t.sev.ok.color} size={26} />
+            <Text style={{ flex: 1, color: t.text }}>Fiecare factură e în linie cu cele de dinainte.</Text>
+          </View>
+        ) : (
+          data.discrepancies.map((d) => <DiscrepancyCard key={d.id} d={d} onPress={() => open(d.bill_id)} />)
+        )}
+
+        {/* Timeline */}
+        <Text style={styles.section}>Toate facturile · {data.bills.length}</Text>
+        <View style={styles.list}>
+          <ScrollView style={{ maxHeight: t.mode === 'senior' ? 420 : 340 }} nestedScrollEnabled showsVerticalScrollIndicator>
+            {data.bills.map((b) => (
+              <BillRow key={b.id} bill={b} unit={unit} flagged={isFlagged(statuses.get(b.id))} paidAt={paidDates.get(b.id)} onPress={() => open(b.id)} />
+            ))}
+          </ScrollView>
+        </View>
+
+        {/* Archive (§8) */}
+        <View style={{ gap: 6, marginTop: 6 }}>
+          {archiving ? (
+            <ActivityIndicator color={t.accent} style={{ height: t.touch }} />
+          ) : data.archived ? (
+            <Button title={copy.unarchive} variant="secondary" onPress={() => setArchived(false)} />
+          ) : (
+            <Button title={copy.archive} variant="ghost" onPress={() => setConfirmArchive(true)} />
+          )}
+          {!data.archived && <Text style={[styles.muted, { textAlign: 'center', fontSize: t.fs(12) }]}>Pentru când ai încheiat contractul. Facturile rămân.</Text>}
+          {archiveError && <Text style={{ color: t.sev.critical.color, textAlign: 'center', fontSize: t.fs(13) }}>{archiveError}</Text>}
+        </View>
+      </ScrollView>
+      <ConfirmDialog
+        visible={confirmArchive}
+        title={copy.archiveTitle(data.provider)}
+        body={copy.archiveBody}
+        confirm={copy.archive}
+        cancel="Renunță"
+        primary="confirm"
+        onConfirm={() => setArchived(true)}
+        onCancel={() => setConfirmArchive(false)}
+      />
+      {toast && <Toast key={toast.key} message={toast.text} />}
+    </View>
   );
 }
 
@@ -284,6 +340,8 @@ const makeStyles = (t: Theme) =>
   toggleText: { fontSize: 12, fontWeight: '700', color: t.muted },
   legend: { flexDirection: 'row', gap: 14, flexWrap: 'wrap' },
   selected: { flexDirection: 'row', alignItems: 'center', backgroundColor: t.surface2, borderRadius: 12, padding: 12 },
+  archivedBanner: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: t.surface2, borderRadius: 12, paddingVertical: 10, paddingHorizontal: 12 },
+  archivedText: { flex: 1, color: t.muted, fontWeight: '700', fontSize: t.fs(13) },
   disc: { borderRadius: 14, padding: 14, gap: 6, borderLeftWidth: 4 },
   discTitle: { fontWeight: '700', fontSize: 15 },
   discMonth: { fontSize: 12, color: t.muted, fontWeight: '600' },

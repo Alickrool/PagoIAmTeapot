@@ -94,7 +94,7 @@ describe('rowTone (whole-box colour in provider history)', () => {
     expect(rowTone('ok', t)).toBeNull();
   });
 
-  it('works in the dark Gen Z theme too', () => {
+  it('works in the dark Innovative theme too', () => {
     expect(rowTone('critical', THEMES.genz)!.bg).toBe(THEMES.genz.sev.critical.bg);
   });
 });

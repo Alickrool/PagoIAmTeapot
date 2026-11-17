@@ -96,21 +96,31 @@
       "member": 1,
       "time": "2026-11-17 10:11",
       "headline": "Aplicația rulează pe hotspot, gata pentru testul de demo"
+    },
+    {
+      "n": 17,
+      "member": 1,
+      "time": "2026-11-17 12:11",
+      "headline": "Căutare cu vocea, arhivă cu glisare și trei moduri: Innovative, Profesional, Classic"
     }
   ],
   "members": {
     "1": {
-      "building": "Aplicația mobilă Pago Bill Audit (Expo) în 3 interfețe, Gen Z, Millennials și Senior: vezi facturile lunii într-o roată, scanezi factura din poze sau PDF, Gemini o citește și prinde greșelile. Ca un detectiv care vorbește pe limba fiecărui client.",
-      "works": "Aplicația arată verificările de la scanare: mesajul „Am pus factura în luna X”, cardul cu „E corect” pentru facturile de verificat, deschiderea facturii deja scanate și marcajul „De verificat” în liste. Roata lunii se schimbă fără reîncărcare, iar istoricul furnizorului colorează fiecare factură (roșu = anomalie, galben = atenție). „Adaugă furnizor” are acum un formular cu furnizori din România și pasul „Adaugă factură”. 111 teste automate în aplicație trec.",
-      "blocking": "Cheia Gemini trebuie rotită înainte de demo. Ultimele modificări din aplicație sunt pe branch-ul frontend-final și trebuie unite în main. Laptopul schimbă rețeaua între Wi-Fi și hotspot, iar adresa serverului trebuie actualizată de fiecare dată.",
+      "building": "Aplicația mobilă AI Pago (Expo) în 3 interfețe: Innovative pentru tineri, Profesional pentru vârsta de mijloc și Classic pentru seniori. Vezi facturile lunii, cauți o factură scriind sau vorbind, scanezi factura, iar Gemini o citește și prinde greșelile. Ca un detectiv care vorbește pe limba fiecărui client.",
+      "works": "Bara de căutare de sus găsește facturi după furnizor, lună sau status, chiar scrise greșit („enji” → Engie), iar microfonul caută cu vocea. Furnizorii cu probleme au toată căsuța roșie sau galbenă. Un furnizor cu care ai încheiat contractul se mută în Arhivă glisând spre stânga, cu animație și „Anulează”, iar facturile lui rămân. Modul Profesional are aspect corporate și o „Sinteză a lunii” care se poate exporta. 224 de teste automate în aplicație trec.",
+      "blocking": "Vocea înregistrată pe Android (m4a) nu e înțeleasă de Gemini; pe iPhone aplicația trimite WAV, care merge. Glisarea și vocea mai trebuie încercate pe telefon înainte de demo.",
       "features": [
         {
           "name": "Claude Code",
-          "for": "a făcut verificările de scanare în aplicație, formularul de furnizori și roata fără reîncărcare, a scris 111 teste și raportul lor"
+          "for": "a făcut căutarea cu vocea, arhiva cu glisare și modul corporate, a scris testele și rapoartele despre modificările backend-ului"
         },
         {
           "name": "Browserul integrat",
-          "for": "a testat fiecare interfață la mărime de telefon"
+          "for": "a încercat căutarea, arhivarea și glisarea pe serverul real, la mărime de telefon"
+        },
+        {
+          "name": "Trimitere de fișiere",
+          "for": "a trimis codul QR care deschide aplicația pe telefon"
         },
         {
           "name": "Artifact (canvas de design)",
@@ -133,7 +143,7 @@
           "for": "actualizează pagina Pulse la fiecare 2 ore"
         }
       ],
-      "next": "Unim frontend-final în main și testăm aplicația pe telefon înainte de demo."
+      "next": "Încercăm pe iPhone glisarea și căutarea cu vocea, apoi unim frontend-final în main pentru demo."
     },
     "2": {
       "building": "Pago Bill Audit: înainte să apeși «Plătește», AI-ul citește factura, ți-o explică pe înțeles și prinde greșelile (index estimat, scumpiri ascunse, opțiuni plătite uitate). Ca un contabil de buzunar care se uită pe factură în locul tău.",

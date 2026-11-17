@@ -39,7 +39,7 @@ export default function OffersScreen({ route }: ScreenProps<'Offers'>) {
         </View>
       ))}
       {data.offers.length > 0 && (
-        <Button title="Schimbă furnizorul din Pago" onPress={() => Alert.alert('Schimbă furnizorul', 'Demo: aici începe înscrierea la partener.')} />
+        <Button title="Schimbă furnizorul din AI Pago" onPress={() => Alert.alert('Schimbă furnizorul', 'Demo: aici începe înscrierea la partener.')} />
       )}
       <Text style={styles.muted}>{data.disclaimer}</Text>
     </ScrollView>

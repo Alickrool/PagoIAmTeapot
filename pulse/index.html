@@ -182,9 +182,12 @@ footer { font-size: 12.5px; color: var(--muted); border-top: 1px solid var(--lin
         <li class="stop"><span class="dot"></span>
           <div class="meta"><span class="pill m1" title="Membrul 1">M1</span><span>2026-11-16 22:12</span></div>
           <div class="head">Testul de integritate a trecut: aplicația și backend-ul vorbesc aceeași limbă</div></li>
-        <li class="stop last"><span class="dot"></span>
-          <div class="meta"><span class="pill m2" title="Membrul 2">M2</span><span>2026-11-16 23:37</span><span class="pill here">Ești aici</span></div>
+        <li class="stop"><span class="dot"></span>
+          <div class="meta"><span class="pill m2" title="Membrul 2">M2</span><span>2026-11-16 23:37</span></div>
           <div class="head">Verificarea la scanare a trecut testul live cu Gemini; pregătim demo-ul de mâine</div></li>
+        <li class="stop last"><span class="dot"></span>
+          <div class="meta"><span class="pill m2" title="Membrul 2">M2</span><span>2026-11-17 10:00</span><span class="pill here">Ești aici</span></div>
+          <div class="head">Ziua demo-ului: backend-ul e gata; azi testăm la birou și rotim cheia Gemini</div></li>
       </ol>
     </div>
   </section>
@@ -277,7 +280,7 @@ footer { font-size: 12.5px; color: var(--muted); border-top: 1px solid var(--lin
     <h2>Pasul următor</h2>
     <div class="card nexts">
       <div class="next"><span class="pill m1" title="Membrul 1">M1</span><span class="t">Testăm pe telefon verificările noi de la scanare (luna, sumele, duplicatele) și le arătăm în aplicație.</span></div>
-      <div class="next"><span class="pill m2" title="Membrul 2">M2</span><span class="t">Marți dimineață: testăm telefonul pe Wi-Fi-ul de la birou, rotim cheia Gemini, încărcăm datele demo și punem facturile demo în cache, ca scanarea pe scenă să fie instantanee.</span></div>
+      <div class="next"><span class="pill m2" title="Membrul 2">M2</span><span class="t">Azi dimineață: testăm telefonul pe Wi-Fi-ul de la birou, rotim cheia Gemini, încărcăm datele demo și punem facturile demo în cache, ca scanarea pe scenă să fie instantanee.</span></div>
     </div>
   </section>
 
@@ -363,6 +366,12 @@ footer { font-size: 12.5px; color: var(--muted); border-top: 1px solid var(--lin
       "member": 2,
       "time": "2026-11-16 23:37",
       "headline": "Verificarea la scanare a trecut testul live cu Gemini; pregătim demo-ul de mâine"
+    },
+    {
+      "n": 14,
+      "member": 2,
+      "time": "2026-11-17 10:00",
+      "headline": "Ziua demo-ului: backend-ul e gata; azi testăm la birou și rotim cheia Gemini"
     }
   ],
   "members": {
@@ -405,7 +414,7 @@ footer { font-size: 12.5px; color: var(--muted); border-top: 1px solid var(--lin
     "2": {
       "building": "Pago Bill Audit: înainte să apeși «Plătește», AI-ul citește factura, ți-o explică pe înțeles și prinde greșelile (index estimat, scumpiri ascunse, opțiuni plătite uitate). Ca un contabil de buzunar care se uită pe factură în locul tău.",
       "works": "Verificarea la scanare e gata pe backend și urcată pe GitHub: 52 de teste trecute și un test live cu Gemini, 33 din 33 de pași corecți. Ce citește AI-ul e doar o propunere: regulile din cod verifică luna și anul, sumele și TVA-ul, iar factura din altă lună intră în luna ei. Aceeași factură trimisă a doua oară, chiar ca PDF după poze, e oprită (409). Fișierele periculoase sunt respinse, pozele se salvează fără date GPS, iar o factură cu text care dă ordine AI-ului e semnalată și își păstrează suma tipărită. Butonul „E corect” confirmă factura.",
-      "blocking": "Nimic blocant pe backend. Când modelul Gemini e ocupat (503), trece pe modelul de rezervă și scanarea durează 25–30 de secunde. Cheia Gemini trebuie rotită înainte de demo, iar rețeaua de la birou o testăm marți dimineață.",
+      "blocking": "Nimic blocant pe backend. Partea din aplicație pentru avertismente și „E corect” e gata pe ramura colegului și urmează să intre în main. Când modelul Gemini e ocupat (503), trece pe modelul de rezervă și scanarea durează 25–30 de secunde. Cheia Gemini trebuie rotită înainte de demo, iar rețeaua de la birou o testăm azi dimineață.",
       "features": [
         {
           "name": "Claude Code",
@@ -436,7 +445,7 @@ footer { font-size: 12.5px; color: var(--muted); border-top: 1px solid var(--lin
           "for": "actualizează pagina Pulse la fiecare 2 ore"
         }
       ],
-      "next": "Marți dimineață: testăm telefonul pe Wi-Fi-ul de la birou, rotim cheia Gemini, încărcăm datele demo și punem facturile demo în cache, ca scanarea pe scenă să fie instantanee."
+      "next": "Azi dimineață: testăm telefonul pe Wi-Fi-ul de la birou, rotim cheia Gemini, încărcăm datele demo și punem facturile demo în cache, ca scanarea pe scenă să fie instantanee."
     }
   }
 }</script>

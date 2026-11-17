@@ -108,29 +108,35 @@
       "member": 2,
       "time": "2026-11-17 13:37",
       "headline": "Căutare cu vocea, arhivă de furnizori și scriptul prezentării; 307 teste trec"
+    },
+    {
+      "n": 19,
+      "member": 1,
+      "time": "2026-11-17 14:11",
+      "headline": "Gata de demo: date demo proaspete, Gemini verificat și posterul cu sloganul"
     }
   ],
   "members": {
     "1": {
-      "building": "Aplicația mobilă AI Pago (Expo) în 3 interfețe: Innovative pentru tineri, Profesional pentru vârsta de mijloc și Classic pentru seniori. Vezi facturile lunii, cauți o factură scriind sau vorbind, scanezi factura, iar Gemini o citește și prinde greșelile. Ca un detectiv care vorbește pe limba fiecărui client.",
-      "works": "Bara de căutare de sus găsește facturi după furnizor, lună sau status, chiar scrise greșit („enji” → Engie), iar microfonul caută cu vocea. Furnizorii cu probleme au toată căsuța roșie sau galbenă. Un furnizor cu care ai încheiat contractul se mută în Arhivă glisând spre stânga, cu animație și „Anulează”, iar facturile lui rămân. Modul Profesional are aspect corporate și o „Sinteză a lunii” care se poate exporta. 224 de teste automate în aplicație trec.",
-      "blocking": "Vocea înregistrată pe Android (m4a) nu e înțeleasă de Gemini; pe iPhone aplicația trimite WAV, care merge. Glisarea și vocea mai trebuie încercate pe telefon înainte de demo.",
+      "building": "Aplicația mobilă AI Pago (Expo) în 3 interfețe: Innovative pentru tineri, Profesional pentru vârsta de mijloc și Classic pentru seniori. Vezi facturile lunii, cauți o factură scriind sau vorbind, scanezi factura, iar Gemini o citește, prinde greșelile și îți dă un sfat înainte să plătești. Ca un detectiv care vorbește pe limba fiecărui client.",
+      "works": "Aplicația e pregătită pentru demo: e la fel ca main de pe GitHub, baza de date are din nou datele demo (octombrie neplătit, PPC pe roșu), iar Gemini răspunde la verificarea scurtă în sub o secundă. Modul Profesional are aspect corporate și o „Sinteză a lunii” care se poate exporta, iar bara bugetului e mai groasă. Furnizorii se arhivează glisând spre stânga, iar facturile lor rămân. 224 de teste automate în aplicație trec. Avem și un poster cu sloganul „AI Pago: pentru a primi sfaturi, nu doar pentru a efectua plăți”.",
+      "blocking": "Laptopul trece singur între Wi-Fi și hotspot, iar adresa serverului din aplicație trebuie schimbată de fiecare dată. Fișierele demo nu sunt încă în cache, deci o scanare pe scenă așteaptă câteva secunde după Gemini.",
       "features": [
         {
           "name": "Claude Code",
-          "for": "a făcut căutarea cu vocea, arhiva cu glisare și modul corporate, a scris testele și rapoartele despre modificările backend-ului"
+          "for": "a făcut modurile Innovative, Profesional și Classic, sinteza lunii și arhiva cu glisare, a pregătit baza de date pentru demo și a scris testele"
         },
         {
           "name": "Browserul integrat",
-          "for": "a încercat căutarea, arhivarea și glisarea pe serverul real, la mărime de telefon"
+          "for": "a încercat căutarea, arhivarea, glisarea și fiecare mod pe serverul real, la mărime de telefon"
+        },
+        {
+          "name": "Artifact (canvas de design)",
+          "for": "mockup-ul pe generații și posterul cu sloganul aplicației"
         },
         {
           "name": "Trimitere de fișiere",
           "for": "a trimis codul QR care deschide aplicația pe telefon"
-        },
-        {
-          "name": "Artifact (canvas de design)",
-          "for": "mockup-ul pe generații, cu 20 de reguli de design și tonul fiecărei vârste"
         },
         {
           "name": "Întrebare cu variante",
@@ -149,7 +155,7 @@
           "for": "actualizează pagina Pulse la fiecare 2 ore"
         }
       ],
-      "next": "Încercăm pe iPhone glisarea și căutarea cu vocea, apoi unim frontend-final în main pentru demo."
+      "next": "Facem demo-ul: laptopul și telefonul pe aceeași rețea, datele demo proaspete și Gemini verificat chiar înainte."
     },
     "2": {
       "building": "AI Pago: înainte să apeși «Plătește», AI-ul citește factura, ți-o explică pe înțeles și prinde greșelile (index estimat, scumpiri ascunse, opțiuni plătite uitate). Ca un contabil de buzunar care se uită pe factură în locul tău.",

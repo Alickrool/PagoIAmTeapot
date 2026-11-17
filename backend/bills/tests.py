@@ -595,6 +595,21 @@ class ScanValidationTests(TestCase):
         c.save()
         return out.getvalue()
 
+    # ---- several bills in one scan ----
+
+    def test_several_bills_are_refused_and_nothing_is_saved(self):
+        before = Bill.objects.count()
+        r = self._scan(other_bills=["Digi, octombrie 2026", "Apa Brasov, octombrie <b>2026</b>"])
+        self.assertEqual((r.status_code, r.json()["code"]), (422, "several_bills"))
+        body = r.json()
+        self.assertEqual(body["bills"][1:], ["Digi, octombrie 2026", "Apa Brasov, octombrie b 2026 /b"])  # cleaned
+        self.assertTrue(body["bills"][0].startswith("PPC, "))
+        self.assertIn("Am găsit 3 facturi într-un singur fișier", body["detail"])
+        self.assertIn("Trimite fiecare factură separat", body["detail"])
+        self.assertEqual(Bill.objects.count(), before)
+        r = self._scan(self._photo(), self._photo(), other_bills=["Digi, octombrie 2026"])
+        self.assertIn("2 facturi în fișierele trimise", r.json()["detail"])
+
     # ---- the clean case ----
 
     def test_clean_bill_is_accepted_and_seed_bills_have_no_checks(self):

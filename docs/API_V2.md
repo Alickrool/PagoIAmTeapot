@@ -79,6 +79,7 @@ files: annex.pdf  (application/pdf)
 | 400 | `unreadable_file` | a corrupt file that can't be opened (§6) |
 | 422 | `invalid_extraction` | the model returned something impossible (over 60 lines, total out of range) (§6) |
 | 422 | `invalid_period` | period start after period end (§6) |
+| 422 | `several_bills` | the files hold more than one distinct bill (another provider, customer code or period), e.g. one PDF with 3 bills or photos of 2 different bills; nothing is saved. `detail`: "Am găsit 3 facturi într-un singur fișier: Engie, octombrie 2026; Digi, octombrie 2026; Apa Brasov, octombrie 2026. Trimite fiecare factură separat."; body also has `bills` (the list). More pages, annexes or terms of the same bill are fine |
 | 409 | `duplicate_bill` | the same bill was already scanned from other photos; body also has `existing_bill_id` (§6) |
 | 429 | `too_many_requests` | too many scans / questions from this device; `detail` says when to retry |
 

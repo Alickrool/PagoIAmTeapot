@@ -18,6 +18,7 @@ from bills.models import Bill, BillFile, ExtractionCache, LineItem
 from bills.services import ai, mock, pdf_text, providers, validation
 from bills.services.validation import duplicates, injection
 from bills.services.validation import files as vfiles
+from bills.services.ro import month_label
 
 log = logging.getLogger(__name__)
 PDF = "application/pdf"
@@ -133,6 +134,12 @@ def _document_text(files: list[Upload]) -> str:
     return "\n".join(pdf_text.plain_text(f.data) for f in files if f.mime == PDF)
 
 
+def _other_bill(text: str) -> str:
+    """'DIGI, octombrie 2026' -> 'Digi, octombrie 2026'. Text from the document: cleaned before it is shown."""
+    name, _, rest = (injection.clean_text(text, 60) or "").partition(",")
+    return providers.normalize(name.strip()) + (f", {rest.strip()}" if rest.strip() else "")
+
+
 def scan(files: list[Upload]) -> tuple[Bill, bool]:
     """Returns (bill, created). Re-sending the same files in the same order returns the bill created the first time.
     Raises ScanError (validation.Rejected) when the scan is refused; then nothing is saved."""
@@ -156,6 +163,13 @@ def scan(files: list[Upload]) -> tuple[Bill, bool]:
         raise ScanError("not_a_bill", "Nu pare o factură de utilități sau telecom. Fotografiază factura, nu alt document.", 422)
     if not extracted.readable:
         raise ScanError("unreadable", "Nu am putut citi factura. Încearcă o poză mai clară, bine luminată.", 422)
+    others = [o for b in extracted.other_bills[:5] if (o := _other_bill(b))]
+    if others:  # one scan = one bill; never keep the first and silently drop the rest
+        found = [f"{providers.normalize(extracted.provider)}, {month_label(extracted.period_end.strftime('%Y-%m'))}",
+                 *others]
+        where = "într-un singur fișier" if len(files) == 1 else "în fișierele trimise"
+        raise ScanError("several_bills", f"Am găsit {len(found)} facturi {where}: {'; '.join(found)}. "
+                                         f"Trimite fiecare factură separat.", 422, {"bills": found})
 
     # What the model read is a proposal: the rules decide (docs/API_V2.md §6).
     extracted = injection.sanitize(extracted)
@@ -170,7 +184,7 @@ def scan(files: list[Upload]) -> tuple[Bill, bool]:
 
     with transaction.atomic():
         fields = _blank_nulls(Bill, extracted.model_dump(exclude={"line_items", "is_bill", "readable",
-                                                                  "suspicious_text"}))
+                                                                  "suspicious_text", "other_bills"}))
         fields["provider"] = providers.normalize(fields["provider"])
         bill = Bill(**fields, source=Bill.Source.UPLOAD, file_hash=h, raw_extraction=extracted.model_dump(mode="json"),
                     validation_status=result.status, validation=result.as_json())

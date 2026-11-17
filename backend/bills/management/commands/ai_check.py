@@ -3,6 +3,7 @@
 Usage:  python manage.py ai_check                       (uses samples/demo_ppc_2026_10.pdf)
         python manage.py ai_check ../samples/my_bill.jpg
         python manage.py ai_check page1.jpg page2.jpg      (several files = pages of ONE bill)
+        python manage.py ai_check --models                 (only: is each configured model answering right now?)
 Bypasses the extraction cache and writes nothing to the database.
 """
 
@@ -24,11 +25,15 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument("files", nargs="*")
+        parser.add_argument("--models", action="store_true",
+                            help="ping the main model and every fallback once, print time or the error")
 
-    def handle(self, *args, files, **opts):
+    def handle(self, *args, files, models=False, **opts):
         self.stdout.write(f"Model: {settings.GEMINI_MODEL}")
         if settings.AI_MOCK:
             raise CommandError("AI_MOCK is on (AI_MOCK=1 or no GEMINI_API_KEY in backend/.env).")
+        if models:
+            return self.ping_models()
         paths = [Path(f) for f in files] or [settings.SAMPLES_DIR / "demo_ppc_2026_10.pdf"]
         for path in paths:
             if not path.is_file():
@@ -59,3 +64,25 @@ class Command(BaseCommand):
         answer = ai.answer_question(ctx, "Why is VAT so high this month?", None)
         self.stdout.write(self.style.SUCCESS(f"\nQ&A in {time.monotonic() - t:.1f}s"))
         self.stdout.write(f"  {answer.answer}\n  sources: {answer.sources}\n  actions: {answer.suggested_actions}")
+
+    def ping_models(self):
+        """What the app will meet right now, model by model, in the order the backend tries them."""
+        from google.genai import errors, types
+
+        self.stdout.write(f"Fallbacks: {', '.join(settings.GEMINI_FALLBACK_MODELS) or '-'}\n")
+        hints = {429: "the key's limit for this model is used up (free tier): wait, or use another key",
+                 503: "overloaded right now (Google side)", 504: "no answer within 15 s (overloaded)",
+                 404: "this key cannot use this model: change GEMINI_MODEL / GEMINI_FALLBACK_MODELS in .env"}
+        config = types.GenerateContentConfig(http_options=types.HttpOptions(timeout=15000), max_output_tokens=20)
+        for model in ai._models():
+            t = time.monotonic()
+            try:
+                ai.gemini_client().models.generate_content(model=model, contents=["Answer with one word: OK"],
+                                                           config=config)
+                self.stdout.write(self.style.SUCCESS(f"  {model:<28} OK in {time.monotonic() - t:.1f}s"))
+            except errors.APIError as e:
+                hint = hints.get(e.code, e.message or "")
+                self.stdout.write(self.style.ERROR(f"  {model:<28} {e.code} {e.status or ''} after "
+                                                   f"{time.monotonic() - t:.1f}s: {hint}"))
+            except Exception as e:  # network: no internet, DNS, proxy
+                self.stdout.write(self.style.ERROR(f"  {model:<28} {type(e).__name__}: {e}"))

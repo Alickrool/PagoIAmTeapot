@@ -186,7 +186,7 @@ class GeminiTimeoutTests(TestCase):
                 patch.object(ai, "gemini_client", return_value=fake):
             v = ai.transcribe_query(M4A, "audio/mp4", ["PPC"])
         self.assertEqual(v.query, "PPC")
-        self.assertEqual([m for m, _ in calls], ["slow", "slow", "fast"])
+        self.assertEqual([m for m, _ in calls], ["slow", "fast"])  # a slow model is not tried twice
         self.assertTrue(all(t <= ai.BUDGETS["voice"][1] * 1000 for _, t in calls))
 
     def test_budget_ends_the_call(self):

@@ -99,12 +99,12 @@ def _models() -> list[str]:
 
 # Seconds per call: (whole call incl. fallbacks, one model at most). Without a limit an overloaded model can hold a
 # request for minutes (17.11.2026: gemini-4-hydrogen took 107 s to say "OK") and the app just spins.
-BUDGETS = {"scan": (60, 40), "ask": (30, 15), "dispute": (45, 25), "voice": (25, 12)}
+BUDGETS = {"scan": (60, 40), "ask": (30, 12), "dispute": (45, 25), "voice": (25, 10)}
 MIN_ATTEMPT = 10  # Gemini refuses deadlines shorter than ~10 s
 
 
 def _call_with_fallback(contents, config, budget: str = "scan"):
-    """Try the main model (twice: 503 spikes are short), then each fallback, when Gemini says 'busy' (5xx, including
+    """Try the main model (twice after a quick 503: such spikes are short), then each fallback, when Gemini says 'busy' (5xx, including
     504 when our deadline passed) or 'too many requests' (429), until the call's time budget is spent.
     Other errors (bad key, bad request) are raised at once: another model wouldn't fix them."""
     import httpx2  # the HTTP client google-genai uses
@@ -116,8 +116,8 @@ def _call_with_fallback(contents, config, budget: str = "scan"):
     attempts = [models[0], *models] if models else []
     last = None
     for i, model in enumerate(attempts):
-        if i == 1 and last is not None and last.code == 429:
-            continue  # a quota does not come back in a second: go straight to the next model
+        if i == 1 and last is not None and last.code not in (500, 502, 503):
+            continue  # only a quick 'busy' is worth a second try; a quota (429) or a slow model (504) is not
         left = deadline - time.monotonic()
         if left < MIN_ATTEMPT:
             break

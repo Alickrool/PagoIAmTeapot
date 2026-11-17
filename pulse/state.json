@@ -84,13 +84,25 @@
       "member": 1,
       "time": "2026-11-17 10:00",
       "headline": "Aplicația arată verificările de la scanare și are formularul de furnizori; 111 teste trec"
+    },
+    {
+      "n": 15,
+      "member": 2,
+      "time": "2026-11-17 10:00",
+      "headline": "Ziua demo-ului: backend-ul e gata; azi testăm la birou și rotim cheia Gemini"
+    },
+    {
+      "n": 16,
+      "member": 1,
+      "time": "2026-11-17 10:11",
+      "headline": "Aplicația rulează pe hotspot, gata pentru testul de demo"
     }
   ],
   "members": {
     "1": {
       "building": "Aplicația mobilă Pago Bill Audit (Expo) în 3 interfețe, Gen Z, Millennials și Senior: vezi facturile lunii într-o roată, scanezi factura din poze sau PDF, Gemini o citește și prinde greșelile. Ca un detectiv care vorbește pe limba fiecărui client.",
       "works": "Aplicația arată verificările de la scanare: mesajul „Am pus factura în luna X”, cardul cu „E corect” pentru facturile de verificat, deschiderea facturii deja scanate și marcajul „De verificat” în liste. Roata lunii se schimbă fără reîncărcare, iar istoricul furnizorului colorează fiecare factură (roșu = anomalie, galben = atenție). „Adaugă furnizor” are acum un formular cu furnizori din România și pasul „Adaugă factură”. 111 teste automate în aplicație trec.",
-      "blocking": "Cheia Gemini trebuie rotită înainte de demo. Ultimele modificări din aplicație sunt pe branch-ul frontend-final și trebuie unite în main. Un test vechi de backend (coordonatele rândurilor pe PDF-ul demo) pică pe laptopul acesta.",
+      "blocking": "Cheia Gemini trebuie rotită înainte de demo. Ultimele modificări din aplicație sunt pe branch-ul frontend-final și trebuie unite în main. Laptopul schimbă rețeaua între Wi-Fi și hotspot, iar adresa serverului trebuie actualizată de fiecare dată.",
       "features": [
         {
           "name": "Claude Code",
@@ -126,7 +138,7 @@
     "2": {
       "building": "Pago Bill Audit: înainte să apeși «Plătește», AI-ul citește factura, ți-o explică pe înțeles și prinde greșelile (index estimat, scumpiri ascunse, opțiuni plătite uitate). Ca un contabil de buzunar care se uită pe factură în locul tău.",
       "works": "Verificarea la scanare e gata pe backend și urcată pe GitHub: 52 de teste trecute și un test live cu Gemini, 33 din 33 de pași corecți. Ce citește AI-ul e doar o propunere: regulile din cod verifică luna și anul, sumele și TVA-ul, iar factura din altă lună intră în luna ei. Aceeași factură trimisă a doua oară, chiar ca PDF după poze, e oprită (409). Fișierele periculoase sunt respinse, pozele se salvează fără date GPS, iar o factură cu text care dă ordine AI-ului e semnalată și își păstrează suma tipărită. Butonul „E corect” confirmă factura.",
-      "blocking": "Nimic blocant pe backend. Când modelul Gemini e ocupat (503), trece pe modelul de rezervă și scanarea durează 25–30 de secunde. Cheia Gemini trebuie rotită înainte de demo, iar rețeaua de la birou o testăm marți dimineață.",
+      "blocking": "Nimic blocant pe backend. Partea din aplicație pentru avertismente și „E corect” e gata pe ramura colegului și urmează să intre în main. Când modelul Gemini e ocupat (503), trece pe modelul de rezervă și scanarea durează 25–30 de secunde. Cheia Gemini trebuie rotită înainte de demo, iar rețeaua de la birou o testăm azi dimineață.",
       "features": [
         {
           "name": "Claude Code",
@@ -157,7 +169,7 @@
           "for": "actualizează pagina Pulse la fiecare 2 ore"
         }
       ],
-      "next": "Marți dimineață: testăm telefonul pe Wi-Fi-ul de la birou, rotim cheia Gemini, încărcăm datele demo și punem facturile demo în cache, ca scanarea pe scenă să fie instantanee."
+      "next": "Azi dimineață: testăm telefonul pe Wi-Fi-ul de la birou, rotim cheia Gemini, încărcăm datele demo și punem facturile demo în cache, ca scanarea pe scenă să fie instantanee."
     }
   }
 }

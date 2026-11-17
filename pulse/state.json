@@ -114,6 +114,12 @@
       "member": 1,
       "time": "2026-11-17 14:11",
       "headline": "Gata de demo: date demo proaspete, Gemini verificat și posterul cu sloganul"
+    },
+    {
+      "n": 20,
+      "member": 2,
+      "time": "2026-11-17 15:37",
+      "headline": "Backend-ul e pe main, demo-ul rulează la coleg; urmează clipurile și repetiția"
     }
   ],
   "members": {
@@ -159,8 +165,8 @@
     },
     "2": {
       "building": "AI Pago: înainte să apeși «Plătește», AI-ul citește factura, ți-o explică pe înțeles și prinde greșelile (index estimat, scumpiri ascunse, opțiuni plătite uitate). Ca un contabil de buzunar care se uită pe factură în locul tău.",
-      "works": "Backend-ul e gata pentru demo: căutare scrisă și cu vocea („Arată-mi factura PPC din octombrie” deschide factura), data plății pe fiecare factură, arhivă pentru furnizorii vechi și refuz clar când un fișier are mai multe facturi. Am pregătit două facturi demo cu anomalii: apă scumpă (+86%) și un total modificat de mână, prins ca „De verificat”. Când Gemini e aglomerat, fiecare cerere are limită de timp și trece pe modele ușoare. Scriptul prezentării de 10 minute e scris; 307 teste trec (83 backend, 224 aplicație).",
-      "blocking": "Nimic blocant. Cheia Gemini trebuie rotită înainte de demo.",
+      "works": "Tot backend-ul e pe main și colegul rulează demo-ul pe laptopul lui: căutare scrisă și cu vocea („Arată-mi factura PPC din octombrie” deschide factura), data plății pe fiecare factură, arhivă pentru furnizorii vechi și refuz clar când un fișier are mai multe facturi. Două facturi demo cu anomalii: apă scumpă (+86%) și un total modificat de mână, prins ca „De verificat”. Când Gemini e aglomerat, fiecare cerere are limită de timp și trece pe modele ușoare. Scriptul prezentării de 10 minute e gata, cu cifrele verificate pe datele demo; 307 teste trec (83 backend, 224 aplicație).",
+      "blocking": "Nimic blocant în cod. Cheia Gemini trebuie rotită, iar înainte de demo rulăm din nou datele demo.",
       "features": [
         {
           "name": "Claude Code",

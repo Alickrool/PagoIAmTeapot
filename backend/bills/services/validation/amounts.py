@@ -33,12 +33,12 @@ def check(e) -> list[Check]:
     if lines and abs(lines_sum - total) > max(1.0, abs(total) * 0.01):
         checks.append(warning("lines_sum", "total",
                               f"Rândurile facturii adună {lei(lines_sum)}, dar totalul citit e {lei(total)}. "
-                              f"Verifică poza."))
+                              f"Verifică factura."))
 
     rate = e.vat_rate
     if rate is not None and round(rate, 2) not in VAT_RATES:
         checks.append(warning("vat_rate_allowed", "vat_rate",
-                              f"Cota de TVA citită ({num(rate)}%) nu e o cotă din România. Verifică poza."))
+                              f"Cota de TVA citită ({num(rate)}%) nu e o cotă din România. Verifică factura."))
     else:
         vat_lines = [li for li in lines if _is_vat(li)]
         if rate and len(vat_lines) == 1:
@@ -49,5 +49,5 @@ def check(e) -> list[Check]:
             if abs(vat - expected) > max(1.0, abs(expected) * 0.02):
                 checks.append(warning("vat_amount", "line_items.vat",
                                       f"TVA-ul citit ({lei(vat)}) nu se potrivește cu {num(rate)}% din restul "
-                                      f"facturii ({lei(expected)}). Verifică poza."))
+                                      f"facturii ({lei(expected)}). Verifică factura."))
     return checks

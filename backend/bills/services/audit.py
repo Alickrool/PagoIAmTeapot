@@ -14,6 +14,7 @@ from bills.services import market
 from bills.services.ro import lei, months_ago, num, pct, signed_lei
 
 SEVERITY_ORDER = {"ok": 0, "info": 1, "warning": 2, "critical": 3}
+MAIN_LINE = {"energy": "energiei", "gas": "gazului", "water": "apei"}  # metered line code -> "prețul ..."
 
 
 def _pct(new: float, old: float) -> float:
@@ -88,11 +89,12 @@ def check_price_spike(bill: Bill, history: list[Bill]) -> dict | None:
         if cons_pct * 2 > total_pct:
             return None  # the increase is mostly explained by consumption: not an anomaly
         parts.append(f"consumul a crescut doar cu {num(cons_pct)}% ({signed_lei(consumption_effect)})" if cons_pct >= 0 else f"consumul chiar a scăzut cu {num(-cons_pct)}% ({signed_lei(consumption_effect)})")
-        cur_e, prev_e = _item(bill, "energy"), _item(prev, "energy")
+        code = next((c for c in MAIN_LINE if _item(bill, c)), "energy")
+        cur_e, prev_e = _item(bill, code), _item(prev, code)
         if cur_e and prev_e and cur_e.unit_price and prev_e.unit_price and cur_e.unit_price != prev_e.unit_price:
             evidence.update(previous_energy_price=float(prev_e.unit_price), current_energy_price=float(cur_e.unit_price))
             parts.append(
-                f"prețul energiei s-a schimbat de la {num(prev_e.unit_price)} la {num(cur_e.unit_price)} "
+                f"prețul {MAIN_LINE[code]} s-a schimbat de la {num(prev_e.unit_price)} la {num(cur_e.unit_price)} "
                 f"lei/{bill.consumption_unit} ({signed_lei(price_effect)})"
             )
         else:

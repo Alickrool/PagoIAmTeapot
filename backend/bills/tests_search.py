@@ -156,3 +156,63 @@ class SearchTests(TestCase):
         self.assertEqual(file_checks.sniff_audio(b"\x1aE\xdf\xa3\x01"), "audio/webm")
         self.assertIsNone(file_checks.sniff_audio(b"\x00\x00\x00\x18ftypheic"))  # a photo is not audio
         self.assertIsNone(file_checks.sniff_audio(b"%PDF-1.7"))
+
+
+class GeminiTimeoutTests(TestCase):
+    """An overloaded model must not hold a request for minutes (docs/API_V2.md §7, voice 'loads forever')."""
+
+    def _fake(self, behaviour):
+        from types import SimpleNamespace
+
+        calls = []
+
+        def generate(model, contents, config):
+            calls.append((model, config.http_options.timeout))
+            return behaviour(model)
+
+        return SimpleNamespace(models=SimpleNamespace(generate_content=generate)), calls
+
+    def test_each_attempt_has_a_deadline_and_hangs_fall_through(self):
+        import httpx2
+        from types import SimpleNamespace
+
+        def behaviour(model):
+            if model == "slow":
+                raise httpx2.ReadTimeout("no answer")
+            return SimpleNamespace(text='{"transcript": "PPC", "query": "PPC"}')
+
+        fake, calls = self._fake(behaviour)
+        with override_settings(GEMINI_MODEL="slow", GEMINI_FALLBACK_MODELS=["fast"]), \
+                patch.object(ai, "gemini_client", return_value=fake):
+            v = ai.transcribe_query(M4A, "audio/mp4", ["PPC"])
+        self.assertEqual(v.query, "PPC")
+        self.assertEqual([m for m, _ in calls], ["slow", "slow", "fast"])
+        self.assertTrue(all(t <= ai.BUDGETS["voice"][1] * 1000 for _, t in calls))
+
+    def test_budget_ends_the_call(self):
+        from google.genai import errors
+
+        def behaviour(model):
+            raise errors.ServerError(504, {"error": {"code": 504, "message": "deadline", "status": "DEADLINE_EXCEEDED"}})
+
+        fake, calls = self._fake(behaviour)
+        clock = iter(range(0, 1000, 8))  # every look at the clock: 8 s later
+        with override_settings(GEMINI_MODEL="a", GEMINI_FALLBACK_MODELS=["b", "c", "d", "e"]), \
+                patch.object(ai, "gemini_client", return_value=fake), \
+                patch.object(ai.time, "monotonic", side_effect=lambda: next(clock)):
+            with self.assertRaises(ai.AIUnavailable):
+                ai.transcribe_query(M4A, "audio/mp4", [])
+        self.assertLess(len(calls), 6)  # stopped by the 25 s budget, not by running out of models
+
+    def test_quota_is_not_retried_on_the_same_model(self):
+        from google.genai import errors
+
+        def behaviour(model):
+            raise errors.ClientError(429, {"error": {"code": 429, "message": "quota", "status": "RESOURCE_EXHAUSTED"}})
+
+        fake, calls = self._fake(behaviour)
+        with override_settings(GEMINI_MODEL="a", GEMINI_FALLBACK_MODELS=["b"]), \
+                patch.object(ai, "gemini_client", return_value=fake):
+            with self.assertRaises(ai.AIUnavailable):
+                ai.transcribe_query(M4A, "audio/mp4", [])
+        self.assertEqual([m for m, _ in calls], ["a", "b"])

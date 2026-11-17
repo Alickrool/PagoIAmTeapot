@@ -9,6 +9,7 @@ import io
 import json
 import logging
 import re
+import time
 from datetime import date
 from functools import lru_cache
 from typing import Literal, TypeVar, Union
@@ -53,7 +54,8 @@ def _inline_refs(schema: dict) -> dict:
     return walk(schema)
 
 
-def _generate(parts: list[Part], schema: type[T], *, system: str | None = None, max_tokens: int = 4000) -> T | None:
+def _generate(parts: list[Part], schema: type[T], *, system: str | None = None, max_tokens: int = 4000,
+              budget: str = "scan") -> T | None:
     """One structured LLM call. Returns None when the answer is blocked/empty."""
     from google.genai import types
 
@@ -76,7 +78,7 @@ def _generate(parts: list[Part], schema: type[T], *, system: str | None = None, 
         response_json_schema=_inline_refs(schema.model_json_schema()),
         max_output_tokens=max_tokens,
     )
-    response = _call_with_fallback(contents, config)
+    response = _call_with_fallback(contents, config, budget)
     if not response.text:  # blocked by safety filters or empty
         return None
     return schema.model_validate_json(response.text)
@@ -95,22 +97,44 @@ def _models() -> list[str]:
     return out
 
 
-def _call_with_fallback(contents, config):
-    """Try the main model, then each fallback, when Gemini says 'busy' (5xx) or 'too many requests' (429).
-    Other errors (bad key, bad request) are raised at once: another model wouldn't fix them."""
-    from google.genai import errors
+# Seconds per call: (whole call incl. fallbacks, one model at most). Without a limit an overloaded model can hold a
+# request for minutes (17.11.2026: gemini-4-hydrogen took 107 s to say "OK") and the app just spins.
+BUDGETS = {"scan": (60, 40), "ask": (30, 15), "dispute": (45, 25), "voice": (25, 12)}
+MIN_ATTEMPT = 10  # Gemini refuses deadlines shorter than ~10 s
 
+
+def _call_with_fallback(contents, config, budget: str = "scan"):
+    """Try the main model (twice: 503 spikes are short), then each fallback, when Gemini says 'busy' (5xx, including
+    504 when our deadline passed) or 'too many requests' (429), until the call's time budget is spent.
+    Other errors (bad key, bad request) are raised at once: another model wouldn't fix them."""
+    import httpx2  # the HTTP client google-genai uses
+    from google.genai import errors, types
+
+    total, per_model = BUDGETS[budget]
+    deadline = time.monotonic() + total
+    models = _models()
+    attempts = [models[0], *models] if models else []
     last = None
-    for model in _models():
+    for i, model in enumerate(attempts):
+        if i == 1 and last is not None and last.code == 429:
+            continue  # a quota does not come back in a second: go straight to the next model
+        left = deadline - time.monotonic()
+        if left < MIN_ATTEMPT:
+            break
+        timeout = min(per_model, left)
+        cfg = config.model_copy(update={"http_options": types.HttpOptions(timeout=int(timeout * 1000))})
         try:
-            return gemini_client().models.generate_content(model=model, contents=contents, config=config)
+            return gemini_client().models.generate_content(model=model, contents=contents, config=cfg)
         except errors.APIError as e:
             if e.code == 429 or (e.code or 0) >= 500:
                 log.warning("Gemini %s unavailable (%s), trying the next model", model, e.code)
                 last = e
                 continue
             raise
-    raise AIUnavailable(str(last))
+        except (httpx2.TimeoutException, TimeoutError) as e:
+            log.warning("Gemini %s did not answer in %.0f s, trying the next model", model, timeout)
+            last = errors.ServerError(504, {"error": {"code": 504, "message": str(e), "status": "DEADLINE_EXCEEDED"}})
+    raise AIUnavailable(str(last) if last else "no time left")
 
 
 # ---------- 1. extraction ----------
@@ -279,7 +303,7 @@ def answer_question(bill_context: dict, question: str, line_item: dict | None) -
         f"<bill>\n{json.dumps(bill_context, ensure_ascii=False, default=str)}\n</bill>\n"
         f"<bill_math>\n{bill_math(bill_context)}\n</bill_math>{focus}\n\nQuestion: {question}"
     )
-    result = _generate([user], AskAnswer, system=ASK_SYSTEM.format(kb=knowledge_base()))
+    result = _generate([user], AskAnswer, system=ASK_SYSTEM.format(kb=knowledge_base()), budget="ask")
     return result or AskAnswer(answer="Îmi pare rău, nu pot răspunde la asta.", sources=[], suggested_actions=[])
 
 
@@ -306,7 +330,7 @@ def write_dispute(bill_context: dict, anomaly: dict | None) -> DisputeLetter:
         bill=json.dumps(bill_context, ensure_ascii=False, default=str),
         anomaly=json.dumps(anomaly, ensure_ascii=False) if anomaly else "general clarification request",
     )
-    letter = _generate([prompt], DisputeLetter)
+    letter = _generate([prompt], DisputeLetter, budget="dispute")
     if letter is None:
         raise ValueError("Could not draft the letter")
     return letter
@@ -331,5 +355,5 @@ class VoiceQuery(BaseModel):
 def transcribe_query(audio: bytes, mime: str, provider_names: list[str]) -> VoiceQuery:
     system = VOICE_SYSTEM.format(providers=", ".join(provider_names) or "-")
     result = _generate([(audio, mime), "Transcribe this voice note and write the search query."], VoiceQuery,
-                       system=system, max_tokens=400)
+                       system=system, max_tokens=400, budget="voice")
     return result or VoiceQuery(transcript="", query="")

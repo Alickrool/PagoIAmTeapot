@@ -258,7 +258,7 @@ class DemoScenarioTests(TestCase):
         with override_settings(GEMINI_MODEL="busy-model", GEMINI_FALLBACK_MODELS=["ok-model"]), \
                 um.patch.object(ai, "gemini_client", return_value=fake):
             ai.extract_bill(b"%PDF", "application/pdf")
-        self.assertEqual(tried, ["busy-model", "ok-model"])
+        self.assertEqual(tried, ["busy-model", "busy-model", "ok-model"])  # 503: the main model once more first
 
     def test_all_models_busy_gives_clean_503(self):
         from types import SimpleNamespace

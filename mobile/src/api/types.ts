@@ -67,6 +67,7 @@ export interface BillSummary {
   status: BillStatus;
   audit_status: AuditStatus;
   validation_status?: ValidationStatus; // docs/API_V2.md §6
+  paid_at?: string | null; // §7: "2026-11-16" when paid
 }
 
 // ---------- Scan validation (docs/API_V2.md §6) ----------
@@ -128,6 +129,7 @@ export interface BillDetail extends Omit<BillSummary, 'audit_status' | 'validati
   audit: Audit;
   history: HistoryPoint[]; // oldest first
   validation?: Validation; // §6; optional so older backends / fixtures still type-check
+  paid_at?: string | null; // §7
 }
 
 export interface AskResponse {
@@ -311,3 +313,64 @@ export interface Recalculation {
 }
 
 export type ReadingResponse = BillDetail & { recalculation: Recalculation };
+
+// ---------- Search + voice search (docs/API_V2.md §7) ----------
+
+export type SearchStatus = 'unpaid' | 'paid' | 'review';
+
+export interface SearchFilters {
+  provider: string | null;
+  slug: string | null;
+  category: Category | null;
+  month: string | null; // "2026-10"
+  status: SearchStatus | null;
+}
+
+export interface SearchChip {
+  kind: 'provider' | 'category' | 'month' | 'status';
+  value: string;
+  label: string;
+}
+
+export type SearchTarget =
+  | { screen: 'Bill'; id: number }
+  | { screen: 'Provider'; slug: string; provider: string; month: string | null }
+  | { screen: 'Overview'; month: string }
+  | null;
+
+export interface SearchResult {
+  id: number;
+  provider: string;
+  slug: string;
+  category: Category;
+  month: string;
+  month_label: string;
+  period_start: string | null;
+  period_end: string;
+  due_date: string | null;
+  total: string;
+  status: BillStatus;
+  paid_at: string | null;
+  audit_status: AuditStatus;
+  validation_status: ValidationStatus;
+  has_pdf: boolean;
+}
+
+export interface SearchResponse {
+  query: string;
+  transcript: string | null;
+  filters: SearchFilters;
+  chips: SearchChip[];
+  target: SearchTarget;
+  message: string;
+  results: SearchResult[];
+}
+
+/** What the app sends: free text and/or explicit filters (filters win over `q`). */
+export interface SearchInput {
+  q?: string;
+  provider?: string; // slug
+  category?: Category;
+  month?: string;
+  status?: SearchStatus;
+}

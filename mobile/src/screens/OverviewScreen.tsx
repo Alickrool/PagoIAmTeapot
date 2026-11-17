@@ -1,4 +1,4 @@
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, Share, Text, View } from 'react-native';
 import { api, MOCK } from '../api/client';
@@ -13,7 +13,7 @@ import { MonthBars, monthBar } from '../components/charts/MonthBars';
 import { MonthPager } from '../components/MonthPager';
 import { SeverityBadge } from '../components/SeverityBadge';
 import { useCopy, useStyles, useTheme, type Theme } from '../mode';
-import { useStackNavigation } from '../navigation';
+import { useStackNavigation, type TabParamList } from '../navigation';
 import { mergeMonths, sliceColors, suggestBudget } from '../overviewMath';
 import { deltaColor, deltaLabel, money, monthLabel, monthName, tabular } from '../theme';
 
@@ -85,6 +85,16 @@ export default function OverviewScreen() {
     },
     [fetchMonth],
   );
+
+  // Search (docs/API_V2.md §7) can open a given month: show it, then forget the param so the same jump works again.
+  const route = useRoute<RouteProp<TabParamList, 'Overview'>>();
+  const tabNav = useNavigation();
+  const askedMonth = route.params?.month;
+  useEffect(() => {
+    if (!askedMonth) return;
+    show(askedMonth);
+    tabNav.setParams({ month: undefined } as never);
+  }, [askedMonth, show, tabNav]);
 
   useFocusEffect(useCallback(() => refresh(), [refresh]));
 

@@ -2,7 +2,7 @@ import { useNavigation, type NavigatorScreenParams } from '@react-navigation/nat
 import type { NativeStackNavigationProp, NativeStackScreenProps } from '@react-navigation/native-stack';
 
 export type TabParamList = {
-  Overview: undefined;
+  Overview: { month?: string } | undefined;
   Scan: undefined;
   Providers: undefined;
 };
@@ -13,8 +13,9 @@ export type RootStackParamList = {
   Dispute: { billId: number; anomalyId?: string };
   Offers: { billId: number };
   AutoPay: { billId: number; provider: string; suggestedMax: number };
-  Provider: { slug: string; provider: string };
+  Provider: { slug: string; provider: string; month?: string | null };
   AddProvider: undefined;
+  Search: { q?: string; voice?: boolean } | undefined;
 };
 
 export type ScreenProps<T extends keyof RootStackParamList> = NativeStackScreenProps<RootStackParamList, T>;

@@ -1,7 +1,7 @@
 import Svg, { Circle, Path, Rect } from 'react-native-svg';
 
 /** Minimal line icons (24×24, round caps) used instead of emoji. Stroke follows `color`. */
-export type IconName = 'home' | 'scan' | 'providers' | 'camera' | 'image' | 'file' | 'receipt' | 'check' | 'close' | 'plus' | 'document';
+export type IconName = 'home' | 'scan' | 'providers' | 'camera' | 'image' | 'file' | 'receipt' | 'check' | 'close' | 'plus' | 'document' | 'search' | 'mic' | 'stop';
 
 const SHAPES: Record<IconName, (c: string) => React.ReactNode> = {
   home: () => <Path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z" />,
@@ -26,6 +26,19 @@ const SHAPES: Record<IconName, (c: string) => React.ReactNode> = {
   check: () => <Path d="M5 12l5 5 9-10" />,
   close: () => <Path d="M6 6l12 12M18 6L6 18" />,
   plus: () => <Path d="M12 5v14M5 12h14" />,
+  search: () => (
+    <>
+      <Circle cx={11} cy={11} r={6.5} />
+      <Path d="M16 16l4.5 4.5" />
+    </>
+  ),
+  mic: () => (
+    <>
+      <Rect x={9} y={3} width={6} height={11} rx={3} />
+      <Path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21M9 21h6" />
+    </>
+  ),
+  stop: () => <Rect x={7} y={7} width={10} height={10} rx={2} />,
 };
 
 export function Icon({ name, size = 24, color, strokeWidth = 2 }: { name: IconName; size?: number; color: string; strokeWidth?: number }) {

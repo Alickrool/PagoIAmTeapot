@@ -10,6 +10,7 @@ import { useCopy, useStyles, useTheme, type Theme } from '../mode';
 import { useStackNavigation } from '../navigation';
 import { acceptProvider, pendingProviders } from '../providerList';
 import { manualProviders, withoutBills, type ManualProvider } from '../providersRo';
+import { rowTone } from '../status';
 import { category, deltaColor, deltaLabel, monthLabel, tabular } from '../theme';
 
 /** One compact row per provider: category, bills, last bill, trend vs average, audit. The trend chart is on the provider screen. */
@@ -106,11 +107,14 @@ export default function ProvidersScreen() {
       }
       renderItem={({ item: p }) => {
         const c = category[p.category] ?? category.other;
+        const tone = rowTone(p.audit_status, t); // the whole card: red = anomaly, yellow = warning
         return (
           <Pressable
             onPress={() => navigation.navigate('Provider', { slug: p.slug, provider: p.provider })}
-            style={({ pressed }) => [styles.row, pressed && { opacity: 0.7 }]}
+            style={({ pressed }) => [styles.row, tone && { backgroundColor: tone.bg, borderColor: tone.border }, pressed && { opacity: 0.7 }]}
             accessibilityRole="button"
+            accessibilityLabel={`${p.provider}${p.audit_status === 'critical' ? ', anomalie' : p.audit_status === 'warning' ? ', atenție' : ''}`}
+            testID={`provider-${p.slug}`}
           >
             <ProviderAvatar provider={p.provider} category={p.category} size={t.mode === 'senior' ? 48 : 40} />
             <View style={{ flex: 1, gap: 4, minWidth: 0 }}>
@@ -141,7 +145,7 @@ const makeStyles = (t: Theme) =>
   StyleSheet.create({
     centerFill: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12, padding: 24, backgroundColor: t.bg },
     intro: { color: t.muted, fontSize: t.fs(14), marginBottom: 4 },
-    row: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: t.surface, borderRadius: t.radius - 6, paddingVertical: 12, paddingHorizontal: 14, minHeight: t.touch + 12 },
+    row: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: t.surface, borderRadius: t.radius - 6, borderWidth: 1.5, borderColor: 'transparent', paddingVertical: 12, paddingHorizontal: 14, minHeight: t.touch + 12 },
     line: { flexDirection: 'row', alignItems: 'center', gap: 8 },
     fresh: { backgroundColor: t.surface, borderRadius: t.radius - 6, padding: 14, gap: 10, borderWidth: 1.5, borderColor: t.accent },
     freshTitle: { fontSize: t.fs(14), fontWeight: '800', color: t.accent },

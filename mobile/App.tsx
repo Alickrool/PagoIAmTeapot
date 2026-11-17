@@ -6,6 +6,7 @@ import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Icon, type IconName } from './src/components/Icon';
 import { ModeSwitcher } from './src/components/ModeSwitcher';
+import { SearchBar } from './src/components/SearchBar';
 import { ModeProvider, useCopy, useMode, useTheme } from './src/mode';
 import type { RootStackParamList, TabParamList } from './src/navigation';
 import AddProviderScreen from './src/screens/AddProviderScreen';
@@ -18,6 +19,7 @@ import OverviewScreen from './src/screens/OverviewScreen';
 import ProviderScreen from './src/screens/ProviderScreen';
 import ProvidersScreen from './src/screens/ProvidersScreen';
 import ScanScreen from './src/screens/ScanScreen';
+import SearchScreen from './src/screens/SearchScreen';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const Tab = createMaterialTopTabNavigator<TabParamList>();
@@ -68,15 +70,18 @@ function BigTabBar({ state, navigation }: MaterialTopTabBarProps) {
 function Tabs() {
   const t = useTheme();
   return (
-    <Tab.Navigator
-      tabBarPosition="bottom"
-      tabBar={(props) => <BigTabBar {...props} />}
-      screenOptions={{ swipeEnabled: true, lazy: true, sceneStyle: { backgroundColor: t.bg } }}
-    >
-      <Tab.Screen name="Overview" component={OverviewScreen} />
-      <Tab.Screen name="Scan" component={ScanScreen} />
-      <Tab.Screen name="Providers" component={ProvidersScreen} />
-    </Tab.Navigator>
+    <View style={{ flex: 1, backgroundColor: t.bg }}>
+      <SearchBar />
+      <Tab.Navigator
+        tabBarPosition="bottom"
+        tabBar={(props) => <BigTabBar {...props} />}
+        screenOptions={{ swipeEnabled: true, lazy: true, sceneStyle: { backgroundColor: t.bg } }}
+      >
+        <Tab.Screen name="Overview" component={OverviewScreen} />
+        <Tab.Screen name="Scan" component={ScanScreen} />
+        <Tab.Screen name="Providers" component={ProvidersScreen} />
+      </Tab.Navigator>
+    </View>
   );
 }
 
@@ -122,6 +127,7 @@ function Root() {
         <Stack.Screen name="Bill" component={BillScreen} options={{ title: 'Factura' }} />
         <Stack.Screen name="Provider" component={ProviderScreen} options={{ title: 'Furnizor' }} />
         <Stack.Screen name="AddProvider" component={AddProviderScreen} options={{ title: 'Adaugă furnizor' }} />
+        <Stack.Screen name="Search" component={SearchScreen} options={{ title: 'Caută', headerRight: undefined }} />
         <Stack.Screen name="Dispute" component={DisputeScreen} options={{ title: 'Contestă factura' }} />
         <Stack.Screen name="Offers" component={OffersScreen} options={{ title: 'Oferte mai bune' }} />
         <Stack.Screen name="AutoPay" component={AutoPayScreen} options={{ title: 'Plată automată' }} />

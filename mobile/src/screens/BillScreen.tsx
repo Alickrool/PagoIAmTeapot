@@ -20,6 +20,7 @@ import { AnomalyCard } from '../components/AnomalyCard';
 import { Button } from '../components/Button';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { Toast } from '../components/Toast';
+import { paidLabel } from '../status';
 import { ValidationCard } from '../components/ValidationCard';
 import { Icon } from '../components/Icon';
 import { ReadingModal } from '../components/ReadingModal';
@@ -113,7 +114,7 @@ export default function BillScreen({ route, navigation }: ScreenProps<'Bill'>) {
     setPaying(true);
     try {
       const r = await api.pay(bill.id, 'manual');
-      setBill({ ...bill, status: r.status });
+      setBill({ ...bill, status: r.status, paid_at: r.status === 'paid' ? new Date().toISOString().slice(0, 10) : null });
       // First bill from this provider (came in through a scan)? Offer to add it to "my providers".
       if (r.status === 'paid' && isPending) setAskAddProvider(true);
     } finally {
@@ -231,7 +232,10 @@ export default function BillScreen({ route, navigation }: ScreenProps<'Bill'>) {
             <Button title={copy.pay(bill.total)} onPress={pay} variant={bill.audit.status === 'critical' ? 'secondary' : 'primary'} />
           )
         ) : (
-          <Text style={[styles.muted, { textAlign: 'center' }]}>{bill.status === 'paid' ? copy.paid : bill.status}</Text>
+          <View style={{ alignItems: 'center', gap: 2 }}>
+            <Text style={[styles.muted, { textAlign: 'center' }]}>{bill.status === 'paid' ? copy.paid : paidLabel(bill.status)}</Text>
+            {bill.status === 'paid' && bill.paid_at && <Text style={[styles.muted, { textAlign: 'center', fontWeight: '700' }]}>{paidLabel('paid', bill.paid_at)}</Text>}
+          </View>
         )}
       </ScrollView>
 

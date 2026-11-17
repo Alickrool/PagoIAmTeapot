@@ -1,6 +1,7 @@
 import { Platform } from 'react-native';
 import billsFixture from '../../../shared/fixtures/bills.json';
 import detailsFixture from '../../../shared/fixtures/bill_details.json';
+import { localSearch, SearchInputError, searchQueryString } from '../search';
 import * as derive from './derive';
 import type {
   ApiErrorCode,
@@ -15,6 +16,8 @@ import type {
   ProviderHistory,
   ReadingResponse,
   ProviderSummary,
+  SearchInput,
+  SearchResponse,
   UploadFile,
   ValidationStatus,
 } from './types';
@@ -65,7 +68,7 @@ export function parseApiError(status: number, text: string): ApiRequestError {
 
 // ---- v2 fallback: while /dashboard/ and /providers/ don't exist on the backend (404), build the same JSON
 // on the phone from the bills we already have (see derive.ts and docs/API_V2.md).
-let statusCache: { at: number; value: Map<number, ValidationStatus> } | null = null;
+let billCache: { at: number; value: Promise<Map<number, BillSummary>> } | null = null;
 let pointsCache: { at: number; value: Promise<ReturnType<typeof derive.toPoints>> } | null = null;
 
 function loadPoints() {
@@ -106,6 +109,33 @@ async function appendFile(form: FormData, field: string, file: UploadFile) {
     form.append(field, { uri: file.uri, name: file.name, type: file.mimeType } as unknown as Blob);
   }
 }
+
+/** Every bill's summary (status, paid_at, validation_status) by id, from GET /bills/?all=1. Cached 30 s. */
+function billIndex(): Promise<Map<number, BillSummary>> {
+  if (billCache && Date.now() - billCache.at < 30_000) return billCache.value;
+  const value = (async () => {
+    const all: BillSummary[] = MOCK ? (billsFixture as unknown as BillSummary[]) : await request('/bills/?all=1');
+    return new Map(all.map((b) => [b.id, b]));
+  })();
+  value.catch(() => (billCache = null));
+  billCache = { at: Date.now(), value };
+  return value;
+}
+
+/** Local search errors look like the backend's 400s. */
+function runLocal(input: SearchInput, points: ReturnType<typeof derive.toPoints>, transcript: string | null = null) {
+  try {
+    return localSearch(input, points, transcript);
+  } catch (e) {
+    if (e instanceof SearchInputError) throw new ApiRequestError(400, e.message, e.code);
+    throw e;
+  }
+}
+
+export const VOICE_OFF = 'Căutarea vocală nu e încă activă pe server. Folosește microfonul de pe tastatură.';
+export const VOICE_SLOW = 'Căutarea vocală durează prea mult acum. Încearcă din nou sau scrie ce cauți.';
+/** Same sentence as the backend's AI_MOCK (docs/API_V2.md §7). */
+export const MOCK_TRANSCRIPT = 'Factura PPC din octombrie';
 
 const post = <T,>(path: string, body: unknown) => request<T>(path, { method: 'POST', body: JSON.stringify(body) });
 
@@ -180,7 +210,7 @@ export const api = {
 
   /** User says a needs_review bill is right. docs/API_V2.md §6 */
   confirmBill: (billId: number): Promise<BillDetail> => {
-    statusCache = null; // the "De verificat" marks must update right away
+    billCache = null; // the "De verificat" marks must update right away
     if (!MOCK) return post(`/bills/${billId}/confirm/`, {});
     const bill = details[String(billId)];
     if (!bill) return Promise.reject(new Error('Factura nu există în datele demo.'));
@@ -190,11 +220,45 @@ export const api = {
 
   /** validation_status of every bill, by id (for the "de verificat" marks in lists). Cached 30 s. */
   billStatuses: async (): Promise<Map<number, ValidationStatus>> => {
-    if (statusCache && Date.now() - statusCache.at < 30_000) return statusCache.value;
-    const all: BillSummary[] = MOCK ? (billsFixture as unknown as BillSummary[]) : await request('/bills/?all=1');
-    const value = new Map(all.filter((b) => b.validation_status).map((b) => [b.id, b.validation_status!]));
-    statusCache = { at: Date.now(), value };
-    return value;
+    const all = [...(await billIndex()).values()];
+    return new Map(all.filter((b) => b.validation_status).map((b) => [b.id, b.validation_status!]));
+  },
+
+  /** paid_at of every paid bill, by id (provider history rows show "Plătită pe …"). docs/API_V2.md §7 */
+  paidDates: async (): Promise<Map<number, string>> => {
+    const all = [...(await billIndex()).values()];
+    return new Map(all.filter((b) => b.paid_at).map((b) => [b.id, b.paid_at!]));
+  },
+
+  /** Search bar: free text and/or filters (filters win). Local rules on 404 and in mock mode. docs/API_V2.md §7 */
+  search: async (input: SearchInput): Promise<SearchResponse> => {
+    if (!MOCK) {
+      try {
+        return await request<SearchResponse>(`/search/?${searchQueryString(input)}`);
+      } catch (e) {
+        if (!(e instanceof ApiRequestError && e.status === 404)) throw e;
+      }
+    }
+    const result = runLocal(input, await loadPoints());
+    return MOCK ? delay(result, 200) : result;
+  },
+
+  /** Voice search: one short recording (m4a on the phone, webm on web), field `audio`. docs/API_V2.md §7 */
+  searchVoice: async (audio: UploadFile): Promise<SearchResponse> => {
+    if (MOCK) return delay(runLocal({ q: MOCK_TRANSCRIPT }, await loadPoints(), MOCK_TRANSCRIPT), 1200);
+    const form = new FormData();
+    await appendFile(form, 'audio', audio);
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 60_000);
+    try {
+      return await request<SearchResponse>('/search/voice/', { method: 'POST', body: form, signal: controller.signal });
+    } catch (e) {
+      if (e instanceof ApiRequestError && e.status === 404) throw new ApiRequestError(404, VOICE_OFF, 'voice_off');
+      if ((e as Error)?.name === 'AbortError') throw new ApiRequestError(504, VOICE_SLOW, 'timeout');
+      throw e;
+    } finally {
+      clearTimeout(timer);
+    }
   },
 
   /** The bill as a PDF (original upload, or generated by the backend). docs/API_V2.md §5 */
@@ -238,8 +302,11 @@ export const api = {
     }, 900);
   },
 
-  pay: (billId: number, mode: 'manual' | 'auto'): Promise<PayResponse> =>
-    MOCK ? delay({ status: mode === 'auto' ? 'blocked' : 'paid', reasons: mode === 'auto' ? ['[mock] Estimated index'] : [] }) : post(`/bills/${billId}/pay/`, { mode }),
+  pay: (billId: number, mode: 'manual' | 'auto'): Promise<PayResponse> => {
+    billCache = null; // status and paid_at change
+    pointsCache = null;
+    return MOCK ? delay({ status: mode === 'auto' ? 'blocked' : 'paid', reasons: mode === 'auto' ? ['[mock] Estimated index'] : [] }) : post(`/bills/${billId}/pay/`, { mode });
+  },
 
   createAutoPayRule: (rule: Pick<AutoPayRule, 'provider' | 'max_amount' | 'block_if_estimated' | 'block_if_anomaly'>): Promise<AutoPayRule> =>
     MOCK ? delay({ ...rule, id: 1, active: true, created_at: new Date().toISOString() }) : post('/autopay-rules/', rule),

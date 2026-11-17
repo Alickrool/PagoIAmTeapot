@@ -11,6 +11,7 @@ import type { ScreenProps } from '../navigation';
 import { useStyles, useTheme, type Theme } from '../mode';
 import { category, deltaColor, deltaLabel, money, monthLabel } from '../theme';
 import { Icon } from '../components/Icon';
+import { paidLabel, rowTone } from '../status';
 
 type Metric = 'total' | 'consumption';
 
@@ -19,9 +20,10 @@ const INDEX_LABEL: Record<IndexType, string> = { real: 'Index citit', self: 'Aut
 export default function ProviderScreen({ route, navigation }: ScreenProps<'Provider'>) {
   const t = useTheme();
   const styles = useStyles(makeStyles);
-  const { slug, provider } = route.params;
+  const { slug, provider, month } = route.params;
   const [data, setData] = useState<ProviderHistory | null>(null);
   const [statuses, setStatuses] = useState<Map<number, ValidationStatus>>(new Map());
+  const [paidDates, setPaidDates] = useState<Map<number, string>>(new Map());
   const [error, setError] = useState<string | null>(null);
   const [metric, setMetric] = useState<Metric>('total');
   const [selected, setSelected] = useState<number | null>(null);
@@ -33,9 +35,13 @@ export default function ProviderScreen({ route, navigation }: ScreenProps<'Provi
         .then((d) => {
           setData(d);
           api.billStatuses().then(setStatuses).catch(() => {});
+          api.paidDates().then(setPaidDates).catch(() => {});
+          // Opened from search with a month: select that month's bill in the chart.
+          const hit = month ? d.bills.find((b) => b.period_end.slice(0, 7) === month) : undefined;
+          if (hit) setSelected(hit.id);
         })
         .catch((e) => setError(String(e?.message ?? e))),
-    [slug],
+    [slug, month],
   );
 
   const load = () => {
@@ -144,7 +150,7 @@ export default function ProviderScreen({ route, navigation }: ScreenProps<'Provi
       <View style={styles.list}>
         <ScrollView style={{ maxHeight: t.mode === 'senior' ? 420 : 340 }} nestedScrollEnabled showsVerticalScrollIndicator>
           {data.bills.map((b) => (
-            <BillRow key={b.id} bill={b} unit={unit} flagged={isFlagged(statuses.get(b.id))} onPress={() => open(b.id)} />
+            <BillRow key={b.id} bill={b} unit={unit} flagged={isFlagged(statuses.get(b.id))} paidAt={paidDates.get(b.id)} onPress={() => open(b.id)} />
           ))}
         </ScrollView>
       </View>
@@ -198,14 +204,7 @@ function DiscrepancyCard({ d, onPress }: { d: Discrepancy; onPress: () => void }
   );
 }
 
-/** Whole-row colour for a bill: anomaly = red box, attention = yellow box, ok = plain. */
-export function rowTone(status: ProviderBill['audit_status'], t: Theme): { bg: string; border: string } | null {
-  if (status === 'critical') return { bg: t.sev.critical.bg, border: t.sev.critical.color };
-  if (status === 'warning') return { bg: t.sev.warning.bg, border: t.sev.warning.color };
-  return null;
-}
-
-function BillRow({ bill, unit, flagged, onPress }: { bill: ProviderBill; unit: string; flagged: boolean; onPress: () => void }) {
+function BillRow({ bill, unit, flagged, paidAt, onPress }: { bill: ProviderBill; unit: string; flagged: boolean; paidAt?: string; onPress: () => void }) {
   const t = useTheme();
   const styles = useStyles(makeStyles);
   const tone = rowTone(bill.audit_status, t); // the whole box: red = anomaly, yellow = attention
@@ -242,7 +241,7 @@ function BillRow({ bill, unit, flagged, onPress }: { bill: ProviderBill; unit: s
         {bill.delta_total_pct != null && (
           <Text style={[styles.delta, { color: deltaColor(bill.delta_total_pct, t) }]}>{deltaLabel(bill.delta_total_pct)}</Text>
         )}
-        <Text style={styles.muted}>{bill.status}</Text>
+        <Text style={[styles.muted, { fontSize: t.fs(12) }]}>{paidLabel(bill.status, paidAt)}</Text>
       </View>
     </Pressable>
   );

@@ -16,7 +16,7 @@ import type {
   ProviderSummary,
 } from './types';
 
-interface Point {
+export interface Point {
   id: number;
   provider: string;
   slug: string;
@@ -31,6 +31,9 @@ interface Point {
   status: BillStatus;
   audit_status: AuditStatus;
   anomalies: AnomalyShort[];
+  validation_status?: 'accepted' | 'needs_review';
+  paid_at?: string | null;
+  due_date?: string | null;
 }
 
 export const slugify = (provider: string) =>
@@ -71,6 +74,9 @@ export function toPoints(details: BillDetail[], summaries: BillSummary[] = []): 
         status: s?.status ?? 'paid',
         audit_status: s?.audit_status ?? (h.index_type === 'estimated' ? 'warning' : 'ok'),
         anomalies: [],
+        validation_status: s?.validation_status,
+        paid_at: s?.paid_at ?? null,
+        due_date: s?.due_date ?? null,
       });
     }
     points.push({
@@ -85,6 +91,9 @@ export function toPoints(details: BillDetail[], summaries: BillSummary[] = []): 
       status: d.status,
       audit_status: d.audit.status,
       anomalies: d.audit.anomalies.map(({ id, severity, title }) => ({ id, severity, title })),
+      validation_status: d.validation?.status ?? byId.get(d.id)?.validation_status,
+      paid_at: d.paid_at ?? byId.get(d.id)?.paid_at ?? null,
+      due_date: d.due_date,
     });
   }
   return points.sort((a, b) => a.period_end.localeCompare(b.period_end) || a.id - b.id);

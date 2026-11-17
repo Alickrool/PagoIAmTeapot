@@ -5,7 +5,7 @@ import path from 'path';
 import { slugify } from '../src/api/derive';
 import { THEMES } from '../src/mode';
 import { addManualProvider, fold, manualProviders, removeManualProvider, RO_PROVIDERS, searchProviders, withoutBills } from '../src/providersRo';
-import { rowTone } from '../src/screens/ProviderScreen';
+import { rowTone } from '../src/status';
 
 beforeEach(() => AsyncStorage.clear());
 

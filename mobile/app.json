@@ -20,6 +20,14 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "plugins": [
+      [
+        "expo-audio",
+        {
+          "microphonePermission": "Pago folosește microfonul ca să cauți facturi cu vocea."
+        }
+      ]
+    ]
   }
 }

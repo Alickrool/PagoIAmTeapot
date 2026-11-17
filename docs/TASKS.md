@@ -126,12 +126,12 @@ If Gemini cannot read the phone's audio, the keyboard's own dictation mic types 
 
 | # | Task | Status |
 |---|---|---|
-| F1 | Nav params: `Overview: {month?}`, `Provider: {slug, provider, month?}` (pre-select the month), new stack screen `Search: {q?, voice?}` | open |
-| F2 | `SearchBar` strip above the tabs (all 3 tabs): pill "Caută o factură…" + mic; per-mode `COPY` (Senior: bigger, mic first); search + mic icons | open |
-| F3 | `SearchScreen`: autofocus, 300 ms debounce → `api.search(q)`; chips (× drops a filter, call again with params); top action from `target`; rows grouped by month ("Plătită pe …" / "De plată", PDF button); empty state with example chips | open |
-| F4 | Voice: `npx expo install expo-audio`, mic permission in `app.json`; tap to start/stop (auto-stop 15 s), listening animation, "Mă gândesc…"; `api.searchVoice(uri)` (multipart like `scanBill`); transcript into the field; jump to `target` with a toast of what was heard; errors show `detail` | open |
-| F5 | Mock mode: `api.search` filters `derive.toPoints` with `searchProviders()` + month names; mic hidden | open |
-| F6 | `paid_at` on the bill screen and provider rows; jest tests for search client, mock filter, SearchScreen | open |
+| F1 | Nav params: `Overview: {month?}`, `Provider: {slug, provider, month?}` (pre-select the month), new stack screen `Search: {q?, voice?}` | ✅ month jumps use `popTo` (back to the existing home, no second copy of the tabs) |
+| F2 | `SearchBar` strip above the tabs (all 3 tabs): pill "Caută o factură…" + mic; per-mode `COPY` (Senior: bigger, mic first); search + mic icons | ✅ |
+| F3 | `SearchScreen`: autofocus, 300 ms debounce → `api.search(q)`; chips (× drops a filter, call again with params); top action from `target`; rows grouped by month ("Plătită pe …" / "De plată", PDF button); empty state with example chips | ✅ rows are coloured whole (red anomaly / yellow warning) |
+| F4 | Voice: `npx expo install expo-audio`, mic permission in `app.json`; tap to start/stop (auto-stop 15 s), listening animation, "Mă gândesc…"; `api.searchVoice(uri)` (multipart like `scanBill`); transcript into the field; jump to `target` with a toast of what was heard; errors show `detail` | ✅ iPhone records **16 kHz mono WAV**: live, Gemini understood WAV in seconds but gave an empty transcript for the same words as m4a / AAC (1–2 min). Android still m4a, see SEARCH_SYNC_REPORT.md |
+| F5 | Mock mode: `api.search` filters `derive.toPoints` with `searchProviders()` + month names; mic hidden | ✅ `mobile/src/search.ts` ports `services/search.py` (also the 404 fallback); same filters/chips as all 8 cases in `search.json` |
+| F6 | `paid_at` on the bill screen and provider rows; jest tests for search client, mock filter, SearchScreen | ✅ 71 new Jest tests (182 total) |
 
 Cut order if late: F5 → demo `paid_at` dates → voice auto-jump (keep the list) → voice entirely (keyboard dictation).
 

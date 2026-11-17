@@ -146,6 +146,11 @@ export const COPY = {
     addPage: 'Adaugă măcar o pagină',
     autopayOk: 'Ar plăti singur. Chill.',
     autopayBlocked: 'Blocată. Te-am salvat.',
+    searchPlaceholder: 'Caută o factură…',
+    searchHint: 'Zi „PPC octombrie” sau „ce n-am plătit”',
+    listening: 'Te ascult… zi ce factură cauți',
+    thinking: 'Stai o sec…',
+    heard: (s: string) => `Am auzit: „${s}”`,
   },
   millennial: {
     modeName: 'Millennials',
@@ -186,6 +191,11 @@ export const COPY = {
     addPage: 'Adaugă cel puțin o pagină',
     autopayOk: 'Autopilotul ar achita această factură.',
     autopayBlocked: 'Autopilotul ar pune plata în așteptare.',
+    searchPlaceholder: 'Caută o factură…',
+    searchHint: 'De exemplu „PPC octombrie” sau „neplătite”',
+    listening: 'Te ascult… spune ce factură cauți',
+    thinking: 'Mă gândesc…',
+    heard: (s: string) => `Am auzit: „${s}”`,
   },
   senior: {
     modeName: 'Senior',
@@ -225,6 +235,11 @@ export const COPY = {
     addPage: 'Adăugați o poză',
     autopayOk: 'Factura s-ar plăti singură.',
     autopayBlocked: 'Plata ar fi oprită, ca să vă protejăm.',
+    searchPlaceholder: 'Căutați o factură…',
+    searchHint: 'Apăsați microfonul și spuneți, de exemplu, „factura PPC din octombrie”',
+    listening: 'Vă ascult… spuneți ce factură căutați',
+    thinking: 'Mă gândesc…',
+    heard: (s: string) => `Am auzit: „${s}”`,
   },
 };
 

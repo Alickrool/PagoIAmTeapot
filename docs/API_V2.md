@@ -11,6 +11,7 @@ money as **strings**, dates `YYYY-MM-DD`). Types on the app side: `mobile/src/ap
 | 4 | `GET /api/providers/{slug}/` | Provider history screen | ✅ **live** |
 | 5 | `GET /api/bills/{id}/pdf/` | Bill screen: "Vezi factura (PDF)" | ✅ **live** |
 | 6 | Scan validation: `validation` in `BillDetail`, `POST /api/bills/{id}/confirm/` | Scan result + bill screen | ✅ **live** (app side: AV-tasks in [TASKS.md](TASKS.md)) |
+| 7 | `GET /api/search/?q=`, `POST /api/search/voice/`, `paid_at` | Search bar + voice (all tabs) | 🚧 contract, backend in progress (S-tasks in [TASKS.md](TASKS.md)) |
 
 The app already works without 2–4: until they exist (404) it computes the same JSON on the phone from
 `GET /bills/` + `GET /bills/{id}/` (`mobile/src/api/derive.ts`). That file is a **reference implementation** of the
@@ -366,6 +367,71 @@ from the document.
 
 **Bills scanned before validation existed**: `python manage.py revalidate` runs the rules again on their stored
 extraction (no Gemini). An impossible period on an old scan becomes a warning there, never a deletion.
+
+## 7. Search + voice search 🚧
+
+One search bar above the tabs. **The backend understands the query, the app only shows the answer.** Text and voice
+use the same rules, so voice never invents filters the rules cannot explain.
+
+### `GET /api/search/?q=<text>`
+
+Rules, no AI (instant, free, exact). Case and diacritics do not matter (`apa` = `apă`, `luna trecuta` = `luna trecută`).
+
+| What the user says | Filter |
+|---|---|
+| a provider name or alias, also misspelled by speech (`ppc`, `enel`, `enji`, `apa brasov`, `digi`, `rcs`) | `provider` |
+| `lumină` / `curent` / `electricitate`, `gaz`, `apă` / `canal`, `internet` / `telefon` / `tv` | `category` |
+| `octombrie`, `oct`, `octombrie 2025`, `10/2026`, `2026-10`, `luna asta` / `luna curentă`, `luna trecută` | `month` (a month without a year = the latest such month that has bills) |
+| `neplătit` / `de plată`, `plătit`, `de verificat` / `probleme` / `anomalii` | `status`: `unpaid` / `paid` / `review` |
+
+Filters can also come as params, which win over `q`: `&provider=<slug>&category=<category>&month=YYYY-MM&status=unpaid|paid|review`.
+To drop a chip, call again with the remaining chips' values as params and no `q`.
+
+```json
+{
+  "query": "ppc octombrie",
+  "transcript": null,
+  "filters": {"provider": "PPC", "slug": "ppc", "category": null, "month": "2026-10", "status": null},
+  "chips": [{"kind": "provider", "value": "ppc", "label": "PPC"},
+            {"kind": "month", "value": "2026-10", "label": "octombrie 2026"}],
+  "target": {"screen": "Bill", "id": 12},
+  "message": "Am găsit o factură PPC din octombrie 2026.",
+  "results": [{"id": 12, "provider": "PPC", "slug": "ppc", "category": "electricity",
+               "month": "2026-10", "month_label": "octombrie 2026",
+               "period_start": "2026-09-01", "period_end": "2026-10-31", "due_date": "2026-11-20",
+               "total": "517.06", "status": "paid", "paid_at": "2026-11-16",
+               "audit_status": "critical", "validation_status": "accepted", "has_pdf": true}]
+}
+```
+
+- `results`: newest month first, then provider name; at most 50. One bill per provider per month, the same bills the
+  dashboard counts. `has_pdf` = `GET /bills/{id}/pdf/` will answer 200. `paid_at` is `null` when not paid.
+- `target`: where the app can jump straight away (it still shows the list):
+  - exactly one result → `{"screen": "Bill", "id": 12}`;
+  - else a provider was found → `{"screen": "Provider", "slug": "ppc", "provider": "PPC", "month": "2026-10" | null}`;
+  - else only a month was found → `{"screen": "Overview", "month": "2026-09"}`;
+  - else `null`.
+- `chips.kind`: `provider | category | month | status`; `label` is Romanian, ready to show.
+- `message`: one Romanian sentence for the top of the list; with no results it says what was understood and what to try.
+- Errors: `400 empty_query` (no `q` and no filter params), `400 bad_month`.
+
+### `POST /api/search/voice/` (multipart, field `audio`)
+
+The phone records (`expo-audio`, m4a) and sends the file; one Gemini call writes down what was said and a short search
+query (with the real provider names as spelling hints); then the **same rules** as above run on that query.
+
+- Accepted: m4a / mp4 / aac / wav / ogg / webm, at most 1 MB (about 30 s).
+- Response: the same body as `GET /search/`, with `transcript` = what was heard (show it in the search field) and
+  `query` = what was searched.
+- Errors: `400 no_audio`, `400 audio_too_large`, `400 unsupported_audio`, `422 not_understood` (silence / nothing
+  about bills), `503 ai_busy`, `429 too_many_requests` (shares `ASK_RATE`).
+- `AI_MOCK=1`: the transcript is always `"factura PPC din octombrie"`.
+
+### `paid_at`
+
+New field on `BillSummary`, `BillDetail` and search results: `"2026-11-16"` or `null`. `POST /bills/{id}/pay/`
+sets it when the bill becomes `paid`; paid demo bills get a date a few days before their due date. The app shows
+"Plătită pe 16.11.2026" and the bill PDF as the receipt.
 
 ## Checklist for the backend
 

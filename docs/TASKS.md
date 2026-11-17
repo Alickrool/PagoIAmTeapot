@@ -100,6 +100,40 @@ Out of scope for the hackathon (pitch it as the next step): provider registry wi
 check, login and per-user bills, ANAF online check, `PATCH` to correct fields, file retention, scan log.
 **Before the demo:** rotate the Gemini key (it was pasted in a chat) and put the new one in `backend/.env`.
 
+## Search + voice search (Tue morning, ~4 h)
+
+A search bar above the tabs and a mic: "PPC octombrie", "factura de lumină de luna trecută", "ce n-am plătit".
+Contract: [API_V2.md §7](API_V2.md). The backend understands the query (rules; Gemini only turns speech into text),
+the app shows results and jumps to the screens we already have. Stays in Expo Go: `expo-audio`, no speech module.
+If Gemini cannot read the phone's audio, the keyboard's own dictation mic types into the same field (demo still works).
+
+**Demo line:** Senior mode → mic → "Arată-mi factura de lumină din octombrie" → the PPC October bill opens (🔴 estimated index).
+
+### Backend – Person B
+
+| # | Task | Status |
+|---|---|---|
+| S0 | Merge `frontend-final` into `main` | ✅ 66 backend tests green |
+| S1 | Contract (API_V2 §7) + `shared/fixtures/search.json` for the app's mock mode | contract ✅, fixtures after S3 |
+| S2 | `services/search.py`: months, providers (aliases + misspellings), categories, status words → filters, chips, target, message | open |
+| S3 | `GET /api/search/` | open |
+| S4 | `Bill.paid_at` (migration), set by `pay`, dates for paid demo bills, in serializers | open |
+| S5 | `POST /api/search/voice/`: audio checks, Gemini speech → query, mock, rate limit (spike a real phone m4a first) | open |
+| S6 | Tests + live e2e with a real voice clip | open |
+
+### Frontend – Person A
+
+| # | Task | Status |
+|---|---|---|
+| F1 | Nav params: `Overview: {month?}`, `Provider: {slug, provider, month?}` (pre-select the month), new stack screen `Search: {q?, voice?}` | open |
+| F2 | `SearchBar` strip above the tabs (all 3 tabs): pill "Caută o factură…" + mic; per-mode `COPY` (Senior: bigger, mic first); search + mic icons | open |
+| F3 | `SearchScreen`: autofocus, 300 ms debounce → `api.search(q)`; chips (× drops a filter, call again with params); top action from `target`; rows grouped by month ("Plătită pe …" / "De plată", PDF button); empty state with example chips | open |
+| F4 | Voice: `npx expo install expo-audio`, mic permission in `app.json`; tap to start/stop (auto-stop 15 s), listening animation, "Mă gândesc…"; `api.searchVoice(uri)` (multipart like `scanBill`); transcript into the field; jump to `target` with a toast of what was heard; errors show `detail` | open |
+| F5 | Mock mode: `api.search` filters `derive.toPoints` with `searchProviders()` + month names; mic hidden | open |
+| F6 | `paid_at` on the bill screen and provider rows; jest tests for search client, mock filter, SearchScreen | open |
+
+Cut order if late: F5 → demo `paid_at` dates → voice auto-jump (keep the list) → voice entirely (keyboard dictation).
+
 ## Timeline
 
 | When | Frontend | Backend |

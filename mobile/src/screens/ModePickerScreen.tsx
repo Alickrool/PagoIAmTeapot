@@ -15,7 +15,7 @@ export default function ModePickerScreen() {
   return (
     <SafeAreaView style={styles.safe}>
       <ScrollView contentContainerStyle={styles.page}>
-        <Text style={styles.brand}>pago</Text>
+        <Text style={styles.brand}>AI Pago</Text>
         <Text style={styles.title}>Cum vrei să arate aplicația?</Text>
         <Text style={styles.sub}>Aceleași facturi și aceleași verificări, pe stilul tău. Poți schimba oricând.</Text>
         {ORDER.map((m) => {

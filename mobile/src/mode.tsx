@@ -1,4 +1,5 @@
-// Generation modes (design: "Pago pe generații" mockup). One app, three looks + tones:
+// Generation modes (design: "Pago pe generații" mockup). One app, three looks + tones, shown as
+// "Gen Z" (informal), "Profesional" (millennial) and "Clasic" (senior):
 // genz = dark, lime accent, slang · millennial = light, Pago violet, classy · senior = large text, navy, warm.
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
@@ -159,10 +160,14 @@ export const COPY = {
     archiveBody: 'Îl mutăm în arhivă. Facturile și istoricul rămân, îl scoți oricând.',
     archivedToast: (p: string) => `${p} e în arhivă. Facturile au rămas.`,
     unarchivedToast: (p: string) => `${p} e înapoi în listă.`,
+    archiveShort: 'Arhivează',
+    unarchiveShort: 'Scoate',
+    swipeHint: 'Glisează un furnizor spre dreapta ca să-l arhivezi.',
+    undo: 'Anulează',
   },
   millennial: {
-    modeName: 'Millennials',
-    modeDesc: 'Buget, automatizare, economii',
+    modeName: 'Profesional',
+    modeDesc: 'Buget, automatizări și economii, la obiect',
     tabOverview: 'Buget',
     tabScan: 'Scanează',
     tabProviders: 'Furnizori',
@@ -212,10 +217,14 @@ export const COPY = {
     archiveBody: 'Potrivit când ai încheiat contractul sau ai trecut la alt furnizor. Facturile și istoricul rămân disponibile.',
     archivedToast: (p: string) => `${p} a fost mutat în arhivă. Facturile rămân disponibile.`,
     unarchivedToast: (p: string) => `${p} a revenit în lista de furnizori.`,
+    archiveShort: 'Arhivează',
+    unarchiveShort: 'Scoate',
+    swipeHint: 'Glisează un furnizor spre dreapta pentru a-l arhiva.',
+    undo: 'Anulează',
   },
   senior: {
-    modeName: 'Senior',
-    modeDesc: 'Text mare, simplu și clar',
+    modeName: 'Clasic',
+    modeDesc: 'Text mare, limbaj simplu și politicos',
     tabOverview: 'Facturi',
     tabScan: 'Fotografiați',
     tabProviders: 'Istoric',
@@ -264,6 +273,10 @@ export const COPY = {
     archiveBody: 'Îl punem deoparte, în arhivă. Facturile vechi rămân și le puteți vedea oricând.',
     archivedToast: (p: string) => `Am pus ${p} în arhivă. Facturile vechi rămân.`,
     unarchivedToast: (p: string) => `${p} este din nou în listă.`,
+    archiveShort: 'Arhivați',
+    unarchiveShort: 'Scoateți',
+    swipeHint: 'Trageți un furnizor spre dreapta ca să-l puneți în arhivă.',
+    undo: 'Anulați',
   },
 };
 

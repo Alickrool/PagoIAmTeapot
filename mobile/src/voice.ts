@@ -27,7 +27,7 @@ export const VOICE_RECORDING: RecordingOptions = {
   },
 };
 
-export const MIC_DENIED = 'Pago nu are acces la microfon. Dă-i acces din Setări sau scrie ce cauți.';
+export const MIC_DENIED = 'AI Pago nu are acces la microfon. Dă-i acces din Setări sau scrie ce cauți.';
 
 /** The recording as a file for the multipart upload. The backend checks the real type from the bytes. */
 export function audioFile(uri: string): UploadFile {

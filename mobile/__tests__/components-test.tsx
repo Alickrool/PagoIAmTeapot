@@ -93,7 +93,7 @@ describe('Toast (AV2/AV4)', () => {
 });
 
 describe('older shared components', () => {
-  it('SeverityBadge uses the mode wording (default mode = Millennials)', async () => {
+  it('SeverityBadge uses the mode wording (default mode = Profesional)', async () => {
     await render(<SeverityBadge severity="critical" />);
     expect(screen.getByText('Anomalie')).toBeTruthy();
   });

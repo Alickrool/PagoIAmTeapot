@@ -163,6 +163,17 @@ class ExtractionCache(models.Model):
         return f"{self.filename or self.file_hash[:12]}"
 
 
+class ArchivedProvider(models.Model):
+    """A provider the user no longer uses (docs/API_V2.md §8): still listed with all its bills, but greyed out at the
+    bottom of the list. Keyed by slug, because providers come from the bills and are not stored on their own."""
+
+    slug = models.SlugField(max_length=64, unique=True)
+    archived_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.slug
+
+
 class AutoPayRule(models.Model):
     provider = models.CharField(max_length=64)
     max_amount = models.DecimalField(max_digits=10, decimal_places=2)

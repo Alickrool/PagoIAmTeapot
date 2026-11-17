@@ -11,7 +11,7 @@ from dataclasses import dataclass, field
 from decimal import ROUND_HALF_UP, Decimal
 from statistics import mean
 
-from bills.models import Bill
+from bills.models import ArchivedProvider, Bill
 from bills.services import ro
 from bills.services.audit import audit_bill
 
@@ -151,8 +151,14 @@ def _short_anomalies(p: Point) -> list[dict]:
     return [{"id": a["id"], "severity": a["severity"], "title": a["title"]} for a in p.audit["anomalies"]]
 
 
+def archived() -> dict[str, str]:
+    """slug -> when it was archived (ISO), for every archived provider."""
+    return {a.slug: a.archived_at.isoformat() for a in ArchivedProvider.objects.all()}
+
+
 def providers() -> list[dict]:
     result = []
+    gone = archived()
     for slug, ps in _by_provider(points()).items():
         last = ps[-1]
         previous = [p.total for p in ps[:-1]]
@@ -170,10 +176,13 @@ def providers() -> list[dict]:
             "audit_status": last.audit_status,
             "anomalies_count": sum(1 for a in last.audit["anomalies"] if a["severity"] != "info"),
             "totals": [money(p.total) for p in ps[-12:]],
+            "archived": slug in gone,
+            "archived_at": gone.get(slug),
         })
     # last_period_end desc, then provider name
     result.sort(key=lambda r: r["provider"])
     result.sort(key=lambda r: r["last_period_end"], reverse=True)
+    result.sort(key=lambda r: r["archived"])  # archived providers go to the bottom, same order among themselves
     return result
 
 
@@ -276,6 +285,7 @@ def provider_history(slug: str) -> dict:
     totals = [p.total for p in ps]
     cons = [p.bill.consumption for p in ps if p.bill.consumption is not None]
     previous = totals[:-1]
+    archived_at = archived().get(slug)
 
     bills = []
     for i, p in enumerate(ps):
@@ -304,6 +314,8 @@ def provider_history(slug: str) -> dict:
         "category": last.bill.category,
         "currency": "RON",
         "consumption_unit": last.bill.consumption_unit,
+        "archived": archived_at is not None,
+        "archived_at": archived_at,
         "stats": {
             "average_total": money(mean(previous)) if previous else None,
             "min_total": money(min(totals)),

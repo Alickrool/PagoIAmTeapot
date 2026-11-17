@@ -12,6 +12,7 @@ money as **strings**, dates `YYYY-MM-DD`). Types on the app side: `mobile/src/ap
 | 5 | `GET /api/bills/{id}/pdf/` | Bill screen: "Vezi factura (PDF)" | ✅ **live** |
 | 6 | Scan validation: `validation` in `BillDetail`, `POST /api/bills/{id}/confirm/` | Scan result + bill screen | ✅ **live** (app side: AV-tasks in [TASKS.md](TASKS.md)) |
 | 7 | `GET /api/search/?q=`, `POST /api/search/voice/`, `paid_at` | Search bar + voice (all tabs) | ✅ **live** (voice checked live on WAV; phone m4a still to try) |
+| 8 | `POST` / `DELETE /api/providers/{slug}/archive/`, `archived` on provider cards | Providers tab: "Mută în arhivă" | ✅ **live** |
 
 The app already works without 2–4: until they exist (404) it computes the same JSON on the phone from
 `GET /bills/` + `GET /bills/{id}/` (`mobile/src/api/derive.ts`). That file is a **reference implementation** of the
@@ -146,7 +147,7 @@ scanned again in the demo), only the newest counts, so totals are never doubled.
 
 ## 3. `GET /api/providers/` – provider list
 
-One entry per provider, **sorted by `last_period_end` desc, then provider name**.
+One entry per provider, **sorted by `last_period_end` desc, then provider name; archived providers (§8) last**.
 
 ```json
 [
@@ -162,7 +163,9 @@ One entry per provider, **sorted by `last_period_end` desc, then provider name**
     "trend_pct": 87.0,
     "audit_status": "critical",
     "anomalies_count": 3,
-    "totals": ["246.62", "279.61", "...", "501.85"]
+    "totals": ["246.62", "279.61", "...", "501.85"],
+    "archived": false,
+    "archived_at": null
   }
 ]
 ```
@@ -173,6 +176,7 @@ One entry per provider, **sorted by `last_period_end` desc, then provider name**
 | `trend_pct` | `(last_total − average_total) / average_total × 100` |
 | `audit_status`, `anomalies_count` | from the **latest** bill's audit (`anomalies_count` counts `warning` + `critical`, not `info`) |
 | `totals` | last 12 bill totals, **oldest first** – the sparkline on the card |
+| `archived`, `archived_at` | the user moved this provider to the archive (§8); `archived_at` is an ISO date-time or `null` |
 
 ---
 
@@ -185,6 +189,8 @@ One entry per provider, **sorted by `last_period_end` desc, then provider name**
   "category": "electricity",
   "currency": "RON",
   "consumption_unit": "kWh",
+  "archived": false,
+  "archived_at": null,
   "stats": {
     "average_total": "268.40",
     "min_total": "238.10",
@@ -435,6 +441,22 @@ query (with the real provider names as spelling hints); then the **same rules** 
 New field on `BillSummary`, `BillDetail` and search results: `"2026-11-16"` or `null`. `POST /bills/{id}/pay/`
 sets it when the bill becomes `paid`; paid demo bills get a date a few days before their due date. The app shows
 "Plătită pe 16.11.2026" and the bill PDF as the receipt.
+
+## 8. Provider archive ✅ live
+
+A provider the user does not use any more (moved to another supplier) can go to the archive. **Only the look changes:**
+the card turns grey and goes to the bottom of `GET /providers/`; its bills, history, PDFs, dashboard totals and
+search results stay exactly as they are.
+
+| Call | Does | Answers |
+|---|---|---|
+| `POST /api/providers/{slug}/archive/` | puts it in the archive (calling it again is fine) | `200` + the provider's card (§3) with `archived: true` |
+| `DELETE /api/providers/{slug}/archive/` | takes it out of the archive (fine if it was not archived) | `200` + the card with `archived: false`, `archived_at: null` |
+
+- Unknown slug (no bills from that provider): `404 {"code": "unknown_provider", "detail": "..."}`.
+- `GET /providers/{slug}/` also has `archived` / `archived_at`, so the history screen can show "Scoate din arhivă".
+- `seed_demo` empties the archive, like everything else in the demo data.
+- Suggested texts: "Mută în arhivă" / "Scoate din arhivă"; section title at the bottom of the list: "Arhivă".
 
 ## Checklist for the backend
 

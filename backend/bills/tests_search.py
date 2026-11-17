@@ -216,3 +216,50 @@ class GeminiTimeoutTests(TestCase):
             with self.assertRaises(ai.AIUnavailable):
                 ai.transcribe_query(M4A, "audio/mp4", [])
         self.assertEqual([m for m, _ in calls], ["a", "b"])
+
+
+@override_settings(AI_MOCK=True, SCAN_RATE=None, ASK_RATE=None, CURRENT_MONTH="2026-10")
+class ProviderArchiveTests(TestCase):
+    """docs/API_V2.md §8: archiving only changes how the provider list looks."""
+
+    @classmethod
+    def setUpTestData(cls):
+        call_command("seed_demo", stdout=io.StringIO())
+
+    def setUp(self):
+        self.client = APIClient()
+
+    def slugs(self):
+        return [(p["slug"], p["archived"]) for p in self.client.get("/api/providers/").json()]
+
+    def test_archive_and_back(self):
+        before = self.slugs()
+        self.assertFalse(any(a for _, a in before))
+        dashboard = self.client.get("/api/dashboard/").json()
+
+        r = self.client.post("/api/providers/ppc/archive/")
+        self.assertEqual(r.status_code, 200)
+        self.assertTrue(r.json()["archived"])
+        self.assertIsNotNone(r.json()["archived_at"])
+        self.assertEqual(self.slugs()[-1], ("ppc", True))  # at the bottom
+        self.assertTrue(self.client.get("/api/providers/ppc/").json()["archived"])
+        self.assertEqual(self.client.post("/api/providers/ppc/archive/").status_code, 200)  # twice is fine
+
+        # Nothing else changes: bills, history, dashboard, search
+        self.assertEqual(self.client.get("/api/dashboard/").json()["total"], dashboard["total"])
+        self.assertEqual(len(self.client.get("/api/providers/ppc/").json()["bills"]), 12)
+        self.assertEqual(len(self.client.get("/api/search/", {"q": "ppc"}).json()["results"]), 12)
+
+        r = self.client.delete("/api/providers/ppc/archive/")
+        self.assertEqual((r.status_code, r.json()["archived"], r.json()["archived_at"]), (200, False, None))
+        self.assertEqual(self.slugs(), before)
+
+    def test_unknown_provider(self):
+        for method in (self.client.post, self.client.delete):
+            r = method("/api/providers/orange/archive/")
+            self.assertEqual((r.status_code, r.json()["code"]), (404, "unknown_provider"))
+
+    def test_seed_demo_clears_the_archive(self):
+        self.client.post("/api/providers/digi/archive/")
+        call_command("seed_demo", stdout=io.StringIO())
+        self.assertFalse(any(a for _, a in self.slugs()))

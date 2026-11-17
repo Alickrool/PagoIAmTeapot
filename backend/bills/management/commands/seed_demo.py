@@ -18,7 +18,7 @@ from decimal import ROUND_HALF_UP, Decimal
 from django.core.management.base import BaseCommand
 from django.db import transaction
 
-from bills.models import AutoPayRule, Bill, LineItem
+from bills.models import ArchivedProvider, AutoPayRule, Bill, LineItem
 
 VAT = Decimal("21")
 MONTHS = [(2025, m) for m in range(11, 13)] + [(2026, m) for m in range(1, 11)]  # Nov 2025 .. Oct 2026
@@ -127,6 +127,7 @@ class Command(BaseCommand):
     def handle(self, *args, **opts):
         Bill.objects.all().delete()
         AutoPayRule.objects.all().delete()
+        ArchivedProvider.objects.all().delete()
         seed_engie()
         seed_ppc()
         seed_digi()

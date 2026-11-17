@@ -11,7 +11,7 @@ from rest_framework.response import Response
 from google.genai import errors as genai_errors
 from rest_framework.views import APIView
 
-from bills.models import AutoPayRule, Bill, BillFile, ValidationStatus
+from bills.models import ArchivedProvider, AutoPayRule, Bill, BillFile, ValidationStatus
 from bills.throttles import AskThrottle, ScanThrottle
 from bills.serializers import (AskSerializer, AutoPayRuleSerializer, BillDetailSerializer, BillListSerializer,
                                DisputeSerializer, LineItemSerializer, PaySerializer, ReadingSerializer)
@@ -250,6 +250,29 @@ class ProviderDetailView(APIView):
             return Response(overview.provider_history(slug))
         except overview.UnknownProvider:
             return Response({"code": "unknown_provider", "detail": f"Nu există furnizorul „{slug}”."}, status=404)
+
+
+class ProviderArchiveView(APIView):
+    """POST /api/providers/{slug}/archive/ puts a provider in the archive, DELETE takes it out (docs/API_V2.md §8).
+    Only how the list looks: the bills, totals and history stay as they are. Answers the provider's card."""
+
+    def _card(self, slug):
+        return next((p for p in overview.providers() if p["slug"] == slug), None)
+
+    def _unknown(self, slug):
+        return Response({"code": "unknown_provider", "detail": f"Nu există furnizorul „{slug}”."}, status=404)
+
+    def post(self, request, slug):
+        if not self._card(slug):
+            return self._unknown(slug)
+        ArchivedProvider.objects.get_or_create(slug=slug)
+        return Response(self._card(slug))
+
+    def delete(self, request, slug):
+        if not self._card(slug):
+            return self._unknown(slug)
+        ArchivedProvider.objects.filter(slug=slug).delete()
+        return Response(self._card(slug))
 
 
 # ---- original uploads and the bill as PDF (docs/API_V2.md §5) ----

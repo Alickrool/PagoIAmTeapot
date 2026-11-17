@@ -111,7 +111,7 @@ const lei = (v: number | string) => `${Number(v).toFixed(2).replace('.', ',')} l
 export const COPY = {
   genz: {
     modeName: 'Innovative',
-    modeDesc: 'Dark mode, direct, cu slang',
+    modeDesc: 'Dark mode, liber, direct',
     tabOverview: 'Acasă',
     tabScan: 'Scanează',
     tabProviders: 'Furnizori',

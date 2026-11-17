@@ -3,7 +3,9 @@ import { useCallback, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { api } from '../api/client';
 import type { ProviderSummary } from '../api/types';
+import { archivedLabel, splitArchived } from '../archive';
 import { Button } from '../components/Button';
+import { Icon } from '../components/Icon';
 import { ProviderAvatar } from '../components/ProviderAvatar';
 import { SeverityBadge } from '../components/SeverityBadge';
 import { useCopy, useStyles, useTheme, type Theme } from '../mode';
@@ -24,6 +26,7 @@ export default function ProvidersScreen() {
   const [noBills, setNoBills] = useState<ManualProvider[]>([]); // added by hand, no bill yet
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showArchive, setShowArchive] = useState(false);
 
   const load = useCallback(() => {
     setLoading(true);
@@ -55,10 +58,12 @@ export default function ProvidersScreen() {
     );
   }
 
+  const { active, archived } = splitArchived(items);
+
   return (
     <FlatList
       style={{ backgroundColor: t.bg }}
-      data={items}
+      data={active}
       keyExtractor={(p) => p.slug}
       contentContainerStyle={{ padding: 16, gap: 10 }}
       refreshControl={<RefreshControl refreshing={loading} onRefresh={load} tintColor={t.accent} />}
@@ -103,6 +108,52 @@ export default function ProvidersScreen() {
             </View>
           ))}
           <Button title="＋ Adaugă furnizor" variant="ghost" onPress={() => navigation.navigate('AddProvider')} style={{ marginTop: 4 }} />
+
+          {/* §8: providers the user left. Grey, at the bottom; their bills stay. */}
+          {archived.length > 0 && (
+            <View style={styles.archive}>
+              <Pressable
+                onPress={() => setShowArchive((s) => !s)}
+                style={({ pressed }) => [styles.archiveHead, pressed && { opacity: 0.7 }]}
+                accessibilityRole="button"
+                accessibilityState={{ expanded: showArchive }}
+                accessibilityLabel={`${copy.archiveSection}, ${archived.length} ${archived.length === 1 ? 'furnizor' : 'furnizori'}`}
+              >
+                <Icon name="archive" size={20} color={t.muted} />
+                <Text style={styles.archiveTitle}>
+                  {copy.archiveSection} · {archived.length}
+                </Text>
+                <Text style={styles.archiveToggle}>{showArchive ? 'Ascunde' : 'Arată'}</Text>
+              </Pressable>
+              {showArchive && (
+                <>
+                  <Text style={styles.meta}>{copy.archiveHint}</Text>
+                  {archived.map((p) => (
+                    <Pressable
+                      key={p.slug}
+                      onPress={() => navigation.navigate('Provider', { slug: p.slug, provider: p.provider })}
+                      style={({ pressed }) => [styles.row, styles.archivedRow, pressed && { opacity: 0.7 }]}
+                      accessibilityRole="button"
+                      accessibilityLabel={`${p.provider}, ${archivedLabel(p.archived_at).toLowerCase()}`}
+                      testID={`archived-${p.slug}`}
+                    >
+                      <View style={{ opacity: 0.5 }}>
+                        <ProviderAvatar provider={p.provider} category={p.category} size={t.mode === 'senior' ? 48 : 40} />
+                      </View>
+                      <View style={{ flex: 1, gap: 2, minWidth: 0 }}>
+                        <Text style={[styles.name, { color: t.muted }]} numberOfLines={1}>
+                          {p.provider}
+                        </Text>
+                        <Text style={styles.meta} numberOfLines={1}>
+                          {archivedLabel(p.archived_at)} · {p.bills_count} facturi
+                        </Text>
+                      </View>
+                    </Pressable>
+                  ))}
+                </>
+              )}
+            </View>
+          )}
         </View>
       }
       renderItem={({ item: p }) => {
@@ -155,4 +206,9 @@ const makeStyles = (t: Theme) =>
     total: { fontSize: t.fs(16), fontWeight: '800', color: t.text },
     trend: { fontSize: t.fs(11), fontWeight: '700' },
     muted: { color: t.muted, fontSize: t.fs(14), textAlign: 'center' },
+    archive: { marginTop: 12, gap: 10, paddingTop: 14, borderTopWidth: 1, borderTopColor: t.border },
+    archiveHead: { flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: t.touch },
+    archiveTitle: { flex: 1, color: t.muted, fontWeight: '800', fontSize: t.fs(15) },
+    archiveToggle: { color: t.accent, fontWeight: '700', fontSize: t.fs(14) },
+    archivedRow: { backgroundColor: t.bg, borderColor: t.border, borderStyle: 'dashed' },
   });

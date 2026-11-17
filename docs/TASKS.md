@@ -135,6 +135,15 @@ If Gemini cannot read the phone's audio, the keyboard's own dictation mic types 
 
 Cut order if late: F5 → demo `paid_at` dates → voice auto-jump (keep the list) → voice entirely (keyboard dictation).
 
+## Provider archive (API_V2 §8)
+
+| # | Task | Status |
+|---|---|---|
+| R1 (backend) | `POST` / `DELETE /api/providers/{slug}/archive/`, `archived` / `archived_at` on cards and history, archived last | ✅ `b65308d` |
+| R2 (app) | Providers tab: closed "Arhivă · N" section at the bottom, grey cards "Arhivat pe …", tap opens the full history | ✅ |
+| R3 (app) | History screen: "Mută în arhivă" with a question (per mode), banner "Arhivat pe … · facturile rămân aici", toast, "Scoate din arhivă" | ✅ |
+| R4 (app) | `api.setProviderArchived`; mock mode / backend without §8 keep the archive on the phone (`src/archive.ts`); 17 Jest tests | ✅ see `docs/ARCHIVE_SYNC_REPORT.md` |
+
 ## Timeline
 
 | When | Frontend | Backend |

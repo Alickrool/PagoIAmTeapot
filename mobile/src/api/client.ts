@@ -1,6 +1,7 @@
 import { Platform } from 'react-native';
 import billsFixture from '../../../shared/fixtures/bills.json';
 import detailsFixture from '../../../shared/fixtures/bill_details.json';
+import { historyWithArchive, localArchive, setLocalArchived, withArchive } from '../archive';
 import { localSearch, SearchInputError, searchQueryString } from '../search';
 import * as derive from './derive';
 import type {
@@ -172,12 +173,29 @@ export const api = {
   dashboard: (month?: string): Promise<DashboardResponse> =>
     v2(`/dashboard/${month ? `?month=${month}` : ''}`, (p) => derive.dashboard(p, month)),
 
-  /** docs/API_V2.md §3 */
-  providers: (): Promise<ProviderSummary[]> => v2('/providers/', derive.providers),
+  /** docs/API_V2.md §3; archived providers (§8) last */
+  providers: async (): Promise<ProviderSummary[]> => withArchive(await v2('/providers/', derive.providers), await localArchive()),
 
   /** docs/API_V2.md §4 */
-  providerHistory: (slug: string): Promise<ProviderHistory> =>
-    v2(`/providers/${slug}/`, (p) => derive.providerHistory(p, slug)),
+  providerHistory: async (slug: string): Promise<ProviderHistory> =>
+    historyWithArchive(await v2(`/providers/${slug}/`, (p) => derive.providerHistory(p, slug)), await localArchive()),
+
+  /** Move a provider to the archive (contract ended) or back; bills stay. Returns its card. docs/API_V2.md §8 */
+  setProviderArchived: async (slug: string, archived: boolean): Promise<ProviderSummary> => {
+    if (!MOCK) {
+      try {
+        const card = await request<ProviderSummary>(`/providers/${slug}/archive/`, { method: archived ? 'POST' : 'DELETE' });
+        if (typeof card?.archived === 'boolean') return card;
+      } catch (e) {
+        // unknown_provider is a real answer; a bare 404 means a backend without §8 -> keep it on the phone
+        if (!(e instanceof ApiRequestError && e.status === 404 && e.code !== 'unknown_provider')) throw e;
+      }
+    }
+    await setLocalArchived(slug, archived);
+    const card = (await api.providers()).find((p) => p.slug === slug);
+    if (!card) throw new ApiRequestError(404, `Nu există furnizorul „${slug}”.`, 'unknown_provider');
+    return card;
+  },
 
   ask: (billId: number, body: { question?: string; line_item_id?: number }): Promise<AskResponse> =>
     MOCK

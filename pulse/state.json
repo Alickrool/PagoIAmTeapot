@@ -120,12 +120,18 @@
       "member": 2,
       "time": "2026-11-17 15:37",
       "headline": "Backend-ul e pe main, demo-ul rulează la coleg; urmează clipurile și repetiția"
+    },
+    {
+      "n": 21,
+      "member": 1,
+      "time": "2026-11-17 17:37",
+      "headline": "Gata de scenă: aplicația e pregătită, posterul simplificat, pulsul automat se oprește"
     }
   ],
   "members": {
     "1": {
       "building": "Aplicația mobilă AI Pago (Expo) în 3 interfețe: Innovative pentru tineri, Profesional pentru vârsta de mijloc și Classic pentru seniori. Vezi facturile lunii, cauți o factură scriind sau vorbind, scanezi factura, iar Gemini o citește, prinde greșelile și îți dă un sfat înainte să plătești. Ca un detectiv care vorbește pe limba fiecărui client.",
-      "works": "Aplicația e pregătită pentru demo: e la fel ca main de pe GitHub, baza de date are din nou datele demo (octombrie neplătit, PPC pe roșu), iar Gemini răspunde la verificarea scurtă în sub o secundă. Modul Profesional are aspect corporate și o „Sinteză a lunii” care se poate exporta, iar bara bugetului e mai groasă. Furnizorii se arhivează glisând spre stânga, iar facturile lor rămân. 224 de teste automate în aplicație trec. Avem și un poster cu sloganul „AI Pago: pentru a primi sfaturi, nu doar pentru a efectua plăți”.",
+      "works": "Aplicația e pregătită pentru demo: e la fel ca main de pe GitHub, baza de date a fost readusă la datele demo după teste (octombrie neplătit, PPC pe roșu), iar Gemini a răspuns la verificarea scurtă în sub o secundă. Modul Profesional are aspect corporate și o „Sinteză a lunii” care se poate exporta, iar bara bugetului e mai groasă. Furnizorii se arhivează glisând spre stânga, iar facturile lor rămân. 224 de teste automate în aplicație trec. Posterul cu sloganul „AI Pago: pentru a primi sfaturi, nu doar pentru a efectua plăți” e simplificat: doar sloganul, cu „AI” în galben.",
       "blocking": "Laptopul trece singur între Wi-Fi și hotspot, iar adresa serverului din aplicație trebuie schimbată de fiecare dată. Fișierele demo nu sunt încă în cache, deci o scanare pe scenă așteaptă câteva secunde după Gemini.",
       "features": [
         {
@@ -157,11 +163,15 @@
           "for": "desenează această pagină Pulse"
         },
         {
+          "name": "Export sesiune",
+          "for": "a salvat jurnalul întregii sesiuni într-un fișier text, fără chei și adrese de email"
+        },
+        {
           "name": "Sarcini programate",
-          "for": "actualizează pagina Pulse la fiecare 2 ore"
+          "for": "a actualizat pagina Pulse la fiecare 2 ore; oprită după acest ultim puls"
         }
       ],
-      "next": "Facem demo-ul: laptopul și telefonul pe aceeași rețea, datele demo proaspete și Gemini verificat chiar înainte."
+      "next": "Prezentăm demo-ul juriului: laptopul și telefonul pe aceeași rețea, datele demo proaspete și Gemini verificat chiar înainte."
     },
     "2": {
       "building": "AI Pago: înainte să apeși «Plătește», AI-ul citește factura, ți-o explică pe înțeles și prinde greșelile (index estimat, scumpiri ascunse, opțiuni plătite uitate). Ca un contabil de buzunar care se uită pe factură în locul tău.",
